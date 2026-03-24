@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model AppSettings {
+  id                 String   @id @default(cuid())
+  companyName        String   @default("PT Thermal True Indonesia")
+  companyAddress     String   @default("")
+  companyPhone       String   @default("")
+  companyEmail       String   @default("")
+  companyLogo        String?
+  forexUSD           Float    @default(15800)
+  forexEUR           Float    @default(17200)
+  forexRM            Float    @default(3500)
+  forexSGD           Float    @default(11700)
+  defaultOverhead    Float    @default(5.0)
+  defaultContingency Float    @default(3.0)
+  defaultMargin      Float    @default(20.0)
+  defaultEskalasi    Float    @default(0.0)
+  defaultAsuransi    Float    @default(0.0)
+  defaultMobilisasi  Float    @default(0.0)
+  ppnRate            Float    @default(11.0)
+  paymentTerms       String   @default("DP 50%, balance CBD")
+  deliveryTerms      String   @default("Ex-work Cikarang")
+  warrantyTerms      String   @default("12 months since delivery")
+  validityDays       Int      @default(14)
+  termsConditions    String   @default("")
+  presetSignedByName String   @default("")
+  presetCheckedByName String  @default("")
+  presetApprovedByName String @default("")
+  presetTtdPrepared  String?
+  presetTtdReviewed  String?
+  presetTtdApproved  String?
+  updatedAt          DateTime @updatedAt
+}
+
+model MaterialPrice {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  name       String
+  category   String
+  density    Float
+  pricePerKg Float
+  currency   String   @default("IDR")
+  unit       String   @default("kg")
+  notes      String?
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+}
+
+model ProfileData {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  name       String
+  type       String
+  weightPerM Float
+  pricePerM  Float
+  panelThick Int?
+  notes      String?
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+}
+
+model ComponentCatalog {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  category     String
+  subcategory  String?
+  brand        String?
+  model        String?
+  spec         String?
+  unitPrice    Float
+  currency     String   @default("IDR")
+  unit         String   @default("pcs")
+  moq          Int?
+  leadTimeDays Int?
+  supplier     String?
+  notes        String?
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+}
+
+model CostingProject {
+  id           String           @id @default(cuid())
+  name         String
+  status       String           @default("draft")
+  /** Qty unit for selling / per-unit breakdown (proyek keseluruhan). */
+  qty          Int              @default(1)
+  overhead     Float            @default(5.0)
+  contingency  Float            @default(3.0)
+  eskalasi     Float            @default(0.0)
+  asuransi     Float            @default(0.0)
+  mobilisasi   Float            @default(0.0)
+  margin       Float            @default(20.0)
+  totalHPP     Float            @default(0.0)
+  totalSelling Float            @default(0.0)
+  notes        String?
+  segments     CostingSegment[]
+  quotations   Quotation[]
+  quotationItems QuotationItem[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+/** Satu baris costing dalam proyek: AHU (kalkulasi dimensi) atau manual (DB). */
+model CostingSegment {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     CostingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type        String // "ahu" | "manual"
+  title       String   @default("")
+  sortOrder   Int      @default(0)
+  subtotal    Float    @default(0.0)
+  ahuModel    String?
+  ahuRef      String?
+  flowCMH     Float?
+  qty         Int      @default(1)
+  dimH        Float?
+  dimW        Float?
+  dimD        Float?
+  profileType String?
+  sections          CostingSection[]
+  manualGroups      ManualCostingGroup[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model ManualCostingGroup {
+  id        String         @id @default(cuid())
+  segmentId String
+  segment   CostingSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int            @default(0)
+  subtotal  Float          @default(0.0)
+  items     ManualCostingItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([segmentId])
+}
+
+model ManualCostingItem {
+  id             String             @id @default(cuid())
+  groupId        String
+  group          ManualCostingGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sortOrder      Int                @default(0)
+  sourceType     String
+  sourceId       String
+  code           String
+  name           String
+  category       String
+  uom            String
+  qty            Float              @default(1)
+  basePrice      Float
+  overridePrice  Float?
+  effectivePrice Float
+  wasteFactor    Float              @default(1.0)
+  subtotal       Float              @default(0.0)
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([groupId])
+}
+
+model CostingSection {
+  id        String         @id @default(cuid())
+  segmentId String
+  segment   CostingSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  category  String
+  sortOrder Int            @default(0)
+  subtotal  Float          @default(0.0)
+  lineItems CostingLineItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([segmentId])
+}
+
+model CostingLineItem {
+  id           String         @id @default(cuid())
+  sectionId    String
+  section      CostingSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  sortOrder    Int            @default(0)
+  description  String
+  uom          String
+  qty          Float
+  qtyFormula   String?
+  isOverride   Boolean        @default(false)
+  unitPrice    Float
+  currency     String         @default("IDR")
+  wasteFactor  Float          @default(1.0)
+  subtotal     Float
+  componentRef String?
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Quotation {
+  id              String          @id @default(cuid())
+  projectId       String?
+  project         CostingProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  items           QuotationItem[]
+  status          String          @default("draft")
+  noSurat         String?
+  tanggal         DateTime        @default(now())
+  perihal         String?
+  clientName      String?
+  clientCompany   String?
+  clientAddress   String?
+  clientAttn      String?
+  clientPhone     String?
+  projectLocation String?
+  ourRef          String?
+  yourRef         String?
+  discount        Float           @default(0.0)
+  discountEnabled Boolean        @default(true)
+  ppn             Float           @default(11.0)
+  ppnEnabled      Boolean        @default(true)
+  pphEnabled      Boolean        @default(false)
+  pphRate         Float           @default(0.0)
+  totalBeforeDisc Float           @default(0.0)
+  totalAfterDisc  Float           @default(0.0)
+  totalPPN        Float           @default(0.0)
+  totalPPH        Float           @default(0.0)
+  grandTotal      Float           @default(0.0)
+  paymentTerms    String?
+  deliveryTerms   String?
+  warrantyTerms   String?
+  validityDays    Int             @default(14)
+  termsConditions String?
+  introText       String?
+  notes           String?
+  ttdPrepared     String?
+  ttdReviewed     String?
+  ttdApproved     String?
+  stampPath       String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model QuotationItem {
+  id            String         @id @default(cuid())
+  quotationId   String
+  quotation     Quotation      @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  projectId     String
+  project       CostingProject @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  sortOrder     Int            @default(0)
+  description   String
+  spec          String?
+  qty           Int            @default(1)
+  uom           String         @default("Unit")
+  unitPrice     Float
+  totalPrice    Float
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([quotationId])
+  @@index([projectId])
+}
