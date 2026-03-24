@@ -50,6 +50,7 @@ import type { ProjectDoc, SectionDoc } from "@/lib/generators/document-types";
 import { computeQuotationTotals } from "@/lib/quotation-financials";
 import { formatIDR } from "@/lib/utils/format";
 import { toastError, toastSuccess } from "@/store/toastStore";
+import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
 
 const SPEC_MAX_CHARS = 4000;
 
@@ -209,11 +210,24 @@ export function DocumentationModule() {
   const searchParams = useSearchParams();
   const fromProject = searchParams.get("fromProject");
 
+  const setDocumentationUi = useUiWorkflowStore((s) => s.setDocumentationUi);
+  const screen = useUiWorkflowStore((s) => s.documentation.screen);
+  const previewMode = useUiWorkflowStore((s) => s.documentation.previewMode);
+  const listSearch = useUiWorkflowStore((s) => s.documentation.listSearch);
+  const listStatusFilter = useUiWorkflowStore(
+    (s) => s.documentation.listStatusFilter
+  );
+  const listMonthFilter = useUiWorkflowStore(
+    (s) => s.documentation.listMonthFilter
+  );
+  const listDateFilter = useUiWorkflowStore(
+    (s) => s.documentation.listDateFilter
+  );
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   const [quotations, setQuotations] = useState<QuotationApi[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [quotation, setQuotation] = useState<QuotationApi | null>(null);
   const [settings, setSettings] = useState<SettingsRow | null>(null);
   const [available, setAvailable] = useState<AvailableProject[]>([]);
@@ -255,18 +269,8 @@ export function DocumentationModule() {
 
   const [exportOpen, setExportOpen] = useState<"pdf" | "excel" | null>(null);
   const fromProjectHandled = useRef(false);
-  const [screen, setScreen] = useState<"list" | "editor">("list");
-  const [previewMode, setPreviewMode] = useState<"quotation" | "detailed" | "internal">(
-    "quotation"
-  );
   const [previewBreakdowns, setPreviewBreakdowns] = useState<CostingBreakdown[]>([]);
 
-  const [listSearch, setListSearch] = useState("");
-  const [listStatusFilter, setListStatusFilter] = useState<
-    "all" | "draft" | "final" | "approved"
-  >("all");
-  const [listMonthFilter, setListMonthFilter] = useState("");
-  const [listDateFilter, setListDateFilter] = useState("");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     () => new Set()
@@ -337,7 +341,7 @@ export function DocumentationModule() {
     if (!r.ok) return;
     const q = (await r.json()) as QuotationApi;
     setQuotation(q);
-    setSelectedId(id);
+    setDocumentationUi({ selectedId: id });
     setForm({
       status: q.status,
       noSurat: q.noSurat ?? "",
@@ -397,12 +401,19 @@ export function DocumentationModule() {
   useEffect(() => {
     if (loading) return;
     if (idParam && quotations.some((q) => q.id === idParam)) {
-      setScreen("editor");
+      setDocumentationUi({ screen: "editor" });
       void loadQuotation(idParam);
     } else if (!idParam && !fromProject) {
-      setScreen("list");
+      setDocumentationUi({ screen: "list" });
     }
-  }, [loading, idParam, quotations, loadQuotation, fromProject]);
+  }, [
+    loading,
+    idParam,
+    quotations,
+    loadQuotation,
+    fromProject,
+    setDocumentationUi,
+  ]);
 
   const handleCreate = useCallback(async () => {
     if (creating) return;
@@ -429,7 +440,7 @@ export function DocumentationModule() {
       const created = body as QuotationApi;
       await loadList();
       router.push(`/documentation?id=${created.id}`);
-      setScreen("editor");
+      setDocumentationUi({ screen: "editor" });
       await loadQuotation(created.id);
       toastSuccess("Penawaran baru dibuat");
     } finally {
@@ -478,7 +489,7 @@ export function DocumentationModule() {
   const openQuotation = useCallback(
     (id: string) => {
       router.push(`/documentation?id=${id}`);
-      setScreen("editor");
+      setDocumentationUi({ screen: "editor" });
       void loadQuotation(id);
     },
     [router, loadQuotation]
@@ -486,10 +497,9 @@ export function DocumentationModule() {
 
   const backToList = useCallback(() => {
     router.push("/documentation");
-    setScreen("list");
+    setDocumentationUi({ screen: "list", selectedId: null });
     setQuotation(null);
-    setSelectedId(null);
-  }, [router]);
+  }, [router, setDocumentationUi]);
 
   useEffect(() => {
     if (!fromProject || !settings || loading || fromProjectHandled.current) return;
@@ -506,7 +516,7 @@ export function DocumentationModule() {
         )) as AvailableProject | null;
       if (!proj || cancelled) {
         router.replace(`/documentation?id=${created.id}`);
-        setScreen("editor");
+        setDocumentationUi({ screen: "editor" });
         await loadQuotation(created.id);
         return;
       }
@@ -546,10 +556,19 @@ export function DocumentationModule() {
       if (!put.ok || cancelled) return;
       await loadList();
       router.replace(`/documentation?id=${created.id}`);
-      setScreen("editor");
+      setDocumentationUi({ screen: "editor" });
       await loadQuotation(created.id);
     })();
-  }, [fromProject, settings, available, loading, loadList, loadQuotation, router]);
+  }, [
+    fromProject,
+    settings,
+    available,
+    loading,
+    loadList,
+    loadQuotation,
+    router,
+    setDocumentationUi,
+  ]);
 
   const previewTotals = useMemo(() => {
     const lineTotals = form.items.map((it) => it.qty * it.unitPrice);
@@ -945,14 +964,20 @@ export function DocumentationModule() {
           onDeleteSelected={() => void handleBulkDelete()}
           deleting={deletingBulk}
           search={listSearch}
-          onSearchChange={setListSearch}
+          onSearchChange={(v) => setDocumentationUi({ listSearch: v })}
           statusFilter={listStatusFilter}
-          onStatusFilterChange={setListStatusFilter}
+          onStatusFilterChange={(v) =>
+            setDocumentationUi({ listStatusFilter: v })
+          }
           monthFilter={listMonthFilter}
-          onMonthFilterChange={setListMonthFilter}
+          onMonthFilterChange={(v) =>
+            setDocumentationUi({ listMonthFilter: v })
+          }
           availableMonths={availableMonths}
           dateFilter={listDateFilter}
-          onDateFilterChange={setListDateFilter}
+          onDateFilterChange={(v) =>
+            setDocumentationUi({ listDateFilter: v })
+          }
         />
       </div>
     );
@@ -1593,7 +1618,9 @@ export function DocumentationModule() {
               variant={previewMode === "quotation" ? "default" : "outline"}
               size="sm"
               className="gap-1"
-              onClick={() => setPreviewMode("quotation")}
+              onClick={() =>
+                setDocumentationUi({ previewMode: "quotation" })
+              }
             >
               <FileText className="size-3.5" />
               Quotation
@@ -1603,7 +1630,9 @@ export function DocumentationModule() {
               variant={previewMode === "detailed" ? "default" : "outline"}
               size="sm"
               className="gap-1"
-              onClick={() => setPreviewMode("detailed")}
+              onClick={() =>
+                setDocumentationUi({ previewMode: "detailed" })
+              }
             >
               <PenLine className="size-3.5" />
               Detailed costing
@@ -1613,7 +1642,9 @@ export function DocumentationModule() {
               variant={previewMode === "internal" ? "default" : "outline"}
               size="sm"
               className="gap-1"
-              onClick={() => setPreviewMode("internal")}
+              onClick={() =>
+                setDocumentationUi({ previewMode: "internal" })
+              }
             >
               <FileStack className="size-3.5" />
               Internal costing

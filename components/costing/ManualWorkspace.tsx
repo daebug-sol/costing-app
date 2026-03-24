@@ -58,6 +58,7 @@ import {
 import { formatIDR } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 import { useCostingStore } from "@/store/costingStore";
+import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
 
 type ManualItem = {
   id: string;
@@ -134,7 +135,11 @@ function SortableGroupWrap({
   children,
 }: {
   id: string;
-  children: React.ReactNode;
+  children: (args: {
+    setNodeRef: (node: HTMLElement | null) => void;
+    style: React.CSSProperties;
+    dragProps: React.HTMLAttributes<HTMLDivElement>;
+  }) => React.ReactNode;
 }) {
   const {
     attributes,
@@ -147,15 +152,17 @@ function SortableGroupWrap({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.85 : 1,
+    opacity: isDragging ? 0.3 : 1,
+  };
+  const dragProps: React.HTMLAttributes<HTMLDivElement> = {
+    ...attributes,
+    ...listeners,
+    className:
+      "cursor-grab touch-none select-none active:cursor-grabbing rounded-md px-1 py-0.5 -mx-1 -my-0.5",
+    title: "Tahan lalu seret untuk mengurutkan sub-assembly",
   };
   return (
-    <div ref={setNodeRef} style={style} className="relative">
-      <div className="absolute left-1 top-3 z-10" {...attributes} {...listeners}>
-        <GripVertical className="size-4 cursor-grab text-muted-foreground active:cursor-grabbing" />
-      </div>
-      <div className="pl-7">{children}</div>
-    </div>
+    <>{children({ setNodeRef, style, dragProps })}</>
   );
 }
 
@@ -255,8 +262,6 @@ export function ManualWorkspace({
     togglesRef.current = { esk: useEsk, asu: useAsu, mob: useMob };
   }, [useEsk, useAsu, useMob]);
 
-  const [renameId, setRenameId] = useState<string | null>(null);
-  const [renameVal, setRenameVal] = useState("");
   const [priceEditId, setPriceEditId] = useState<string | null>(null);
   const [priceDraft, setPriceDraft] = useState("");
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
@@ -277,11 +282,17 @@ export function ManualWorkspace({
     const data = (await r.json()) as { groups: ManualGroup[] };
     const list = data.groups ?? [];
     setGroups(list);
+    const saved =
+      useUiWorkflowStore.getState().costing.manualOpenCatsByProject[
+        projectId
+      ]?.[segmentId];
     const o: Record<string, boolean> = {};
-    for (const g of list) o[g.id] = true;
-    setOpenCats((prev) => ({ ...o, ...prev }));
+    for (const g of list) {
+      o[g.id] = saved?.[g.id] ?? true;
+    }
+    setOpenCats(o);
     return list;
-  }, [projectId, manualBase]);
+  }, [projectId, manualBase, segmentId]);
 
   useEffect(() => {
     if (!projectId || !segmentId) return;
@@ -299,6 +310,14 @@ export function ManualWorkspace({
       cancelled = true;
     };
   }, [projectId, segmentId, loadManual]);
+
+  useEffect(() => {
+    if (!projectId || !segmentId) return;
+    if (groups.length === 0) return;
+    useUiWorkflowStore
+      .getState()
+      .setManualOpenCats(projectId, segmentId, openCats);
+  }, [projectId, segmentId, groups.length, openCats]);
 
   const lastCollapseSig = useRef(0);
   const lastExpandSig = useRef(0);
@@ -427,7 +446,9 @@ export function ManualWorkspace({
   }, [groups]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, {
+      activationConstraint: { delay: 220, tolerance: 8 },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -504,25 +525,6 @@ export function ManualWorkspace({
     }
   };
 
-  const openPickerTop = async () => {
-    if (!projectId) return;
-    let list = await loadManual();
-    if (list.length === 0) {
-      const r = await fetch(`${manualBase}/groups`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "Umum" }),
-      });
-      if (!r.ok) {
-        showToast(await readErr(r));
-        return;
-      }
-      list = await loadManual();
-    }
-    setPickerLockGroupId(null);
-    setPickerOpen(true);
-  };
-
   const openPickerForGroup = (groupId: string) => {
     setPickerLockGroupId(groupId);
     setPickerOpen(true);
@@ -570,22 +572,37 @@ export function ManualWorkspace({
     return created.id;
   };
 
-  const saveRename = async (groupId: string) => {
-    if (!projectId || !renameVal.trim()) {
-      setRenameId(null);
-      return;
-    }
+  const renameGroup = async (groupId: string, name: string) => {
+    if (!projectId || !name.trim()) return;
     const r = await fetch(
       `${manualBase}/groups/${groupId}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: renameVal.trim() }),
+        body: JSON.stringify({ name: name.trim() }),
       }
     );
     if (!r.ok) showToast(await readErr(r));
-    setRenameId(null);
     await loadManual();
+  };
+
+  const createSubAssembly = async () => {
+    const id = await createGroupFromName(`Sub-assembly ${groups.length + 1}`);
+    if (!id) return;
+    setOpenCats((prev) => ({ ...prev, [id]: true }));
+  };
+
+  const removeGroup = async (groupId: string) => {
+    if (!projectId) return;
+    const r = await fetch(`${manualBase}/groups/${groupId}`, {
+      method: "DELETE",
+    });
+    if (!r.ok) {
+      showToast(await readErr(r));
+      return;
+    }
+    await loadManual();
+    await loadProject(projectId);
   };
 
   const updateItemQty = async (itemId: string, qty: number) => {
@@ -628,7 +645,7 @@ export function ManualWorkspace({
 
   return (
     <div
-      className={cn("space-y-6", !embedded && "mx-auto max-w-6xl")}
+      className={cn("space-y-4", !embedded && "mx-auto max-w-6xl")}
     >
       {toast && (
         <div className="bg-card border-border fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-lg border px-4 py-2 text-sm">
@@ -653,8 +670,8 @@ export function ManualWorkspace({
           </div>
         )}
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="secondary" onClick={() => void openPickerTop()}>
-            + Tambah Item dari Database
+          <Button type="button" variant="secondary" onClick={() => void createSubAssembly()}>
+            + Sub-assembly
           </Button>
         </div>
       </div>
@@ -667,10 +684,10 @@ export function ManualWorkspace({
       ) : groups.length === 0 ? (
         <EmptyState
           icon={Plus}
-          title="Belum ada grup"
-          description="Tambah item dari database master. Grup default “Umum” dibuat otomatis saat pertama kali membuka pemilih item."
-          actionLabel="+ Tambah Item dari Database"
-          onAction={() => void openPickerTop()}
+          title="Belum ada sub-assembly"
+          description="Tambahkan sub-assembly dulu, lalu pilih part per sub-assembly."
+          actionLabel="+ Sub-assembly"
+          onAction={() => void createSubAssembly()}
           className="min-h-[240px]"
         />
       ) : (
@@ -684,59 +701,92 @@ export function ManualWorkspace({
           items={groupIds}
           strategy={verticalListSortingStrategy}
         >
-            <div className="space-y-3">
+            <div className="border-border/60 overflow-hidden rounded-md border">
               {groups.map((g) => {
                 const open = openCats[g.id] ?? true;
                 const itemIds = g.items.map((i) => `i-${i.id}`);
                 return (
                   <SortableGroupWrap key={g.id} id={`g-${g.id}`}>
-                    <Card className="overflow-hidden border-border ">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenCats((o) => ({ ...o, [g.id]: !open }))
-                        }
-                        className="flex w-full items-center justify-between gap-3 border-b border-border bg-muted/50 px-4 py-3 text-left"
-                      >
-                        <span className="min-w-0 flex-1 font-medium text-foreground">
-                          {renameId === g.id ? (
-                            <Input
-                              className="h-8 max-w-xs"
-                              value={renameVal}
-                              autoFocus
-                              onChange={(e) => setRenameVal(e.target.value)}
-                              onBlur={() => void saveRename(g.id)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") void saveRename(g.id);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          ) : (
-                            <span
-                              role="presentation"
-                              onDoubleClick={(e) => {
-                                e.stopPropagation();
-                                setRenameId(g.id);
-                                setRenameVal(g.name);
-                              }}
-                            >
-                              {g.name}
-                            </span>
-                          )}
-                        </span>
-                        <span className="flex items-center gap-3">
-                          <span className="tabular-money text-sm font-semibold text-foreground">
-                            {formatIDR(g.subtotal)}
-                          </span>
+                    {({ setNodeRef, style, dragProps }) => (
+                    <div
+                      ref={setNodeRef}
+                      style={style}
+                      className="border-border/60 overflow-hidden border-t first:border-t-0"
+                    >
+                      <div className="bg-muted/20 flex min-w-0 items-center gap-2 border-b border-border px-2 py-1.5">
+                        <button
+                          type="button"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={() =>
+                            setOpenCats((o) => ({ ...o, [g.id]: !open }))
+                          }
+                          className="text-muted-foreground hover:text-foreground flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 transition-colors"
+                          aria-expanded={open}
+                          aria-label={
+                            open ? "Ciutkan sub-assembly" : "Buka sub-assembly"
+                          }
+                        >
                           {open ? (
-                            <ChevronDown className="size-4 text-muted-foreground" />
+                            <ChevronDown className="size-4" />
                           ) : (
-                            <ChevronRight className="size-4 text-muted-foreground" />
+                            <ChevronRight className="size-4" />
                           )}
+                        </button>
+                        <div
+                          {...dragProps}
+                          className={cn(
+                            "flex shrink-0 items-center gap-2",
+                            dragProps.className
+                          )}
+                        >
+                          <Badge className="bg-violet-600 text-[10px] hover:bg-violet-600">
+                            Sub-assembly
+                          </Badge>
+                        </div>
+                        <div className="w-[6rem] shrink-0 sm:w-28 md:w-36">
+                          <Input
+                            className="h-7 w-full min-w-0 truncate text-xs font-medium sm:text-sm"
+                            defaultValue={g.name}
+                            key={`gname-${g.id}-${g.name}`}
+                            title={g.name}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onBlur={(e) => void renameGroup(g.id, e.target.value)}
+                          />
+                        </div>
+                        <span
+                          className="tabular-money text-muted-foreground min-w-0 flex-1 truncate text-right text-[11px] sm:text-xs"
+                          title={`Subtotal HPP: ${formatIDR(g.subtotal)}`}
+                        >
+                          Subtotal HPP: {formatIDR(g.subtotal)}
                         </span>
-                      </button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={() => openPickerForGroup(g.id)}
+                        >
+                          + Part
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-destructive size-8 shrink-0"
+                          title="Hapus sub-assembly"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={() => {
+                            if (window.confirm("Hapus sub-assembly ini beserta part di dalamnya?")) {
+                              void removeGroup(g.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
                       {open && (
-                        <CardContent className="p-0">
+                        <>
                           <SortableContext
                             id={`manual-items-${g.id}`}
                             items={itemIds}
@@ -897,18 +947,10 @@ export function ManualWorkspace({
                               </TableBody>
                             </Table>
                           </SortableContext>
-                          <div className="border-t border-border px-4 py-2">
-                            <button
-                              type="button"
-                              className="text-primary text-sm font-medium hover:underline"
-                              onClick={() => openPickerForGroup(g.id)}
-                            >
-                              + Tambah Item ke Grup ini
-                            </button>
-                          </div>
-                        </CardContent>
+                        </>
                       )}
-                    </Card>
+                    </div>
+                    )}
                   </SortableGroupWrap>
                 );
               })}
@@ -1176,8 +1218,8 @@ export function ManualWorkspace({
             <DialogTitle>Hapus item?</DialogTitle>
           </DialogHeader>
           <p className="text-muted-foreground text-sm">
-            Item akan dihapus dari grup ini. Tindakan ini dapat dibatalkan dengan
-            menambah ulang dari database.
+            Item akan dihapus dari sub-assembly ini. Tindakan ini dapat
+            dibatalkan dengan menambahkan ulang dari database.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteItemId(null)}>

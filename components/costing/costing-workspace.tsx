@@ -3,9 +3,12 @@
 import {
   DndContext,
   type DragEndEvent,
+  type DragStartEvent,
+  DragOverlay,
   KeyboardSensor,
   PointerSensor,
   closestCenter,
+  defaultDropAnimation,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -21,7 +24,6 @@ import {
   ChevronDown,
   ChevronRight,
   FolderKanban,
-  GripVertical,
   ListFilter,
   Loader2,
   Lock,
@@ -35,6 +37,7 @@ import { useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -87,6 +90,11 @@ import {
   type CostingSectionWithLines,
   type CostingSegmentDetail,
 } from "@/store/costingStore";
+import {
+  EMPTY_BOOL_MAP,
+  mergeOpenSegmentsForProject,
+  useUiWorkflowStore,
+} from "@/store/uiWorkflowStore";
 
 const CATEGORY_ORDER = [
   "Frame & Panel",
@@ -122,7 +130,11 @@ function SortableCostingSegment({
   children,
 }: {
   id: string;
-  children: (dragHandle: React.ReactNode) => React.ReactNode;
+  children: (args: {
+    setNodeRef: (node: HTMLElement | null) => void;
+    style: React.CSSProperties;
+    dragProps: React.HTMLAttributes<HTMLDivElement>;
+  }) => React.ReactNode;
 }) {
   const {
     attributes,
@@ -132,27 +144,19 @@ function SortableCostingSegment({
     transition,
     isDragging,
   } = useSortable({ id });
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.92 : 1,
+    transition: isDragging ? transition : undefined,
+    opacity: isDragging ? 0.3 : 1,
   };
-  const dragHandle = (
-    <button
-      type="button"
-      className="text-muted-foreground hover:text-foreground mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40"
-      title="Seret untuk mengurutkan segmen"
-      {...attributes}
-      {...listeners}
-    >
-      <GripVertical className="size-4" />
-    </button>
-  );
-  return (
-    <div ref={setNodeRef} style={style}>
-      {children(dragHandle)}
-    </div>
-  );
+  const dragProps: React.HTMLAttributes<HTMLDivElement> = {
+    ...attributes,
+    ...listeners,
+    className:
+      "cursor-grab touch-none select-none active:cursor-grabbing rounded-md px-1 py-0.5 -mx-1 -my-0.5",
+    title: "Tahan lalu seret untuk mengurutkan assembly",
+  };
+  return <>{children({ setNodeRef, style, dragProps })}</>;
 }
 
 function finite(n: number, fallback = 0) {
@@ -568,16 +572,30 @@ export function CostingWorkspace() {
     updateMargins,
   } = useCostingStore();
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "finalized">(
-    "all"
+  const search = useUiWorkflowStore((s) => s.costing.sidebar.search);
+  const statusFilter = useUiWorkflowStore((s) => s.costing.sidebar.statusFilter);
+  const monthFilter = useUiWorkflowStore((s) => s.costing.sidebar.monthFilter);
+  const dateFilter = useUiWorkflowStore((s) => s.costing.sidebar.dateFilter);
+  const setCostingSidebar = useUiWorkflowStore((s) => s.setCostingSidebar);
+  const setCostingOpenSegments = useUiWorkflowStore(
+    (s) => s.setCostingOpenSegments
   );
-  const [monthFilter, setMonthFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
+  const patchCostingOpenSegment = useUiWorkflowStore(
+    (s) => s.patchCostingOpenSegment
+  );
+  const patchCostingOpenCat = useUiWorkflowStore((s) => s.patchCostingOpenCat);
+  const setCostingOpenCats = useUiWorkflowStore((s) => s.setCostingOpenCats);
+  const setCostingMainScroll = useUiWorkflowStore((s) => s.setCostingMainScroll);
+
   const [newOpen, setNewOpen] = useState(false);
   const [newName, setNewName] = useState("");
-  const [openCats, setOpenCats] = useState<Record<string, boolean>>({});
-  const [openSegments, setOpenSegments] = useState<Record<string, boolean>>({});
+  const projectKey = currentProject?.id ?? "";
+  const openCatsByProject = useUiWorkflowStore((s) => s.costing.openCatsByProject);
+  const openSegmentsByProject = useUiWorkflowStore(
+    (s) => s.costing.openSegmentsByProject
+  );
+  const openCats = openCatsByProject[projectKey] ?? EMPTY_BOOL_MAP;
+  const openSegments = openSegmentsByProject[projectKey] ?? EMPTY_BOOL_MAP;
   const [collapseManualTick, setCollapseManualTick] = useState(0);
   const [expandManualTick, setExpandManualTick] = useState(0);
   const [unlockDraft, setUnlockDraft] = useState<Record<string, boolean>>({});
@@ -608,6 +626,32 @@ export function CostingWorkspace() {
     mobilisasi: 0,
     margin: 20,
   });
+
+  const mainScrollRef = useRef<HTMLElement>(null);
+  const scrollSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [activeSegmentDragId, setActiveSegmentDragId] = useState<string | null>(
+    null
+  );
+
+  useLayoutEffect(() => {
+    if (!currentProject?.id) return;
+    const el = mainScrollRef.current;
+    if (!el) return;
+    const saved =
+      useUiWorkflowStore.getState().costing.mainScrollByProject[currentProject.id];
+    if (saved != null) el.scrollTop = saved;
+  }, [currentProject?.id]);
+
+  const onMainScroll = useCallback(
+    (e: React.UIEvent<HTMLElement>) => {
+      if (!currentProject?.id) return;
+      if (scrollSaveTimer.current) clearTimeout(scrollSaveTimer.current);
+      scrollSaveTimer.current = setTimeout(() => {
+        setCostingMainScroll(currentProject.id, e.currentTarget.scrollTop);
+      }, 120);
+    },
+    [currentProject?.id, setCostingMainScroll]
+  );
 
   useEffect(() => {
     loadProjects().catch((e) => showToast(String(e)));
@@ -828,7 +872,9 @@ export function CostingWorkspace() {
 
   const toggleCat = (segmentId: string, cat: string) => {
     const k = catKey(segmentId, cat);
-    setOpenCats((o) => ({ ...o, [k]: !(o[k] ?? true) }));
+    if (!currentProject?.id) return;
+    const cur = openCats[k] ?? true;
+    patchCostingOpenCat(currentProject.id, k, !cur);
   };
 
   const segments = useMemo(
@@ -837,17 +883,41 @@ export function CostingWorkspace() {
   );
 
   useEffect(() => {
-    setOpenSegments((prev) => {
-      const next = { ...prev };
-      for (const s of segments) {
-        if (next[s.id] === undefined) next[s.id] = true;
+    if (!currentProject?.id) return;
+    const stored =
+      useUiWorkflowStore.getState().costing.openSegmentsByProject[
+        currentProject.id
+      ];
+    const merged = mergeOpenSegmentsForProject(
+      stored,
+      segments.map((s) => s.id)
+    );
+    let changed = false;
+    if (!stored) {
+      changed = true;
+    } else {
+      const mergedKeys = Object.keys(merged);
+      const storedKeys = Object.keys(stored);
+      if (mergedKeys.length !== storedKeys.length) {
+        changed = true;
+      } else {
+        for (const id of mergedKeys) {
+          if (stored[id] !== merged[id]) {
+            changed = true;
+            break;
+          }
+        }
       }
-      return next;
-    });
-  }, [segments]);
+    }
+    if (changed) setCostingOpenSegments(currentProject.id, merged);
+  }, [currentProject?.id, segments, setCostingOpenSegments]);
 
   const collapseAllHierarchy = useCallback(() => {
-    setOpenSegments(Object.fromEntries(segments.map((s) => [s.id, false])));
+    if (!currentProject?.id) return;
+    setCostingOpenSegments(
+      currentProject.id,
+      Object.fromEntries(segments.map((s) => [s.id, false]))
+    );
     const catUpdates: Record<string, boolean> = {};
     for (const seg of segments) {
       if (seg.type === "manual") continue;
@@ -856,13 +926,21 @@ export function CostingWorkspace() {
       }
     }
     if (Object.keys(catUpdates).length > 0) {
-      setOpenCats((o) => ({ ...o, ...catUpdates }));
+      const prev =
+        useUiWorkflowStore.getState().costing.openCatsByProject[
+          currentProject.id
+        ] ?? {};
+      setCostingOpenCats(currentProject.id, { ...prev, ...catUpdates });
     }
     setCollapseManualTick((t) => t + 1);
-  }, [segments]);
+  }, [segments, currentProject?.id, setCostingOpenCats, setCostingOpenSegments]);
 
   const expandAllHierarchy = useCallback(() => {
-    setOpenSegments(Object.fromEntries(segments.map((s) => [s.id, true])));
+    if (!currentProject?.id) return;
+    setCostingOpenSegments(
+      currentProject.id,
+      Object.fromEntries(segments.map((s) => [s.id, true]))
+    );
     const catUpdates: Record<string, boolean> = {};
     for (const seg of segments) {
       if (seg.type === "manual") continue;
@@ -871,17 +949,28 @@ export function CostingWorkspace() {
       }
     }
     if (Object.keys(catUpdates).length > 0) {
-      setOpenCats((o) => ({ ...o, ...catUpdates }));
+      const prev =
+        useUiWorkflowStore.getState().costing.openCatsByProject[
+          currentProject.id
+        ] ?? {};
+      setCostingOpenCats(currentProject.id, { ...prev, ...catUpdates });
     }
     setExpandManualTick((t) => t + 1);
-  }, [segments]);
+  }, [segments, currentProject?.id, setCostingOpenCats, setCostingOpenSegments]);
 
   const segmentSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, {
+      activationConstraint: { delay: 220, tolerance: 8 },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const onSegmentDragStart = (event: DragStartEvent) => {
+    setActiveSegmentDragId(String(event.active.id));
+  };
+
   const onSegmentDragEnd = (event: DragEndEvent) => {
+    setActiveSegmentDragId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const ids = segments.map((s) => s.id);
@@ -890,6 +979,10 @@ export function CostingWorkspace() {
     if (oldIndex < 0 || newIndex < 0) return;
     const next = arrayMove(ids, oldIndex, newIndex);
     reorderSegments(next).catch((e) => showToast(String(e)));
+  };
+
+  const onSegmentDragCancel = () => {
+    setActiveSegmentDragId(null);
   };
 
   const statusBadge = (s: string) => {
@@ -932,7 +1025,9 @@ export function CostingWorkspace() {
             <Input
               placeholder="Cari nama / model / ID…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) =>
+                setCostingSidebar({ search: e.target.value })
+              }
               className="h-8 pl-8 pr-10 text-sm"
             />
             <DropdownMenu>
@@ -954,7 +1049,9 @@ export function CostingWorkspace() {
                     <Select
                       value={statusFilter}
                       onValueChange={(v) =>
-                        setStatusFilter(v as "all" | "draft" | "finalized")
+                        setCostingSidebar({
+                          statusFilter: v as "all" | "draft" | "finalized",
+                        })
                       }
                     >
                       <SelectTrigger className="h-8 text-xs">
@@ -972,7 +1069,9 @@ export function CostingWorkspace() {
                     <Select
                       value={monthFilter || "all"}
                       onValueChange={(v) =>
-                        setMonthFilter(v === "all" ? "" : v)
+                        setCostingSidebar({
+                          monthFilter: v === "all" ? "" : v,
+                        })
                       }
                     >
                       <SelectTrigger className="h-8 text-xs">
@@ -994,7 +1093,9 @@ export function CostingWorkspace() {
                       type="date"
                       className="h-8 text-xs"
                       value={dateFilter}
-                      onChange={(e) => setDateFilter(e.target.value)}
+                      onChange={(e) =>
+                        setCostingSidebar({ dateFilter: e.target.value })
+                      }
                     />
                   </div>
                 </div>
@@ -1063,7 +1164,7 @@ export function CostingWorkspace() {
                                   {p.name}
                                 </span>
                                 <Badge variant="outline" className="text-[10px]">
-                                  {p.segmentCount} segmen
+                                  {p.segmentCount} assembly
                                 </Badge>
                               </div>
                               <div className="mt-0.5 text-[11px] text-muted-foreground">
@@ -1088,7 +1189,11 @@ export function CostingWorkspace() {
       </aside>
 
       {/* Right */}
-      <main className="bg-card min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border p-4 lg:p-6">
+      <main
+        ref={mainScrollRef}
+        onScroll={currentProject ? onMainScroll : undefined}
+        className="bg-card min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border p-4 lg:p-6"
+      >
         {!currentProject ? (
           <EmptyState
             icon={FolderKanban}
@@ -1097,7 +1202,7 @@ export function CostingWorkspace() {
             className="h-[min(480px,calc(100vh-8rem))]"
           />
         ) : (
-          <div className="mx-auto max-w-6xl space-y-6">
+          <div className="mx-auto max-w-6xl space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">
@@ -1145,7 +1250,7 @@ export function CostingWorkspace() {
                   <DropdownMenuTrigger asChild>
                     <Button size="sm" variant="outline" className="gap-1">
                       <Plus className="size-4" />
-                      Segmen
+                      Assembly
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -1171,8 +1276,8 @@ export function CostingWorkspace() {
             {segments.length === 0 ? (
               <EmptyState
                 icon={FolderKanban}
-                title="Belum ada segmen"
-                description="Tambahkan segmen AHU atau manual. Satu penawaran bisa berisi banyak item (banyak segmen)."
+                title="Belum ada assembly"
+                description="Tambahkan assembly AHU atau manual. Satu penawaran bisa berisi banyak item (banyak assembly)."
                 className="bg-card border border-dashed border-border py-12"
               />
             ) : null}
@@ -1180,120 +1285,196 @@ export function CostingWorkspace() {
             <DndContext
               sensors={segmentSensors}
               collisionDetection={closestCenter}
+              onDragStart={onSegmentDragStart}
               onDragEnd={onSegmentDragEnd}
+              onDragCancel={onSegmentDragCancel}
             >
               <SortableContext
                 items={segments.map((s) => s.id)}
                 strategy={verticalListSortingStrategy}
               >
-                {segments.map((seg) => {
-                  const segOpen = openSegments[seg.id] ?? true;
-                  return (
-                    <SortableCostingSegment key={seg.id} id={seg.id}>
-                      {(dragHandle) => (
-                <div
-                  className="space-y-4 rounded-xl border border-border bg-card p-4"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                      {dragHandle}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenSegments((o) => ({
-                            ...o,
-                            [seg.id]: !(o[seg.id] ?? true),
-                          }))
-                        }
-                        className="text-muted-foreground hover:text-foreground flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 transition-colors"
-                        aria-expanded={segOpen}
-                        aria-label={
-                          segOpen ? "Ciutkan segmen" : "Buka segmen"
-                        }
-                      >
-                        {segOpen ? (
-                          <ChevronDown className="size-4" />
-                        ) : (
-                          <ChevronRight className="size-4" />
+                <Table className="border-border rounded-lg border">
+                  {segments.map((seg, segIndex) => {
+                    const segOpen = openSegments[seg.id] ?? true;
+                    return (
+                      <SortableCostingSegment key={seg.id} id={seg.id}>
+                        {({ setNodeRef, style, dragProps }) => (
+                          <tbody
+                            ref={setNodeRef}
+                            style={style}
+                            className={cn(
+                              "[&_tr:last-child]:border-0",
+                              segIndex > 0 && "border-t border-border"
+                            )}
+                          >
+                            <TableRow className="bg-muted/10 hover:bg-muted/20 border-0">
+                              <TableCell
+                                colSpan={4}
+                                className="max-w-0 p-0 align-middle"
+                              >
+                                <div className="flex min-w-0 items-center gap-2 px-3 py-2">
+                                  <button
+                                    type="button"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={() => {
+                                      if (!currentProject?.id) return;
+                                      patchCostingOpenSegment(
+                                        currentProject.id,
+                                        seg.id,
+                                        !(openSegments[seg.id] ?? true)
+                                      );
+                                    }}
+                                    className="text-muted-foreground hover:text-foreground flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 transition-colors"
+                                    aria-expanded={segOpen}
+                                    aria-label={
+                                      segOpen ? "Ciutkan assembly" : "Buka assembly"
+                                    }
+                                  >
+                                    {segOpen ? (
+                                      <ChevronDown className="size-4" />
+                                    ) : (
+                                      <ChevronRight className="size-4" />
+                                    )}
+                                  </button>
+                                  <div
+                                    {...dragProps}
+                                    className={cn(
+                                      "flex shrink-0 items-center gap-2",
+                                      dragProps.className
+                                    )}
+                                  >
+                                    <Badge
+                                      className={
+                                        seg.type === "manual"
+                                          ? "bg-violet-600 text-[10px] hover:bg-violet-600"
+                                          : "bg-primary text-primary-foreground text-[10px] hover:bg-primary/90"
+                                      }
+                                    >
+                                      {seg.type === "manual" ? "Manual" : "AHU"}
+                                    </Badge>
+                                  </div>
+                                  <div className="w-[5.5rem] shrink-0 sm:w-28 md:w-32">
+                                    <Input
+                                      className="h-8 w-full min-w-0 truncate text-xs font-medium sm:text-sm"
+                                      defaultValue={seg.title}
+                                      key={`t-${seg.id}-${seg.title}`}
+                                      title={seg.title}
+                                      onPointerDown={(e) => e.stopPropagation()}
+                                      onBlur={(e) =>
+                                        patchSegment(seg.id, {
+                                          title:
+                                            e.target.value.trim() || seg.title,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <span
+                                    className="tabular-money text-muted-foreground min-w-0 flex-1 truncate text-right text-[11px] sm:text-xs"
+                                    title={`Subtotal HPP: ${formatIDR(seg.subtotal)}`}
+                                  >
+                                    Subtotal HPP: {formatIDR(seg.subtotal)}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-muted-foreground hover:text-destructive size-8 shrink-0"
+                                    title="Hapus assembly"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={() => {
+                                      if (
+                                        window.confirm(
+                                          "Hapus assembly ini beserta isinya?"
+                                        )
+                                      )
+                                        deleteSegment(seg.id).catch((e) =>
+                                          showToast(String(e))
+                                        );
+                                    }}
+                                  >
+                                    <Trash2 className="size-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                            {segOpen ? (
+                              <TableRow className="border-0 hover:bg-transparent">
+                                <TableCell
+                                  colSpan={4}
+                                  className="border-border/80 bg-card p-0"
+                                >
+                                  <div className="border-border/60 border-t px-3 pb-3 pt-1">
+                                    {seg.type === "manual" ? (
+                                      <ManualWorkspace
+                                        segmentId={seg.id}
+                                        embedded
+                                        collapseAllManualSignal={
+                                          collapseManualTick
+                                        }
+                                        expandAllManualSignal={
+                                          expandManualTick
+                                        }
+                                      />
+                                    ) : (
+                                      <AhuSegmentEditor
+                                        segment={seg}
+                                        patchSegment={patchSegment}
+                                        recalculateSegment={recalculateSegment}
+                                        isCalculating={isCalculating}
+                                        openAddItem={openAddItem}
+                                        toggleCat={toggleCat}
+                                        openCats={openCats}
+                                        unlockDraft={unlockDraft}
+                                        setUnlockDraft={setUnlockDraft}
+                                        qtyDraft={qtyDraft}
+                                        setQtyDraft={setQtyDraft}
+                                        overrideItem={overrideItem}
+                                        resetItem={resetItem}
+                                        showToast={showToast}
+                                      />
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ) : null}
+                          </tbody>
                         )}
-                      </button>
-                      <Badge
-                        className={
-                          seg.type === "manual"
-                            ? "bg-violet-600 text-[10px] hover:bg-violet-600"
-                            : "bg-primary text-primary-foreground text-[10px] hover:bg-primary/90"
-                        }
-                      >
-                        {seg.type === "manual" ? "Manual" : "AHU"}
-                      </Badge>
-                      <Input
-                        className="h-8 max-w-xs font-medium"
-                        defaultValue={seg.title}
-                        key={`t-${seg.id}-${seg.title}`}
-                        onBlur={(e) =>
-                          patchSegment(seg.id, {
-                            title: e.target.value.trim() || seg.title,
-                          })
-                        }
-                      />
-                      <span className="tabular-money text-xs text-muted-foreground">
-                        Subtotal HPP: {formatIDR(seg.subtotal)}
-                      </span>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive"
-                      title="Hapus segmen"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Hapus segmen ini beserta isinya?"
-                          )
-                        )
-                          deleteSegment(seg.id).catch((e) =>
-                            showToast(String(e))
-                          );
-                      }}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-
-                  {segOpen ? (
-                    seg.type === "manual" ? (
-                      <ManualWorkspace
-                        segmentId={seg.id}
-                        embedded
-                        collapseAllManualSignal={collapseManualTick}
-                        expandAllManualSignal={expandManualTick}
-                      />
-                    ) : (
-                      <AhuSegmentEditor
-                        segment={seg}
-                        patchSegment={patchSegment}
-                        recalculateSegment={recalculateSegment}
-                        isCalculating={isCalculating}
-                        openAddItem={openAddItem}
-                        toggleCat={toggleCat}
-                        openCats={openCats}
-                        unlockDraft={unlockDraft}
-                        setUnlockDraft={setUnlockDraft}
-                        qtyDraft={qtyDraft}
-                        setQtyDraft={setQtyDraft}
-                        overrideItem={overrideItem}
-                        resetItem={resetItem}
-                        showToast={showToast}
-                      />
-                    )
-                  ) : null}
-                </div>
-                      )}
-                    </SortableCostingSegment>
-                  );
-                })}
+                      </SortableCostingSegment>
+                    );
+                  })}
+                </Table>
               </SortableContext>
+              <DragOverlay dropAnimation={defaultDropAnimation}>
+                {activeSegmentDragId ? (
+                  <div className="bg-card flex max-w-md flex-wrap items-center gap-2 rounded-lg border border-primary/35 px-4 py-3 shadow-lg">
+                    {(() => {
+                      const s = segments.find(
+                        (x) => x.id === activeSegmentDragId
+                      );
+                      if (!s) return null;
+                      return (
+                        <>
+                          <Badge
+                            className={
+                              s.type === "manual"
+                                ? "bg-violet-600 text-[10px]"
+                                : "bg-primary text-primary-foreground text-[10px]"
+                            }
+                          >
+                            {s.type === "manual" ? "Manual" : "AHU"}
+                          </Badge>
+                          <span className="min-w-0 flex-1 truncate font-medium">
+                            {s.title}
+                          </span>
+                          <span className="text-muted-foreground tabular-money text-xs">
+                            {formatIDR(s.subtotal)}
+                          </span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : null}
+              </DragOverlay>
             </DndContext>
 
             {/* C — Summary */}
@@ -1540,7 +1721,7 @@ export function CostingWorkspace() {
           <DialogHeader>
             <DialogTitle>Buat Project Costing Baru</DialogTitle>
             <DialogDescription>
-              Masukkan nama proyek. Anda bisa menambah segmen AHU atau manual
+              Masukkan nama proyek. Anda bisa menambah assembly AHU atau manual
               setelah proyek dibuat.
             </DialogDescription>
           </DialogHeader>

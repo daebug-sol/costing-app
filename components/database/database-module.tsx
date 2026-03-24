@@ -46,6 +46,7 @@ import {
 } from "@/lib/database-xlsx";
 import { downloadTextFile, parseCsv, toCsv } from "@/lib/csv";
 import { formatIDR, formatNumber } from "@/lib/utils/format";
+import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
 
 type ToastState = { type: "success" | "error"; message: string } | null;
 
@@ -1919,6 +1920,8 @@ function ForexPanel({ show }: { show: (t: "success" | "error", m: string) => voi
 
 export function DatabaseModule() {
   const { toast, show } = useToast();
+  const activeTab = useUiWorkflowStore((s) => s.database.activeTab);
+  const setDatabaseActiveTab = useUiWorkflowStore((s) => s.setDatabaseActiveTab);
 
   return (
     <div className="relative">
@@ -1939,7 +1942,11 @@ export function DatabaseModule() {
         </div>
       )}
 
-      <Tabs defaultValue="materials" className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={setDatabaseActiveTab}
+        className="w-full"
+      >
         <TabsList className="mb-6 h-auto w-full flex-wrap justify-start gap-1 bg-muted/80 p-1">
           <TabsTrigger value="materials">Material Prices</TabsTrigger>
           <TabsTrigger value="profiles">Profile Data</TabsTrigger>
