@@ -24,34 +24,19 @@ import { formatIDR } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 
 export type PickerSelection = {
-  sourceType: "material" | "profile" | "component";
+  sourceType: "material" | "profile" | "component" | "custom";
   sourceId: string;
   qty: number;
 };
 
-type MaterialRow = {
+type CatalogItem = {
   id: string;
+  sourceType: PickerSelection["sourceType"];
+  sourceId: string;
   code: string;
   name: string;
   category: string;
-  pricePerKg: number;
-  unit: string;
-};
-
-type ProfileRow = {
-  id: string;
-  code: string;
-  name: string;
-  type: string;
-  pricePerM: number;
-};
-
-type ComponentRow = {
-  id: string;
-  code: string;
-  name: string;
-  category: string;
-  unitPrice: number;
+  price: number;
   unit: string;
 };
 
@@ -88,9 +73,7 @@ export function ItemPickerModal({
   /** Buat grup baru dari picker; kembalikan id grup atau null jika gagal/dibatalkan */
   onCreateGroup?: (name: string) => Promise<string | null>;
 }) {
-  const [materials, setMaterials] = useState<MaterialRow[]>([]);
-  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
-  const [components, setComponents] = useState<ComponentRow[]>([]);
+  const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("__all__");
@@ -100,38 +83,17 @@ export function ItemPickerModal({
   const [submitting, setSubmitting] = useState(false);
 
   const unifiedRows: UnifiedRow[] = useMemo(() => {
-    const mRows: UnifiedRow[] = materials.map((m) => ({
-      key: rowKey("material", m.id),
-      sourceType: "material",
-      sourceId: m.id,
-      title: m.name,
-      subtitle: m.code,
-      category: m.category,
-      priceLabel: `${formatIDR(m.pricePerKg)}/${m.unit}`,
-      uom: m.unit,
+    return catalog.map((item) => ({
+      key: rowKey(item.sourceType, item.sourceId),
+      sourceType: item.sourceType,
+      sourceId: item.sourceId,
+      title: item.name,
+      subtitle: item.code,
+      category: item.category,
+      priceLabel: `${formatIDR(item.price)}/${item.unit}`,
+      uom: item.unit,
     }));
-    const pRows: UnifiedRow[] = profiles.map((p) => ({
-      key: rowKey("profile", p.id),
-      sourceType: "profile",
-      sourceId: p.id,
-      title: p.name,
-      subtitle: p.code,
-      category: p.type,
-      priceLabel: `${formatIDR(p.pricePerM)}/m`,
-      uom: "m",
-    }));
-    const cRows: UnifiedRow[] = components.map((c) => ({
-      key: rowKey("component", c.id),
-      sourceType: "component",
-      sourceId: c.id,
-      title: c.name,
-      subtitle: c.code,
-      category: c.category,
-      priceLabel: `${formatIDR(c.unitPrice)}/${c.unit}`,
-      uom: c.unit,
-    }));
-    return [...mRows, ...pRows, ...cRows];
-  }, [materials, profiles, components]);
+  }, [catalog]);
 
   const categories = useMemo(() => {
     const s = new Set<string>();
@@ -193,14 +155,29 @@ export function ItemPickerModal({
   const loadCatalog = useCallback(async () => {
     setLoading(true);
     try {
-      const [rm, rp, rc] = await Promise.all([
-        fetch("/api/materials", { cache: "no-store" }),
-        fetch("/api/profiles", { cache: "no-store" }),
-        fetch("/api/components", { cache: "no-store" }),
-      ]);
-      if (rm.ok) setMaterials((await rm.json()) as MaterialRow[]);
-      if (rp.ok) setProfiles((await rp.json()) as ProfileRow[]);
-      if (rc.ok) setComponents((await rc.json()) as ComponentRow[]);
+      const res = await fetch("/api/database/items", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as Array<{
+        sourceType: PickerSelection["sourceType"];
+        sourceId: string;
+        code: string;
+        name: string;
+        category: string;
+        price: number;
+        uom: string;
+      }>;
+      setCatalog(
+        data.map((d) => ({
+          id: `${d.sourceType}:${d.sourceId}`,
+          sourceType: d.sourceType,
+          sourceId: d.sourceId,
+          code: d.code,
+          name: d.name,
+          category: d.category,
+          price: d.price,
+          unit: d.uom,
+        }))
+      );
     } finally {
       setLoading(false);
     }

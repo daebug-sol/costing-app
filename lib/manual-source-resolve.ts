@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { hasColumnKey } from "./custom-db";
 
 export type ResolvedManualSource = {
   code: string;
@@ -49,6 +50,26 @@ export async function resolveManualSource(
       category: c.category,
       uom: c.unit,
       basePrice: c.unitPrice,
+    };
+  }
+  if (sourceType === "custom") {
+    const row = await prisma.customDbRow.findUnique({
+      where: { id: sourceId },
+      include: { cells: { include: { column: true } } },
+    });
+    if (!row) return null;
+    const code = row.cells.find((c) => hasColumnKey(c.columnId, "col_code"))?.rawValue?.trim() ?? "";
+    const name = row.cells.find((c) => hasColumnKey(c.columnId, "col_name"))?.rawValue?.trim() ?? "";
+    const uom = row.cells.find((c) => hasColumnKey(c.columnId, "col_uom"))?.rawValue?.trim() ?? "unit";
+    const priceCell = row.cells.find((c) => hasColumnKey(c.columnId, "col_price"));
+    const price = Number(priceCell?.computedValue ?? priceCell?.rawValue ?? 0);
+    if (!code || !name || !Number.isFinite(price)) return null;
+    return {
+      code,
+      name,
+      category: "Custom",
+      uom,
+      basePrice: price,
     };
   }
   return null;

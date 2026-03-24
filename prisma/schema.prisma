@@ -170,6 +170,60 @@ model ManualCostingItem {
   @@index([groupId])
 }
 
+model CustomDbTable {
+  id        String           @id @default(cuid())
+  name      String           @default("Custom Database")
+  columns   CustomDbColumn[]
+  rows      CustomDbRow[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model CustomDbColumn {
+  id        String    @id
+  tableId   String
+  table     CustomDbTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  header    String
+  sortOrder Int
+  locked    Boolean   @default(false)
+  kind      String    @default("dynamic")
+  cells     CustomDbCell[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([tableId, header])
+  @@unique([tableId, sortOrder])
+  @@index([tableId])
+}
+
+model CustomDbRow {
+  id        String    @id @default(cuid())
+  tableId   String
+  table     CustomDbTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  sortOrder Int
+  cells     CustomDbCell[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([tableId, sortOrder])
+  @@index([tableId])
+}
+
+model CustomDbCell {
+  id            String   @id @default(cuid())
+  rowId         String
+  row           CustomDbRow @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  columnId      String
+  column        CustomDbColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  rawValue      String?
+  computedValue Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([rowId, columnId])
+  @@index([columnId])
+}
+
 model CostingSection {
   id        String         @id @default(cuid())
   segmentId String

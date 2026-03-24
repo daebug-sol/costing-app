@@ -62,7 +62,13 @@ export async function POST(request: Request, context: Ctx) {
     for (const inp of rawItems) {
       const sourceType = String(inp.sourceType ?? "").toLowerCase();
       const sourceId = String(inp.sourceId ?? "").trim();
-      if (!sourceId || (sourceType !== "material" && sourceType !== "profile" && sourceType !== "component")) {
+      if (
+        !sourceId ||
+        (sourceType !== "material" &&
+          sourceType !== "profile" &&
+          sourceType !== "component" &&
+          sourceType !== "custom")
+      ) {
         return NextResponse.json(
           { error: "Each item needs valid sourceType and sourceId" },
           { status: 400 }

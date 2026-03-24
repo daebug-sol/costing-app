@@ -7,7 +7,7 @@ export default function DatabasePage() {
         Database
       </h1>
       <p className="text-muted-foreground mb-8 text-sm">
-        Master data: materials, profiles, components, and forex reference rates.
+        Dual-mode database: AHU structured data and custom dynamic grid.
       </p>
       <DatabaseModule />
     </div>

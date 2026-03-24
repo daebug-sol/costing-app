@@ -28,6 +28,7 @@ type UiWorkflowState = {
   };
   database: {
     activeTab: string;
+    ahuSection: string;
   };
   documentation: DocumentationListFilters & {
     screen: "list" | "editor";
@@ -65,6 +66,7 @@ type UiWorkflowState = {
   setCostingMainScroll: (projectId: string, scrollTop: number) => void;
 
   setDatabaseActiveTab: (tab: string) => void;
+  setDatabaseAhuSection: (tab: string) => void;
 
   setDocumentationUi: (
     patch: Partial<
@@ -108,7 +110,7 @@ export const useUiWorkflowStore = create<UiWorkflowState>()(
         manualOpenCatsByProject: {},
         mainScrollByProject: {},
       },
-      database: { activeTab: "materials" },
+      database: { activeTab: "ahu", ahuSection: "materials" },
       documentation: { ...defaultDocumentation },
 
       setCostingSidebar: (patch) =>
@@ -215,6 +217,10 @@ export const useUiWorkflowStore = create<UiWorkflowState>()(
       setDatabaseActiveTab: (tab) =>
         set((s) => ({
           database: { ...s.database, activeTab: tab },
+        })),
+      setDatabaseAhuSection: (tab) =>
+        set((s) => ({
+          database: { ...s.database, ahuSection: tab },
         })),
 
       setDocumentationUi: (patch) =>

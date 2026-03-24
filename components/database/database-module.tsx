@@ -44,9 +44,9 @@ import {
   parseXlsxFirstSheet,
   validateRequiredColumns,
 } from "@/lib/database-xlsx";
-import { downloadTextFile, parseCsv, toCsv } from "@/lib/csv";
 import { formatIDR, formatNumber } from "@/lib/utils/format";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
+import { CustomDatabasePanel } from "./custom-database-panel";
 
 type ToastState = { type: "success" | "error"; message: string } | null;
 
@@ -114,15 +114,6 @@ type ComponentRow = {
   leadTimeDays: number | null;
   supplier: string | null;
   notes: string | null;
-};
-
-type AppSettings = {
-  id: string;
-  forexUSD: number;
-  forexEUR: number;
-  forexRM: number;
-  forexSGD: number;
-  updatedAt: string;
 };
 
 const ALL = "__all__";
@@ -1657,271 +1648,14 @@ function ComponentsPanel({
   );
 }
 
-/* ——— Forex ——— */
-
-function ForexPanel({ show }: { show: (t: "success" | "error", m: string) => void }) {
-  const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [usd, setUsd] = useState("");
-  const [eur, setEur] = useState("");
-  const [rm, setRm] = useState("");
-  const [sgd, setSgd] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await fetch("/api/settings");
-      if (!r.ok) throw new Error(await readErr(r));
-      const s = (await r.json()) as AppSettings;
-      setSettings(s);
-      setUsd(String(s.forexUSD));
-      setEur(String(s.forexEUR));
-      setRm(String(s.forexRM));
-      setSgd(String(s.forexSGD));
-    } catch (e) {
-      show("error", e instanceof Error ? e.message : "Gagal memuat pengaturan");
-    } finally {
-      setLoading(false);
-    }
-  }, [show]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const save = async () => {
-    const forexUSD = Number(usd);
-    const forexEUR = Number(eur);
-    const forexRM = Number(rm);
-    const forexSGD = Number(sgd);
-    if (
-      !Number.isFinite(forexUSD) ||
-      !Number.isFinite(forexEUR) ||
-      !Number.isFinite(forexRM) ||
-      !Number.isFinite(forexSGD)
-    ) {
-      show("error", "Semua kurs harus angka valid");
-      return;
-    }
-    try {
-      const r = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ forexUSD, forexEUR, forexRM, forexSGD }),
-      });
-      if (!r.ok) throw new Error(await readErr(r));
-      const s = (await r.json()) as AppSettings;
-      setSettings(s);
-      show("success", "Rates saved");
-    } catch (e) {
-      show("error", e instanceof Error ? e.message : "Failed to save");
-    }
-  };
-
-  const exportCsv = () => {
-    if (!settings) return;
-    const rows = [
-      ["pair", "rateIdr"],
-      ["USD", String(settings.forexUSD)],
-      ["EUR", String(settings.forexEUR)],
-      ["RM", String(settings.forexRM)],
-      ["SGD", String(settings.forexSGD)],
-    ];
-    downloadTextFile("forex-rates.csv", toCsv(rows));
-    show("success", "CSV exported");
-  };
-
-  const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    const text = await file.text();
-    const table = parseCsv(text);
-    const map: Record<string, number> = {};
-    for (const row of table) {
-      if (row.length < 2) continue;
-      const key = row[0]!.trim().toUpperCase();
-      const val = Number(row[1]);
-      if (!Number.isFinite(val)) continue;
-      if (key === "USD" || key === "EUR" || key === "RM" || key === "SGD")
-        map[key] = val;
-    }
-    if (Object.keys(map).length === 0) {
-      show("error", "CSV must contain valid USD, EUR, RM, or SGD rows");
-      return;
-    }
-    try {
-      const r = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...(map.USD !== undefined && { forexUSD: map.USD }),
-          ...(map.EUR !== undefined && { forexEUR: map.EUR }),
-          ...(map.RM !== undefined && { forexRM: map.RM }),
-          ...(map.SGD !== undefined && { forexSGD: map.SGD }),
-        }),
-      });
-      if (!r.ok) throw new Error(await readErr(r));
-      const s = (await r.json()) as AppSettings;
-      setSettings(s);
-      setUsd(String(s.forexUSD));
-      setEur(String(s.forexEUR));
-      setRm(String(s.forexRM));
-      setSgd(String(s.forexSGD));
-      show("success", "Rates imported from CSV");
-    } catch (err) {
-      show("error", err instanceof Error ? err.message : "Import failed");
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-          <Input
-            disabled
-            placeholder="Search (not used for rates)"
-            className="max-w-md cursor-not-allowed bg-muted"
-            title="Search applies to master tables only"
-          />
-          <div
-            className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground shadow-xs sm:w-[200px]"
-            title="Category filter applies to master tables only"
-          >
-            All categories
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            disabled
-            title="Edit rates in the form below"
-            className="cursor-not-allowed opacity-60"
-          >
-            <Plus className="size-4" />
-            Add New
-          </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={onImportFile}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => fileRef.current?.click()}
-          >
-            <Upload className="size-4" />
-            Import CSV
-          </Button>
-          <Button type="button" variant="outline" onClick={exportCsv}>
-            <Download className="size-4" />
-            Export CSV
-          </Button>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-border bg-cardp-6">
-        {loading ? (
-          <div className="mx-auto max-w-md space-y-4">
-            <div className="h-6 w-48 animate-pulse rounded bg-muted" />
-            <div className="grid gap-4 sm:grid-cols-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-                  <div className="h-9 w-full animate-pulse rounded bg-muted" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="mx-auto max-w-md space-y-6">
-            <div>
-              <h2 className="text-lg font-medium text-foreground">
-                Reference rates to IDR
-              </h2>
-              {settings && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Last updated:{" "}
-                  <time dateTime={settings.updatedAt}>
-                    {new Date(settings.updatedAt).toLocaleString("id-ID", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </time>
-                </p>
-              )}
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="fx-usd">USD → IDR</Label>
-                <Input
-                  id="fx-usd"
-                  inputMode="decimal"
-                  value={usd}
-                  onChange={(e) => setUsd(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Tampilan: {usd && Number.isFinite(Number(usd)) ? formatIDR(Number(usd)) : "—"}
-                </p>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="fx-eur">EUR → IDR</Label>
-                <Input
-                  id="fx-eur"
-                  inputMode="decimal"
-                  value={eur}
-                  onChange={(e) => setEur(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {eur && Number.isFinite(Number(eur)) ? formatIDR(Number(eur)) : "—"}
-                </p>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="fx-rm">RM → IDR</Label>
-                <Input
-                  id="fx-rm"
-                  inputMode="decimal"
-                  value={rm}
-                  onChange={(e) => setRm(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {rm && Number.isFinite(Number(rm)) ? formatIDR(Number(rm)) : "—"}
-                </p>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="fx-sgd">SGD → IDR</Label>
-                <Input
-                  id="fx-sgd"
-                  inputMode="decimal"
-                  value={sgd}
-                  onChange={(e) => setSgd(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {sgd && Number.isFinite(Number(sgd)) ? formatIDR(Number(sgd)) : "—"}
-                </p>
-              </div>
-            </div>
-            <Button type="button" onClick={save}>
-              Save
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* ——— Root ——— */
 
 export function DatabaseModule() {
   const { toast, show } = useToast();
-  const activeTab = useUiWorkflowStore((s) => s.database.activeTab);
+  const activeTab = useUiWorkflowStore((s) => s.database.activeTab || "ahu");
   const setDatabaseActiveTab = useUiWorkflowStore((s) => s.setDatabaseActiveTab);
+  const ahuSection = useUiWorkflowStore((s) => s.database.ahuSection || "materials");
+  const setDatabaseAhuSection = useUiWorkflowStore((s) => s.setDatabaseAhuSection);
 
   return (
     <div className="relative">
@@ -1942,28 +1676,35 @@ export function DatabaseModule() {
         </div>
       )}
 
-      <Tabs
-        value={activeTab}
-        onValueChange={setDatabaseActiveTab}
-        className="w-full"
-      >
-        <TabsList className="mb-6 h-auto w-full flex-wrap justify-start gap-1 bg-muted/80 p-1">
-          <TabsTrigger value="materials">Material Prices</TabsTrigger>
-          <TabsTrigger value="profiles">Profile Data</TabsTrigger>
-          <TabsTrigger value="components">Component Catalog</TabsTrigger>
-          <TabsTrigger value="forex">Forex Rates</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setDatabaseActiveTab} className="w-full">
+        <TabsList className="mb-6 inline-flex h-auto rounded-full bg-muted p-1">
+          <TabsTrigger value="ahu" className="rounded-full">
+            AHU Database
+          </TabsTrigger>
+          <TabsTrigger value="custom" className="rounded-full">
+            Custom Database
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="materials" className="mt-0">
-          <MaterialsPanel show={show} />
+        <TabsContent value="ahu" className="mt-0">
+          <Tabs value={ahuSection} onValueChange={setDatabaseAhuSection} className="w-full">
+            <TabsList className="mb-6 h-auto w-full flex-wrap justify-start gap-1 bg-muted/80 p-1">
+              <TabsTrigger value="materials">Material Prices</TabsTrigger>
+              <TabsTrigger value="profiles">Profile Data</TabsTrigger>
+              <TabsTrigger value="components">Component Catalog</TabsTrigger>
+            </TabsList>
+            <TabsContent value="materials" className="mt-0">
+              <MaterialsPanel show={show} />
+            </TabsContent>
+            <TabsContent value="profiles" className="mt-0">
+              <ProfilesPanel show={show} />
+            </TabsContent>
+            <TabsContent value="components" className="mt-0">
+              <ComponentsPanel show={show} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
-        <TabsContent value="profiles" className="mt-0">
-          <ProfilesPanel show={show} />
-        </TabsContent>
-        <TabsContent value="components" className="mt-0">
-          <ComponentsPanel show={show} />
-        </TabsContent>
-        <TabsContent value="forex" className="mt-0">
-          <ForexPanel show={show} />
+        <TabsContent value="custom" className="mt-0">
+          <CustomDatabasePanel show={show} />
         </TabsContent>
       </Tabs>
     </div>
