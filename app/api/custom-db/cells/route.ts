@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { applyCustomDbCellValue } from "@/lib/custom-db-cell-update";
+import { prisma } from "@/lib/prisma";
 
 export async function PATCH(request: Request) {
   try {
@@ -17,7 +18,20 @@ export async function PATCH(request: Request) {
 
     try {
       const saved = await applyCustomDbCellValue(rowId, columnId, rawValue);
-      return NextResponse.json(saved);
+      const cells = await prisma.customDbCell.findMany({
+        where: { rowId },
+        select: {
+          rowId: true,
+          columnId: true,
+          rawValue: true,
+          computedValue: true,
+        },
+      });
+      return NextResponse.json({
+        rowId,
+        updatedCell: saved,
+        cells,
+      });
     } catch (err) {
       if (err instanceof Error && err.message === "Row not found") {
         return NextResponse.json({ error: "Row not found" }, { status: 404 });

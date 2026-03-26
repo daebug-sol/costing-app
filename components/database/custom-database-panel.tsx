@@ -68,6 +68,12 @@ type FileItem = {
   columnsCount: number;
 };
 
+type UpdateCellResponse = {
+  rowId: string;
+  updatedCell: CustomCell;
+  cells: CustomCell[];
+};
+
 const PAGE_SIZE = 100;
 
 const FORMULA_REF_CELL_CLASSES = [
@@ -311,6 +317,7 @@ export function CustomDatabasePanel({
       `input[data-grid-row-id="${rowId}"][data-grid-col-id="${columnId}"]`
     );
     if (el) {
+      el.scrollIntoView({ block: "nearest", inline: "nearest" });
       el.focus();
       const pos = el.value.length;
       el.setSelectionRange(pos, pos);
@@ -329,7 +336,10 @@ export function CustomDatabasePanel({
     const el = document.querySelector<HTMLInputElement>(
       `input[data-grid-row-id="${selectedCell.rowId}"][data-grid-col-id="${selectedCell.columnId}"]`
     );
-    if (el) el.scrollIntoView({ block: "nearest", inline: "nearest" });
+    if (el) {
+      // Force horizontal sync for keyboard selection (especially back to Code on ArrowLeft).
+      el.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
   }, [selectedCell, focusedCell, gridPage]);
 
   useEffect(() => {
@@ -494,17 +504,18 @@ export function CustomDatabasePanel({
       show("error", "Gagal menyimpan cell");
       return;
     }
-    if (activeFileId) await openFile(activeFileId, false);
+    const payload = (await r.json()) as UpdateCellResponse;
+    setTable((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        rows: prev.rows.map((row) =>
+          row.id === payload.rowId ? { ...row, cells: payload.cells } : row
+        ),
+      };
+    });
     setSaveStatus("saved");
     setTimeout(() => setSaveStatus((prev) => (prev === "saved" ? "idle" : prev)), 1200);
-  };
-
-  const patchCellRaw = async (rowId: string, columnId: string, rawValue: string) => {
-    await fetch("/api/custom-db/cells", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rowId, columnId, rawValue }),
-    });
   };
 
   const addColumn = async (header: string, kind: string) => {
@@ -743,33 +754,22 @@ export function CustomDatabasePanel({
       setSaveStatus("failed");
       return;
     }
-    const latestRes = await fetch(`/api/custom-db/${target.id}`, { cache: "no-store" });
-    if (!latestRes.ok) {
-      show("error", "Gagal membuka file target import");
+    const importRes = await fetch("/api/custom-db/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tableId: target.id,
+        headers,
+        rows: parsed.rows,
+      }),
+    });
+    if (!importRes.ok) {
+      show("error", await readErr(importRes));
       setSaveStatus("failed");
       return;
     }
-    const latest = (await latestRes.json()) as CustomTable;
-    const colByHeader = new Map(latest.columns.map((c) => [c.header.toLowerCase(), c.id]));
-
-    for (const rec of parsed.rows) {
-      const rowRes = await fetch("/api/custom-db/rows", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tableId: latest.id }),
-      });
-      if (!rowRes.ok) continue;
-      const row = (await rowRes.json()) as { id: string };
-      for (const h of headers) {
-        const colId = colByHeader.get(h.toLowerCase());
-        if (!colId) continue;
-        const value = String(rec[h] ?? "").trim();
-        if (!value) continue;
-        await patchCellRaw(row.id, colId, value);
-      }
-    }
     await loadFiles();
-    await openFile(latest.id);
+    await openFile(target.id);
     setSaveStatus("saved");
     setTimeout(() => setSaveStatus((prev) => (prev === "saved" ? "idle" : prev)), 1200);
     show("success", "Import Excel selesai");
@@ -968,7 +968,7 @@ export function CustomDatabasePanel({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex h-[calc(100vh-11rem)] min-h-0 flex-col gap-3 overflow-hidden">
       <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <Button
@@ -1011,7 +1011,7 @@ export function CustomDatabasePanel({
         />
       </div>
 
-      <div className="overflow-auto rounded-lg border border-border bg-card">
+      <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-card">
         <table className="min-w-full border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
@@ -1032,9 +1032,7 @@ export function CustomDatabasePanel({
                     insertVarKeyAtCursor(key);
                   }}
                   onContextMenu={(e) => openContextMenu(e, { columnId: col.id })}
-                  className={`px-3 py-2 text-left font-medium ${
-                    idx <= 1 ? "sticky left-0 z-20" : ""
-                  } ${hasColumnKey(col.id, "col_price") ? "sticky right-0 z-30" : ""} ${
+                  className={`sticky top-0 z-30 px-3 py-2 text-left font-medium ${
                     isLocked(col.id)
                       ? "bg-[#203351] text-white border-2 border-[#15233a]"
                       : "border-b border-r bg-muted"
@@ -1147,10 +1145,6 @@ export function CustomDatabasePanel({
                                 formulaRefSelecting?.columnId === col.id
                               ? `ring-2 ring-[#203351]/70`
                               : ""
-                        } ${
-                          colIdx <= 1 ? "sticky left-0 z-10" : ""
-                        } ${
-                          hasColumnKey(col.id, "col_price") ? "sticky right-0 z-10" : ""
                         }`}
                       >
                         <div className="relative">
