@@ -1,6 +1,6 @@
 "use client";
 
-import { FileSpreadsheet, Plus, Search } from "lucide-react";
+import { FileSpreadsheet, Plus, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { columnHeaderToVariableKey, hasColumnKey } from "@/lib/custom-db";
 import { exportDatabaseSheet, parseXlsxFirstSheet } from "@/lib/database-xlsx";
+import { MANDATORY_DB_HEADER, matchMandatoryExcelHeaders } from "@/lib/excel-column-match";
 import { formatIDR } from "@/lib/utils/format";
 
 type CustomCol = {
@@ -274,6 +275,30 @@ export function CustomDatabasePanel({
       setLoading(false);
     }
   }, [show]);
+
+  const deleteFile = useCallback(
+    async (id: string) => {
+      if (!window.confirm("Hapus file database ini? Tindakan ini tidak dapat dibatalkan.")) return;
+      try {
+        const r = await fetch(`/api/custom-db/${id}`, { method: "DELETE" });
+        if (!r.ok) {
+          show("error", await readErr(r));
+          return;
+        }
+        show("success", "File dihapus");
+        if (activeFileId === id) {
+          setActiveFileId(null);
+          setTable(null);
+          setSelectedCell(null);
+          setFocusedCell(null);
+        }
+        await loadFiles();
+      } catch (e) {
+        show("error", e instanceof Error ? e.message : "Gagal menghapus file");
+      }
+    },
+    [activeFileId, loadFiles, show]
+  );
 
   useEffect(() => {
     void loadFiles();
@@ -719,20 +744,31 @@ export function CustomDatabasePanel({
       setSaveStatus("failed");
       return;
     }
-    const lower = headers.map((h) => h.toLowerCase());
-    const hasCode = lower.includes("code");
-    const hasName = lower.includes("name");
-    if (!hasCode || !hasName) {
-      show("error", "Excel wajib punya header Code dan Name");
+    const mandatory = matchMandatoryExcelHeaders(headers);
+    if (!mandatory.ok) {
+      const labels = mandatory.missing.map((k) => MANDATORY_DB_HEADER[k]);
+      show(
+        "error",
+        `Kolom wajib tidak terdeteksi (mirip Code, Name, UOM, Price): ${labels.join(", ")}`
+      );
       setSaveStatus("failed");
       return;
     }
+    const { excelToDbHeader } = mandatory;
+    const matchedExcelTitles = new Set(excelToDbHeader.keys());
+    const remappedHeaders = headers.map((h) => excelToDbHeader.get(h) ?? h);
+    const remappedRows = parsed.rows.map((row) => {
+      const out: Record<string, string> = {};
+      for (const [k, v] of Object.entries(row)) {
+        const dbKey = excelToDbHeader.get(k) ?? k;
+        out[dbKey] = v;
+      }
+      return out;
+    });
 
     let target: CustomTable | null = table;
     if (mode === "new") {
-      const dynamicHeaders = headers.filter(
-        (h) => !["code", "name", "uom", "price"].includes(h.toLowerCase())
-      );
+      const dynamicHeaders = headers.filter((h) => !matchedExcelTitles.has(h));
       const createRes = await fetch("/api/custom-db", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -759,8 +795,8 @@ export function CustomDatabasePanel({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tableId: target.id,
-        headers,
-        rows: parsed.rows,
+        headers: remappedHeaders,
+        rows: remappedRows,
       }),
     });
     if (!importRes.ok) {
@@ -870,14 +906,30 @@ export function CustomDatabasePanel({
               </thead>
               <tbody>
                 {filteredFiles.map((f) => (
-                  <tr key={f.id} className="border-b last:border-b-0">
+                  <tr
+                    key={f.id}
+                    className="border-b last:border-b-0 cursor-pointer hover:bg-muted/50"
+                    title="Double-click untuk membuka file"
+                    onDoubleClick={() => void openFile(f.id)}
+                  >
                     <td className="px-3 py-2">{f.name}</td>
                     <td className="px-3 py-2">{f.rowsCount}</td>
                     <td className="px-3 py-2">{f.columnsCount}</td>
                     <td className="px-3 py-2">{new Date(f.updatedAt).toLocaleString("id-ID")}</td>
-                    <td className="px-3 py-2 text-right">
-                      <Button type="button" variant="outline" onClick={() => void openFile(f.id)}>
-                        Open
+                    <td
+                      className="px-3 py-2 text-right"
+                      onClick={(e) => e.stopPropagation()}
+                      onDoubleClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        aria-label={`Hapus ${f.name}`}
+                        onClick={() => void deleteFile(f.id)}
+                      >
+                        <Trash2 className="size-4" />
                       </Button>
                     </td>
                   </tr>
@@ -1112,6 +1164,12 @@ export function CustomDatabasePanel({
                       <td
                         key={col.id}
                         data-custom-col-index={colIdx}
+                        title="Double-click untuk mengedit sel"
+                        onDoubleClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          focusCellInput(row.id, col.id);
+                        }}
                         onMouseDownCapture={(e) => {
                           const t = e.target as HTMLElement;
                           if (t.closest("[data-fill-handle]")) return;

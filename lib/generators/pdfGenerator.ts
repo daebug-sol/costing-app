@@ -105,8 +105,14 @@ function applyDraftWatermark(doc: jsPDF, status: string) {
   doc.setPage(n);
 }
 
+/** PDF dokumentasi penawaran: A4 portrait (210×297 mm). */
 function newDoc(): jsPDF {
-  return new jsPDF({ unit: "mm", format: "a4", compress: true });
+  return new jsPDF({
+    unit: "mm",
+    format: "a4",
+    orientation: "portrait",
+    compress: true,
+  });
 }
 
 function ensureSpace(doc: jsPDF, y: number, need: number): number {
@@ -407,7 +413,106 @@ export function drawTotalsBlock(doc: jsPDF, quotation: QuotationDoc, yIn: number
   return y;
 }
 
-function drawTermsAndSig(doc: jsPDF, quotation: QuotationDoc, yIn: number): number {
+/** Tinggi blok "Syarat & ketentuan" + tanda tangan (mm), satu halaman — untuk penempatan di dasar A4. */
+function measureTermsAndSigBlockHeight(doc: jsPDF, quotation: QuotationDoc): number {
+  const W = doc.internal.pageSize.getWidth();
+  const contentW = W - 2 * MARGIN;
+  let h = LINE;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  const tc = [
+    `Pembayaran: ${quotation.paymentTerms ?? "—"}`,
+    `Pengiriman: ${quotation.deliveryTerms ?? "—"}`,
+    `Garansi: ${quotation.warrantyTerms ?? "—"}`,
+    `Validitas penawaran: ${quotation.validityDays} hari`,
+  ];
+  if (quotation.termsConditions?.trim()) {
+    tc.push(quotation.termsConditions.trim());
+  }
+  for (const t of tc) {
+    h += wrapLines(doc, t, contentW).length * LINE * 0.85;
+  }
+  if (quotation.notes?.trim()) {
+    h += LINE * 0.5;
+    h += wrapLines(doc, `Catatan: ${quotation.notes}`, contentW).length * LINE * 0.85;
+  }
+  h += LINE * 2;
+  h += 40;
+  return h;
+}
+
+/** Gambar syarat & tanda tangan mulai yTop (tanpa ensureSpace) — dipakai saat posisi sudah dihitung. */
+function drawTermsAndSigAt(doc: jsPDF, quotation: QuotationDoc, yTop: number): number {
+  let y = yTop;
+  const W = doc.internal.pageSize.getWidth();
+  const contentW = W - 2 * MARGIN;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("Syarat & ketentuan", MARGIN, y);
+  y += LINE;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  const tc = [
+    `Pembayaran: ${quotation.paymentTerms ?? "—"}`,
+    `Pengiriman: ${quotation.deliveryTerms ?? "—"}`,
+    `Garansi: ${quotation.warrantyTerms ?? "—"}`,
+    `Validitas penawaran: ${quotation.validityDays} hari`,
+  ];
+  if (quotation.termsConditions?.trim()) {
+    tc.push(quotation.termsConditions.trim());
+  }
+  for (const t of tc) {
+    for (const line of wrapLines(doc, t, contentW)) {
+      doc.text(line, MARGIN, y);
+      y += LINE * 0.85;
+    }
+  }
+  if (quotation.notes?.trim()) {
+    y += LINE * 0.5;
+    doc.setFont("helvetica", "italic");
+    for (const line of wrapLines(doc, `Catatan: ${quotation.notes}`, contentW)) {
+      doc.text(line, MARGIN, y);
+      y += LINE * 0.85;
+    }
+    doc.setFont("helvetica", "normal");
+  }
+
+  y += LINE * 2;
+  const colW = (contentW - 10) / 3;
+  const sigY = y;
+  const blocks = [
+    { label: "Dibuat oleh", name: quotation.signedBy, img: quotation.ttdPrepared },
+    { label: "Diperiksa", name: quotation.checkedBy, img: quotation.ttdReviewed },
+    { label: "Disetujui", name: quotation.approvedBy, img: quotation.ttdApproved },
+  ];
+  blocks.forEach((b, i) => {
+    const x = MARGIN + i * (colW + 5);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text(b.label, x, sigY);
+    const imgY = sigY + 2;
+    const showStamp =
+      i === 2 &&
+      quotation.status?.toLowerCase() === "approved" &&
+      quotation.stampPath;
+
+    if (showStamp) {
+      addLogo(doc, b.img, x, imgY, colW - 4, 14);
+      const cx = x + (colW - 4) / 2;
+      const cy = imgY + 7;
+      addStampOverlay(doc, quotation.stampPath, cx, cy, 36, 36);
+    } else {
+      addLogo(doc, b.img, x, imgY, colW - 4, 14);
+    }
+    doc.text(b.name ?? "________________", x, imgY + 18);
+  });
+
+  return sigY + 40;
+}
+
+/** Alur lama: syarat & tanda tangan mengalir setelah konten (bila blok lebih tinggi dari satu halaman). */
+function drawTermsAndSigFlowing(doc: jsPDF, quotation: QuotationDoc, yIn: number): number {
   let y = yIn;
   const W = doc.internal.pageSize.getWidth();
   const contentW = W - 2 * MARGIN;
@@ -467,7 +572,6 @@ function drawTermsAndSig(doc: jsPDF, quotation: QuotationDoc, yIn: number): numb
       quotation.stampPath;
 
     if (showStamp) {
-      // Signature first, then stamp on top (like a physical stamp on top of ink).
       addLogo(doc, b.img, x, imgY, colW - 4, 14);
       const cx = x + (colW - 4) / 2;
       const cy = imgY + 7;
@@ -479,6 +583,30 @@ function drawTermsAndSig(doc: jsPDF, quotation: QuotationDoc, yIn: number): numb
   });
 
   return sigY + 40;
+}
+
+/**
+ * Syarat & ketentuan + tanda tangan ditempatkan di bagian bawah halaman terakhir (A4),
+ * dengan ruang kosong di atasnya bila konten utama pendek. Jika teks syarat terlalu panjang
+ * untuk satu halaman, dipakai alur mengalir multi-halaman.
+ */
+function drawTermsAndSig(doc: jsPDF, quotation: QuotationDoc, yAfterMainContent: number): number {
+  const H = doc.internal.pageSize.getHeight();
+  const bottom = H - MARGIN;
+  const usablePage = H - 2 * MARGIN;
+  const blockH = measureTermsAndSigBlockHeight(doc, quotation);
+
+  if (blockH > usablePage) {
+    return drawTermsAndSigFlowing(doc, quotation, yAfterMainContent);
+  }
+
+  let yStart = bottom - blockH;
+  if (yStart < yAfterMainContent) {
+    doc.addPage();
+    yStart = bottom - blockH;
+  }
+
+  return drawTermsAndSigAt(doc, quotation, yStart);
 }
 
 /** Customer quotation PDF — line items from `quotation.lineItems` only. */

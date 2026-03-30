@@ -5,6 +5,7 @@ import {
   evaluateFormulaExpression,
   resolveColumnIdByKey,
 } from "@/lib/custom-db";
+import { resolveImportColumnId } from "@/lib/excel-column-match";
 import { prisma } from "@/lib/prisma";
 
 type ImportRow = Record<string, unknown>;
@@ -50,7 +51,12 @@ export async function POST(request: Request) {
     if (!table) return NextResponse.json({ error: "Table not found" }, { status: 404 });
 
     const colByHeader = new Map(table.columns.map((c) => [c.header.toLowerCase(), c.id]));
-    const mappedHeaders = headers.filter((h) => colByHeader.has(h.toLowerCase()));
+    const mappedHeaders = headers.filter((h) => {
+      const t = String(h).trim();
+      if (!t) return false;
+      if (colByHeader.has(t.toLowerCase())) return true;
+      return resolveImportColumnId(t, table.columns) !== undefined;
+    });
     if (mappedHeaders.length === 0) {
       return NextResponse.json(
         { error: "Tidak ada header Excel yang cocok dengan kolom di file target" },
@@ -92,7 +98,8 @@ export async function POST(request: Request) {
       const rowCellMap = new Map<string, { rawValue: string; computedValue: number | null }>();
 
       for (const h of mappedHeaders) {
-        const colId = colByHeader.get(h.toLowerCase());
+        const colId =
+          colByHeader.get(h.toLowerCase()) ?? resolveImportColumnId(h, table.columns);
         if (!colId) continue;
         const rawValue = toRaw(rec[h]);
         if (!rawValue) continue;
