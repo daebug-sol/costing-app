@@ -48,6 +48,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -81,6 +82,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { AhuRecalcParams } from "@/lib/ahu-recalc-params";
+import {
+  parseAhuRecalcParams,
+  resolveDamperModes,
+} from "@/lib/ahu-recalc-params";
+import type { CostingScope } from "@/lib/costing-scope";
+import { DEFAULT_COSTING_SCOPE, normalizeCostingScope } from "@/lib/costing-scope";
 import { groupByMonthAndDay } from "@/lib/group-by-month-day";
 import { formatIDR, formatNumber } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
@@ -98,16 +106,53 @@ import {
 
 const CATEGORY_ORDER = [
   "Frame & Panel",
-  "Structure",
   "Skid",
+  "Structure",
+  "Drain Pan",
   "Coil",
   "Damper",
   "Fan & Motor",
 ] as const;
 
+type AhuModuleToggleKey = keyof Pick<
+  CostingScope,
+  | "includeFramePanel"
+  | "includeSkid"
+  | "includeStructure"
+  | "includeDrainPan"
+  | "includeCoil"
+  | "includeDamper"
+  | "includeFanMotor"
+>;
+
+const AHU_COSTING_MODULE_TOGGLES: { key: AhuModuleToggleKey; label: string }[] =
+  [
+    { key: "includeFramePanel", label: "Frame & Panel" },
+    { key: "includeSkid", label: "Skid" },
+    { key: "includeStructure", label: "Structure" },
+    { key: "includeDrainPan", label: "Drain Pan" },
+    { key: "includeCoil", label: "Coil" },
+    { key: "includeDamper", label: "Damper" },
+    { key: "includeFanMotor", label: "Fan & Motor" },
+  ];
+
+function initialAhuFromSegment(raw: unknown): AhuRecalcParams {
+  const p = parseAhuRecalcParams(raw);
+  const m = resolveDamperModes(p.damper);
+  return {
+    ...p,
+    damper: {
+      ...p.damper,
+      includeFA: m.fa,
+      includeRA: m.ra,
+    },
+  };
+}
+
 function categoryTitle(cat: string): string {
   if (cat === "Structure") return "AHU Structure";
   if (cat === "Skid") return "AHU Skid";
+  if (cat === "Drain Pan") return "Drain pan";
   return cat;
 }
 
@@ -200,9 +245,15 @@ type AhuEditorProps = {
   segment: CostingSegmentDetail;
   patchSegment: (
     segmentId: string,
-    patch: Record<string, string | number | null>
+    patch: Record<string, unknown>
   ) => void;
-  recalculateSegment: (segmentId: string) => Promise<void>;
+  saveAhuParams: (segmentId: string, params: AhuRecalcParams) => Promise<void>;
+  saveAhuParamsAndRecalculate: (
+    segmentId: string,
+    params: AhuRecalcParams
+  ) => Promise<void>;
+  /** True saat proyek belum termuat — cegah PUT/recalc tanpa currentProject */
+  segmentActionsDisabled: boolean;
   isCalculating: boolean;
   openAddItem: (sectionId: string) => void;
   toggleCat: (segmentId: string, cat: string) => void;
@@ -219,7 +270,9 @@ type AhuEditorProps = {
 function AhuSegmentEditor({
   segment: seg,
   patchSegment,
-  recalculateSegment,
+  saveAhuParams,
+  saveAhuParamsAndRecalculate,
+  segmentActionsDisabled,
   isCalculating,
   openAddItem,
   toggleCat,
@@ -236,6 +289,69 @@ function AhuSegmentEditor({
     () => sortSections(seg.sections ?? []),
     [seg.sections]
   );
+
+  const paramsKey = JSON.stringify(seg.ahuRecalcParams ?? null);
+  const [ahu, setAhu] = useState<AhuRecalcParams>(() =>
+    initialAhuFromSegment(seg.ahuRecalcParams)
+  );
+
+  useLayoutEffect(() => {
+    setAhu(initialAhuFromSegment(seg.ahuRecalcParams));
+  }, [seg.id, paramsKey]);
+
+  const setCoil = (patch: Partial<NonNullable<AhuRecalcParams["coil"]>>) => {
+    setAhu((p) => ({ ...p, coil: { ...p.coil, ...patch } }));
+  };
+  const setDamper = (patch: Partial<NonNullable<AhuRecalcParams["damper"]>>) => {
+    setAhu((p) => ({ ...p, damper: { ...p.damper, ...patch } }));
+  };
+  const setFan = (patch: Partial<NonNullable<AhuRecalcParams["fanMotor"]>>) => {
+    setAhu((p) => ({ ...p, fanMotor: { ...p.fanMotor, ...patch } }));
+  };
+
+  const scope = normalizeCostingScope(ahu.costingScope);
+
+  const setFullAhuSwitch = (full: boolean) => {
+    setAhu((p) => ({
+      ...p,
+      costingScope: full
+        ? { ...DEFAULT_COSTING_SCOPE }
+        : {
+            isFullAhu: false,
+            includeFramePanel: true,
+            includeSkid: true,
+            includeStructure: true,
+            includeDrainPan: true,
+            includeCoil: true,
+            includeDamper: true,
+            includeFanMotor: true,
+          },
+    }));
+  };
+
+  const setScopeModule = (key: AhuModuleToggleKey, checked: boolean) => {
+    setAhu((p) => {
+      const s = normalizeCostingScope(p.costingScope);
+      if (s.isFullAhu) return p;
+      return {
+        ...p,
+        costingScope: {
+          isFullAhu: false,
+          includeFramePanel:
+            key === "includeFramePanel" ? checked : s.includeFramePanel,
+          includeSkid: key === "includeSkid" ? checked : s.includeSkid,
+          includeStructure:
+            key === "includeStructure" ? checked : s.includeStructure,
+          includeDrainPan:
+            key === "includeDrainPan" ? checked : s.includeDrainPan,
+          includeCoil: key === "includeCoil" ? checked : s.includeCoil,
+          includeDamper: key === "includeDamper" ? checked : s.includeDamper,
+          includeFanMotor:
+            key === "includeFanMotor" ? checked : s.includeFanMotor,
+        },
+      };
+    });
+  };
 
   return (
     <>
@@ -360,21 +476,304 @@ function AhuSegmentEditor({
                 }
               />
             </div>
-            <Button
-              type="button"
-              className="gap-2"
-              disabled={isCalculating}
-              onClick={() =>
-                recalculateSegment(seg.id).catch((e) => showToast(String(e)))
-              }
-            >
-              {isCalculating ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <span aria-hidden>🔄</span>
-              )}
-              Recalculate
-            </Button>
+            <div className="flex flex-wrap items-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                disabled={isCalculating || segmentActionsDisabled}
+                onClick={() =>
+                  saveAhuParams(seg.id, ahu).catch((e) =>
+                    showToast(String(e))
+                  )
+                }
+              >
+                Simpan parameter
+              </Button>
+              <Button
+                type="button"
+                className="gap-2"
+                disabled={isCalculating || segmentActionsDisabled}
+                onClick={() =>
+                  saveAhuParamsAndRecalculate(seg.id, ahu).catch((e) =>
+                    showToast(String(e))
+                  )
+                }
+              >
+                {isCalculating ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <span aria-hidden>🔄</span>
+                )}
+                Hitung ulang
+              </Button>
+            </div>
+          </div>
+
+          <div className="border-border space-y-3 border-t pt-4">
+            <h4 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+              Modul costing AHU
+            </h4>
+            <p className="text-muted-foreground max-w-xl text-xs leading-relaxed">
+              Full AHU menghitung semua blok. Matikan untuk memilih sub-assembly
+              saja (mis. coil atau damper); isi parameter di bawah sesuai modul
+              yang aktif, lalu Hitung ulang.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Switch
+                id={`ahu-full-${seg.id}`}
+                checked={scope.isFullAhu}
+                onCheckedChange={(v) => setFullAhuSwitch(v)}
+              />
+              <Label
+                htmlFor={`ahu-full-${seg.id}`}
+                className="cursor-pointer text-sm font-medium"
+              >
+                Full AHU (semua modul)
+              </Label>
+            </div>
+            {!scope.isFullAhu && (
+              <div className="bg-muted/30 rounded-lg border border-border p-3">
+                <p className="text-muted-foreground mb-2 text-xs font-medium">
+                  Sub-assembly yang dihitung
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {AHU_COSTING_MODULE_TOGGLES.map(({ key, label }) => {
+                    const modId = `ahu-mod-${seg.id}-${key}`;
+                    return (
+                      <label
+                        key={key}
+                        htmlFor={modId}
+                        className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-md px-1 py-1.5"
+                      >
+                        <Checkbox
+                          id={modId}
+                          checked={scope[key]}
+                          onCheckedChange={(c) => {
+                            if (typeof c !== "boolean") return;
+                            setScopeModule(key, c);
+                          }}
+                        />
+                        <span className="text-sm select-none">{label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="border-border space-y-3 border-t pt-4">
+            <h4 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+              Parameter kalkulasi
+            </h4>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+              <div className="space-y-1">
+                <Label className="text-xs">Jumlah section</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  className="w-full"
+                  value={ahu.nSections != null ? ahu.nSections : 1}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setAhu((p) => ({
+                      ...p,
+                      nSections:
+                        v === ""
+                          ? undefined
+                          : Math.max(1, Math.floor(Number(v) || 1)),
+                    }));
+                  }}
+                />
+              </div>
+            </div>
+            <p className="text-muted-foreground text-xs font-medium">Coil</p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="space-y-1">
+                <Label className="text-xs">FH (mm)</Label>
+                <Input
+                  type="number"
+                  placeholder={`default H (${seg.dimH ?? "—"})`}
+                  value={ahu.coil?.FH ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCoil({
+                      FH: v === "" ? undefined : Number(v),
+                    });
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">FL (mm)</Label>
+                <Input
+                  type="number"
+                  placeholder={`default W (${seg.dimW ?? "—"})`}
+                  value={ahu.coil?.FL ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCoil({
+                      FL: v === "" ? undefined : Number(v),
+                    });
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Rows</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={ahu.coil?.rows ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCoil({
+                      rows: v === "" ? undefined : Number(v),
+                    });
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">FPI</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={ahu.coil?.FPI ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCoil({
+                      FPI: v === "" ? undefined : Number(v),
+                    });
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Circuits</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={ahu.coil?.circuits ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCoil({
+                      circuits: v === "" ? undefined : Number(v),
+                    });
+                  }}
+                />
+              </div>
+            </div>
+            <p className="text-muted-foreground text-xs font-medium">Damper</p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-1">
+                <Label className="text-xs">Lebar W (mm)</Label>
+                <Input
+                  type="number"
+                  placeholder={`default ${seg.dimW ?? "—"}`}
+                  value={ahu.damper?.W ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setDamper({ W: v === "" ? undefined : Number(v) });
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Tinggi H (mm)</Label>
+                <Input
+                  type="number"
+                  placeholder={`default ${seg.dimH ?? "—"}`}
+                  value={ahu.damper?.H ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setDamper({ H: v === "" ? undefined : Number(v) });
+                  }}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label className="text-xs">Hitung damper (boleh keduanya)</Label>
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={ahu.damper?.includeFA !== false}
+                      onCheckedChange={(c) => {
+                        if (c === "indeterminate") return;
+                        setDamper({
+                          includeFA: c === true,
+                          type: undefined,
+                        });
+                      }}
+                    />
+                    Fresh air (FA)
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={ahu.damper?.includeRA !== false}
+                      onCheckedChange={(c) => {
+                        if (c === "indeterminate") return;
+                        setDamper({
+                          includeRA: c === true,
+                          type: undefined,
+                        });
+                      }}
+                    />
+                    Return air (RA)
+                  </label>
+                </div>
+              </div>
+            </div>
+            <p className="text-muted-foreground text-xs font-medium">
+              Fan &amp; motor
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs">Fan model (kode)</Label>
+                <Input
+                  value={ahu.fanMotor?.fanModel ?? ""}
+                  onChange={(e) => setFan({ fanModel: e.target.value || undefined })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Motor kW</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={ahu.fanMotor?.motorKW ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setFan({ motorKW: v === "" ? undefined : Number(v) });
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Kutub motor</Label>
+                <Input
+                  type="number"
+                  min={2}
+                  step={2}
+                  value={ahu.fanMotor?.motorPoles ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setFan({
+                      motorPoles: v === "" ? undefined : Math.floor(Number(v)),
+                    });
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Qty fan (override)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder={`default ${seg.qty}`}
+                  value={ahu.fanMotor?.qty ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setFan({
+                      qty: v === "" ? undefined : Math.max(1, Math.floor(Number(v))),
+                    });
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -828,10 +1227,25 @@ export function CostingWorkspace() {
 
   const patchSegment = (
     segmentId: string,
-    patch: Record<string, string | number | null>
+    patch: Record<string, unknown>
   ) => {
     updateSegment(segmentId, patch).catch((e) => showToast(String(e)));
   };
+
+  const saveAhuParams = useCallback(
+    async (segmentId: string, params: AhuRecalcParams) => {
+      await updateSegment(segmentId, { ahuRecalcParams: params });
+    },
+    [updateSegment]
+  );
+
+  const saveAhuParamsAndRecalculate = useCallback(
+    async (segmentId: string, params: AhuRecalcParams) => {
+      await updateSegment(segmentId, { ahuRecalcParams: params });
+      await recalculateSegment(segmentId);
+    },
+    [updateSegment, recalculateSegment]
+  );
 
   const openAddItem = (sectionId: string) => {
     setAddSectionId(sectionId);
@@ -1419,7 +1833,13 @@ export function CostingWorkspace() {
                                       <AhuSegmentEditor
                                         segment={seg}
                                         patchSegment={patchSegment}
-                                        recalculateSegment={recalculateSegment}
+                                        saveAhuParams={saveAhuParams}
+                                        saveAhuParamsAndRecalculate={
+                                          saveAhuParamsAndRecalculate
+                                        }
+                                        segmentActionsDisabled={
+                                          isLoading || !currentProject
+                                        }
                                         isCalculating={isCalculating}
                                         openAddItem={openAddItem}
                                         toggleCat={toggleCat}

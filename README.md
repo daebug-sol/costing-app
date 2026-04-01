@@ -1,5 +1,10 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Costing documentation
+
+- [AHU costing — Phase A (API contract & architecture)](docs/ahu-costing-phase-a.md)
+- [AHU costing — Phases D–F (drain pan, damper FA/RA, parity, outputs)](docs/ahu-costing-phases-d-f.md)
+
 ## Getting Started
 
 First, run the development server:

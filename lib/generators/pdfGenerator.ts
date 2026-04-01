@@ -624,58 +624,9 @@ export function generateQuotation(
   return doc.output("blob");
 }
 
-function drawCategoryBreakdownBlock(
+/** Per kategori: baris part + subtotal — dipakai rincian biaya & internal. */
+function drawCostSectionsLineItems(
   doc: jsPDF,
-  project: ProjectDoc,
-  sections: SectionDoc[],
-  yIn: number
-): number {
-  let y = yIn;
-  const W = doc.internal.pageSize.getWidth();
-  y = ensureSpace(doc, y, LINE * 3);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text(`Rincian per kategori — ${project.name}`, MARGIN, y);
-  y += LINE + 1;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-
-  for (const sec of sections) {
-    y = ensureSpace(doc, y, LINE * 2);
-    doc.text(sec.category, MARGIN, y);
-    doc.text(formatIDR(sec.subtotal), W - MARGIN - 2, y, { align: "right" });
-    y += LINE;
-  }
-  return y + LINE;
-}
-
-/** Detailed costing: quotation table + per-category subtotals per linked project. */
-export function generateDetailedCosting(
-  quotation: QuotationDoc,
-  settings: AppSettingsDoc,
-  costingBreakdowns: Array<{ project: ProjectDoc; sections: SectionDoc[] }>
-): Blob {
-  const doc = newDoc();
-  let y = drawLetterhead(doc, quotation, settings, "PENAWARAN — RINCIAN BIAYA");
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text("Bersama ini kami mengajukan penawaran harga:", MARGIN, y);
-  y += LINE + 2;
-  y = drawQuotationLineItemsTable(doc, quotation, y);
-  y = drawTotalsBlock(doc, quotation, y);
-
-  for (const { project, sections } of costingBreakdowns) {
-    y = drawCategoryBreakdownBlock(doc, project, sections, y);
-  }
-
-  drawTermsAndSig(doc, quotation, y);
-  applyDraftWatermark(doc, quotation.status);
-  return doc.output("blob");
-}
-
-function drawInternalCostStack(
-  doc: jsPDF,
-  project: ProjectDoc,
   sections: SectionDoc[],
   yIn: number
 ): number {
@@ -714,6 +665,72 @@ function drawInternalCostStack(
     doc.setFont("helvetica", "normal");
     y += LINE + 2;
   }
+  return y;
+}
+
+function drawDetailedCostingProjectBlock(
+  doc: jsPDF,
+  project: ProjectDoc,
+  sections: SectionDoc[],
+  yIn: number
+): number {
+  let y = yIn;
+  y = ensureSpace(doc, y, LINE * 3);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(`Rincian biaya — ${project.name}`, MARGIN, y);
+  y += LINE + 1;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(`Model: ${project.ahuModel ?? "—"}`, MARGIN, y);
+  y += LINE;
+  doc.text(
+    `Dimensi (H×W×D mm): ${project.dimH ?? "—"} × ${project.dimW ?? "—"} × ${project.dimD ?? "—"}`,
+    MARGIN,
+    y
+  );
+  y += LINE;
+  doc.text(
+    `Flow: ${project.flowCMH != null ? formatNumber(project.flowCMH) : "—"} CMH`,
+    MARGIN,
+    y
+  );
+  y += LINE + 2;
+  return drawCostSectionsLineItems(doc, sections, y);
+}
+
+/** Detailed costing: quotation table + rincian part per kategori per proyek terlink. */
+export function generateDetailedCosting(
+  quotation: QuotationDoc,
+  settings: AppSettingsDoc,
+  costingBreakdowns: Array<{ project: ProjectDoc; sections: SectionDoc[] }>
+): Blob {
+  const doc = newDoc();
+  let y = drawLetterhead(doc, quotation, settings, "PENAWARAN — RINCIAN BIAYA");
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text("Bersama ini kami mengajukan penawaran harga:", MARGIN, y);
+  y += LINE + 2;
+  y = drawQuotationLineItemsTable(doc, quotation, y);
+  y = drawTotalsBlock(doc, quotation, y);
+
+  for (const { project, sections } of costingBreakdowns) {
+    y = drawDetailedCostingProjectBlock(doc, project, sections, y);
+  }
+
+  drawTermsAndSig(doc, quotation, y);
+  applyDraftWatermark(doc, quotation.status);
+  return doc.output("blob");
+}
+
+function drawInternalCostStack(
+  doc: jsPDF,
+  project: ProjectDoc,
+  sections: SectionDoc[],
+  yIn: number
+): number {
+  const W = doc.internal.pageSize.getWidth();
+  let y = drawCostSectionsLineItems(doc, sections, yIn);
 
   const s = summaryFromProject(project);
   y = ensureSpace(doc, y, LINE * 12);

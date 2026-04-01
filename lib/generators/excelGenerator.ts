@@ -331,7 +331,7 @@ export async function generateInternalDraftExcel(
   return workbookToBlob(wb);
 }
 
-/** Sheet1 summary + Sheet2 category subtotals per line (no margin % column). */
+/** Sheet1 summary + Sheet2 rincian part per kategori (sama kedalaman dengan internal). */
 export async function generateDetailedCostingExcel(
   quotation: QuotationDoc,
   settings: AppSettingsDoc,
@@ -346,7 +346,7 @@ export async function generateDetailedCostingExcel(
     const s2 = wb.addWorksheet(
       costingBreakdowns.length > 1 ? `Categories ${idx + 1}` : "Category breakdown"
     );
-    addBreakdownSheet(s2, cb.sections, false);
+    addBreakdownSheet(s2, cb.sections, true);
   });
 
   return workbookToBlob(wb);

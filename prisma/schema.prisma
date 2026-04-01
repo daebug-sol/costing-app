@@ -124,6 +124,8 @@ model CostingSegment {
   dimW        Float?
   dimD        Float?
   profileType String?
+  /** JSON: nSections, coil, damper, fanMotor — lihat lib/ahu-recalc-params.ts */
+  ahuRecalcParams Json?
   sections          CostingSection[]
   manualGroups      ManualCostingGroup[]
   createdAt   DateTime @default(now())

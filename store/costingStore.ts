@@ -46,6 +46,17 @@ async function readErr(res: Response): Promise<string> {
   return res.statusText || "Request failed";
 }
 
+/** Deep-clone JSON fields so fetch body is valid and Prisma accepts nested objects. */
+function prepareSegmentPatch(patch: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...patch };
+  if (out.ahuRecalcParams !== undefined && out.ahuRecalcParams !== null) {
+    out.ahuRecalcParams = JSON.parse(
+      JSON.stringify(out.ahuRecalcParams)
+    ) as unknown;
+  }
+  return out;
+}
+
 function normalizeProject(json: unknown): CostingProjectDetail {
   const p = json as CostingProjectDetail;
   return {
@@ -166,13 +177,16 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
 
   updateSegment: async (segmentId, patch) => {
     const cur = get().currentProject;
-    if (!cur) return;
+    if (!cur) {
+      throw new Error("Tidak ada proyek aktif. Buka proyek costing terlebih dahulu.");
+    }
     const r = await fetch(
       `/api/projects/${cur.id}/segments/${segmentId}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(patch),
+        body: JSON.stringify(prepareSegmentPatch(patch)),
+        cache: "no-store",
       }
     );
     if (!r.ok) throw new Error(await readErr(r));
@@ -224,7 +238,9 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
 
   recalculateSegment: async (segmentId, body = {}) => {
     const cur = get().currentProject;
-    if (!cur) return;
+    if (!cur) {
+      throw new Error("Tidak ada proyek aktif. Buka proyek costing terlebih dahulu.");
+    }
     set({ isCalculating: true });
     try {
       const r = await fetch(
@@ -233,6 +249,7 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
+          cache: "no-store",
         }
       );
       if (!r.ok) throw new Error(await readErr(r));

@@ -1,27 +1,14 @@
 import { NextResponse } from "next/server";
+import { mergeRecalcParams, parseAhuRecalcParams } from "@/lib/ahu-recalc-params";
+import { validateAhuRecalculateContext } from "@/lib/ahu-recalc-validation";
+import { computeAhuSegmentCostingBlocks } from "@/lib/ahu-segment-costing";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
-import {
-  calculateCoil,
-  calculateDamper,
-  calculateFanMotor,
-  calculateFramePanel,
-  calculateSkid,
-  calculateStructure,
-  finite,
-} from "@/lib/calculations";
+import { finite } from "@/lib/calculations";
+import { normalizeCostingScope } from "@/lib/costing-scope";
 import { prisma } from "@/lib/prisma";
 import { rollupProjectFinancials } from "@/lib/project-rollup";
 
 type Ctx = { params: Promise<{ id: string; segmentId: string }> };
-
-const SECTIONS = [
-  { category: "Frame & Panel", sortOrder: 0 },
-  { category: "Skid", sortOrder: 1 },
-  { category: "Structure", sortOrder: 2 },
-  { category: "Coil", sortOrder: 3 },
-  { category: "Damper", sortOrder: 4 },
-  { category: "Fan & Motor", sortOrder: 5 },
-] as const;
 
 export async function POST(request: Request, context: Ctx) {
   try {
@@ -52,65 +39,51 @@ export async function POST(request: Request, context: Ctx) {
       prisma.componentCatalog.findMany(),
     ]);
 
+    const storedParams = parseAhuRecalcParams(segment.ahuRecalcParams);
+    const merged = mergeRecalcParams(storedParams, body);
+
+    const validation = validateAhuRecalculateContext({
+      dimH: segment.dimH,
+      dimW: segment.dimW,
+      dimD: segment.dimD,
+      merged,
+    });
+    if (!validation.ok) {
+      return NextResponse.json(
+        { error: "Validasi gagal", detail: validation.message },
+        { status: 400 }
+      );
+    }
+
     const H = finite(segment.dimH, 0);
     const W = finite(segment.dimW, 0);
     const D = finite(segment.dimD, 0);
-    const nSections = Math.max(1, Math.floor(finite(body.nSections, 1)));
+
+    const nSections = Math.max(1, Math.floor(finite(merged.nSections, 1)));
     const profileType =
       segment.profileType?.trim() ||
       profiles.find((p) => p.type === "Pentapost")?.code ||
       "";
 
-    const frameItems = calculateFramePanel({
-      H,
-      W,
-      D,
+    const scope = normalizeCostingScope(merged.costingScope);
+
+    const rawBlocks = computeAhuSegmentCostingBlocks({
+      dimH: H,
+      dimW: W,
+      dimD: D,
       profileType,
+      segmentQty: segment.qty,
       nSections,
+      scope,
+      mergedParams: merged,
+      materials,
       profiles,
-      materials,
-    });
-
-    const skidItems = calculateSkid({ W, D, materials });
-    const structureItems = calculateStructure({ H, W, D, materials });
-
-    const coilBody = (body.coil ?? {}) as Record<string, unknown>;
-    const coilItems = calculateCoil({
-      FH: finite(coilBody.FH, H),
-      FL: finite(coilBody.FL, W),
-      rows: finite(coilBody.rows, 4),
-      FPI: finite(coilBody.FPI, 10),
-      circuits: finite(coilBody.circuits, 2),
-      materials,
-    });
-
-    const damperBody = (body.damper ?? {}) as Record<string, unknown>;
-    const damperItems = calculateDamper({
-      W: finite(damperBody.W, W),
-      H: finite(damperBody.H, H),
-      type: damperBody.type === "FA" ? "FA" : "RA",
-      profiles,
-      materials,
       components,
     });
 
-    const fmBody = (body.fanMotor ?? {}) as Record<string, unknown>;
-    const fanItems = calculateFanMotor({
-      fanModel: String(fmBody.fanModel ?? ""),
-      motorKW: finite(fmBody.motorKW, 0),
-      motorPoles: Math.floor(finite(fmBody.motorPoles, 4)),
-      qty: Math.max(1, Math.floor(finite(fmBody.qty, segment.qty))),
-      components,
-    });
-
-    const blocks = [
-      { ...SECTIONS[0], items: frameItems },
-      { ...SECTIONS[1], items: skidItems },
-      { ...SECTIONS[2], items: structureItems },
-      { ...SECTIONS[3], items: coilItems },
-      { ...SECTIONS[4], items: damperItems },
-      { ...SECTIONS[5], items: fanItems },
-    ];
+    const blocks = rawBlocks
+      .filter((b) => b.items.length > 0)
+      .map((b, idx) => ({ ...b, sortOrder: idx }));
 
     await prisma.$transaction(async (tx) => {
       await tx.costingSection.deleteMany({ where: { segmentId } });
@@ -171,8 +144,9 @@ export async function POST(request: Request, context: Ctx) {
     return NextResponse.json(refreshed);
   } catch (e) {
     console.error(e);
+    const detail = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { error: "Recalculate failed" },
+      { error: "Recalculate failed", detail },
       { status: 500 }
     );
   }

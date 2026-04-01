@@ -43,6 +43,7 @@ import {
 import {
   costingProjectToProjectDoc,
   costingProjectToSectionDocs,
+  quotationSubAssemblyLineItemsFromProjects,
   segmentTitlesSpecFromProject,
   type CostingProjectApi,
 } from "@/lib/quotation-export-mappers";
@@ -824,19 +825,24 @@ export function DocumentationModule() {
     }
   }
 
-  const fetchBreakdowns = async (): Promise<CostingBreakdown[]> => {
+  const fetchBreakdowns = async (): Promise<{
+    breakdowns: CostingBreakdown[];
+    projectsById: Map<string, CostingProjectApi>;
+  }> => {
     const ids = [...new Set(form.items.map((i) => i.projectId))];
     const out: CostingBreakdown[] = [];
+    const projectsById = new Map<string, CostingProjectApi>();
     for (const pid of ids) {
       const r = await fetch(`/api/projects/${pid}`);
       if (!r.ok) continue;
       const raw = (await r.json()) as CostingProjectApi;
+      projectsById.set(pid, raw);
       out.push({
         project: costingProjectToProjectDoc(raw),
         sections: costingProjectToSectionDocs(raw),
       });
     }
-    return out;
+    return { breakdowns: out, projectsById };
   };
 
   useEffect(() => {
@@ -869,9 +875,24 @@ export function DocumentationModule() {
     variant: "internal" | "quotation" | "detailed"
   ) => {
     if (!settings || !mergedDocForExport) return;
-    const qDoc = mergedDocForExport;
     const sDoc = toSettingsDoc(settings);
-    const breakdowns = await fetchBreakdowns();
+    const { breakdowns, projectsById } = await fetchBreakdowns();
+    const qDoc =
+      variant === "quotation"
+        ? {
+            ...mergedDocForExport,
+            lineItems: quotationSubAssemblyLineItemsFromProjects(
+              form.items.map((it) => ({
+                projectId: it.projectId,
+                qty: it.qty,
+                unitPrice: it.unitPrice,
+                description: it.description,
+                spec: it.spec,
+              })),
+              projectsById
+            ),
+          }
+        : mergedDocForExport;
     let blob: Blob;
     let name: string;
     if (kind === "pdf") {

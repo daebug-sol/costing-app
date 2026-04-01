@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { prisma } from "@/lib/prisma";
@@ -72,16 +72,51 @@ export async function PUT(request: Request, context: Ctx) {
           : String(body.profileType);
     }
 
-    if (Object.keys(data).length === 0) {
+    const hasAhuRecalcJson = body.ahuRecalcParams !== undefined;
+    const prismaFieldCount = Object.keys(data).length;
+
+    if (prismaFieldCount === 0 && !hasAhuRecalcJson) {
       return NextResponse.json(
         { error: "No fields to update" },
         { status: 400 }
       );
     }
 
-    await prisma.costingSegment.update({
-      where: { id: segmentId },
-      data,
+    /**
+     * `ahuRecalcParams` disimpan lewat SQL mentah agar tetap jalan bila klien Prisma
+     * di dev (Turbopack cache) belum ter-generate ulang — hindari Unknown argument `ahuRecalcParams`.
+     */
+    await prisma.$transaction(async (tx) => {
+      if (prismaFieldCount > 0) {
+        await tx.costingSegment.update({
+          where: { id: segmentId },
+          data,
+        });
+      }
+      if (hasAhuRecalcJson) {
+        const now = new Date();
+        if (body.ahuRecalcParams === null) {
+          await tx.$executeRaw`
+            UPDATE "CostingSegment"
+            SET "ahuRecalcParams" = NULL, "updatedAt" = ${now}
+            WHERE "id" = ${segmentId}
+          `;
+        } else if (
+          typeof body.ahuRecalcParams === "object" &&
+          !Array.isArray(body.ahuRecalcParams)
+        ) {
+          const jsonText = JSON.stringify(body.ahuRecalcParams);
+          await tx.$executeRaw`
+            UPDATE "CostingSegment"
+            SET "ahuRecalcParams" = ${jsonText}, "updatedAt" = ${now}
+            WHERE "id" = ${segmentId}
+          `;
+        } else {
+          throw new Error(
+            "ahuRecalcParams must be null or a plain object (JSON)"
+          );
+        }
+      }
     });
 
     const fullProject = await prisma.costingProject.findUnique({
@@ -96,8 +131,9 @@ export async function PUT(request: Request, context: Ctx) {
     return NextResponse.json(fullProject);
   } catch (e) {
     console.error(e);
+    const detail = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { error: "Failed to update segment" },
+      { error: "Failed to update segment", detail },
       { status: 500 }
     );
   }

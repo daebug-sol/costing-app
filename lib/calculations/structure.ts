@@ -1,7 +1,6 @@
 import type { CalcLineItem, MaterialPrice } from "./types";
 import { finite, findMaterial } from "./types";
 
-const SUS304_CODE = "SUS304-1.5";
 const GI_DENSITY = 8030;
 
 function line(
@@ -37,23 +36,16 @@ export function calculateStructure(params: {
 }): CalcLineItem[] {
   const H = finite(params.H, 0);
   const W = finite(params.W, 0);
-  const D = finite(params.D, 0);
+  finite(params.D, 0);
 
-  const ss = findMaterial(params.materials, SUS304_CODE);
-  const ssPrice = ss ? finite(ss.pricePerKg, 0) : 0;
   const giMat =
     findMaterial(params.materials, "SGCC-1.5") ??
     findMaterial(params.materials, "SGCC-1.0");
   const giPrice = giMat ? finite(giMat.pricePerKg, 0) : 0;
 
-  const dM = D / 1000;
   const wM = W / 1000;
   const hM = H / 1000;
 
-  const kgDrainPan =
-    0.0015 * wM * (dM + 0.15) * 8800 * 1.15;
-  const kgDrainSupport =
-    0.0015 * 0.2 * wM * 8800 * 1.15 * 2;
   const kgSupFlangeW =
     0.0015 * 0.1 * wM * GI_DENSITY * 1.15 * 2;
   const kgSupFlangeH =
@@ -66,22 +58,6 @@ export function calculateStructure(params: {
     0.0015 * 0.1 * wM * GI_DENSITY * 1.15 * 4;
 
   return [
-    line({
-      description: "Drain pan SS304",
-      uom: "kg",
-      qty: finite(kgDrainPan, 0),
-      qtyFormula: `0.0015*(${W}/1000)*(${D}/1000+0.15)*8800*1.15`,
-      unitPrice: ssPrice,
-      componentRef: SUS304_CODE,
-    }),
-    line({
-      description: "Drain pan support SS304",
-      uom: "kg",
-      qty: finite(kgDrainSupport, 0),
-      qtyFormula: `0.0015*0.2*(${W}/1000)*8800*1.15*2`,
-      unitPrice: ssPrice,
-      componentRef: SUS304_CODE,
-    }),
     line({
       description: "Supply flange W (GI)",
       uom: "kg",
