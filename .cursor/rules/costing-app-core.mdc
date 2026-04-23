@@ -1,0 +1,13 @@
+---
+description: Core stack, scope, and safety for costing-app (always apply)
+alwaysApply: true
+---
+
+# Costing app — core
+
+- **Next.js**: This repo may differ from public Next.js docs. Before Route Handlers, `next.config`, or App Router APIs, read `node_modules/next/dist/docs/` for this version. Heed deprecations.
+- **Scope**: Change only what the task requires. No drive-by refactors, no unrelated UI restyling.
+- **Secrets**: Never commit API keys, connection strings, or `.env*`. Client code must not embed secrets.
+- **Money / numbers**: Prefer explicit rounding where totals matter. Costing logic belongs in `lib/calculations/*`, `lib/ahu-segment-costing.ts`, `lib/project-rollup.ts` — not scattered in UI.
+- **Source of truth**: Domain rules live in code + Prisma schema. Agent rules and skills **guide** behavior; they do not replace reading the actual files.
+- **SaaS readiness**: When adding auth or multi-tenancy, every data access must eventually be scoped by tenant — see `docs/PRODUCTION-HARNESS.md`.

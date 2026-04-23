@@ -13,7 +13,7 @@ import {
   framePanelAirflowM3hFromI3,
   framePanelI3FromI4,
 } from "./ahu-costing";
-import { d } from "./excel-math";
+import { d, excelRoundDown } from "./excel-math";
 
 /** Max |a − b| for currency / weights / intermediate decimals (Rupiah-scale). */
 const EPS = 0.01;
@@ -102,6 +102,15 @@ describe("AHU costing parity (golden vs excel-formulas-dump.json)", () => {
       const excelL236 = 455;
       const got = coilCostRoundUpSample(I209, G209, G211);
       expectDecimalNear(got, excelL236, 0);
+    });
+  });
+
+  describe('Sheet "VolDamperCost2023 FA" — ROUNDDOWN (golden dari excel-formulas-dump)', () => {
+    it("P44 = ROUNDDOWN(C43/100,0) when C43 = 410 → 4", () => {
+      const c43 = 410;
+      const excelP44 = 4;
+      const got = excelRoundDown(d(c43).div(100), 0);
+      expectDecimalNear(got, excelP44, 0);
     });
   });
 });

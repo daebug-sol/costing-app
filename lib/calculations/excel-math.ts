@@ -47,6 +47,22 @@ export function excelRoundUp(value: Decimal.Value, numDigits: number): Decimal {
 }
 
 /**
+ * Excel `ROUNDDOWN(value, num_digits)` — toward zero (untuk bilangan positif = floor ke digit).
+ */
+export function excelRoundDown(value: Decimal.Value, numDigits: number): Decimal {
+  const x = d(value);
+  const n = numDigits;
+  if (n >= 0) {
+    return x.toDecimalPlaces(n, Decimal.ROUND_DOWN);
+  }
+  const factor = d(10).pow(-n);
+  return x
+    .div(factor)
+    .toDecimalPlaces(0, Decimal.ROUND_DOWN)
+    .mul(factor);
+}
+
+/**
  * Excel `IF(ISBLANK(ref), expr, ref)` for migration: treat null/undefined as blank.
  */
 export function ifBlank<T>(ref: T | null | undefined, whenBlank: Decimal): Decimal {

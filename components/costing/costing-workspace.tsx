@@ -109,8 +109,13 @@ const CATEGORY_ORDER = [
   "Skid",
   "Structure",
   "Drain Pan",
+  "Access Door",
+  "Mixing Box",
+  "Filters",
   "Coil",
+  "Electric Heater",
   "Damper",
+  "Inlet/Outlet Opening",
   "Fan & Motor",
 ] as const;
 
@@ -120,8 +125,13 @@ type AhuModuleToggleKey = keyof Pick<
   | "includeSkid"
   | "includeStructure"
   | "includeDrainPan"
+  | "includeAccessDoor"
+  | "includeMixingBox"
+  | "includeFilters"
   | "includeCoil"
+  | "includeElectricHeater"
   | "includeDamper"
+  | "includeOpening"
   | "includeFanMotor"
 >;
 
@@ -131,8 +141,13 @@ const AHU_COSTING_MODULE_TOGGLES: { key: AhuModuleToggleKey; label: string }[] =
     { key: "includeSkid", label: "Skid" },
     { key: "includeStructure", label: "Structure" },
     { key: "includeDrainPan", label: "Drain Pan" },
+    { key: "includeAccessDoor", label: "Access Door" },
+    { key: "includeMixingBox", label: "Mixing Box" },
+    { key: "includeFilters", label: "Filters" },
     { key: "includeCoil", label: "Coil" },
+    { key: "includeElectricHeater", label: "Electric Heater" },
     { key: "includeDamper", label: "Damper" },
+    { key: "includeOpening", label: "Inlet/Outlet Opening" },
     { key: "includeFanMotor", label: "Fan & Motor" },
   ];
 
@@ -153,6 +168,7 @@ function categoryTitle(cat: string): string {
   if (cat === "Structure") return "AHU Structure";
   if (cat === "Skid") return "AHU Skid";
   if (cat === "Drain Pan") return "Drain pan";
+  if (cat === "Inlet/Outlet Opening") return "Inlet / Outlet Opening";
   return cat;
 }
 
@@ -302,8 +318,36 @@ function AhuSegmentEditor({
   const setCoil = (patch: Partial<NonNullable<AhuRecalcParams["coil"]>>) => {
     setAhu((p) => ({ ...p, coil: { ...p.coil, ...patch } }));
   };
+  const setAccessDoor = (
+    patch: Partial<NonNullable<AhuRecalcParams["accessDoor"]>>
+  ) => {
+    setAhu((p) => ({ ...p, accessDoor: { ...p.accessDoor, ...patch } }));
+  };
+  const setMixingBox = (
+    patch: Partial<NonNullable<AhuRecalcParams["mixingBox"]>>
+  ) => {
+    setAhu((p) => ({ ...p, mixingBox: { ...p.mixingBox, ...patch } }));
+  };
+  const setFilters = (
+    patch: Partial<NonNullable<AhuRecalcParams["filters"]>>
+  ) => {
+    setAhu((p) => ({ ...p, filters: { ...p.filters, ...patch } }));
+  };
+  const setElectricHeater = (
+    patch: Partial<NonNullable<AhuRecalcParams["electricHeater"]>>
+  ) => {
+    setAhu((p) => ({
+      ...p,
+      electricHeater: { ...p.electricHeater, ...patch },
+    }));
+  };
   const setDamper = (patch: Partial<NonNullable<AhuRecalcParams["damper"]>>) => {
     setAhu((p) => ({ ...p, damper: { ...p.damper, ...patch } }));
+  };
+  const setOpening = (
+    patch: Partial<NonNullable<AhuRecalcParams["opening"]>>
+  ) => {
+    setAhu((p) => ({ ...p, opening: { ...p.opening, ...patch } }));
   };
   const setFan = (patch: Partial<NonNullable<AhuRecalcParams["fanMotor"]>>) => {
     setAhu((p) => ({ ...p, fanMotor: { ...p.fanMotor, ...patch } }));
@@ -322,8 +366,13 @@ function AhuSegmentEditor({
             includeSkid: true,
             includeStructure: true,
             includeDrainPan: true,
+            includeAccessDoor: true,
+            includeMixingBox: true,
+            includeFilters: true,
             includeCoil: true,
+            includeElectricHeater: true,
             includeDamper: true,
+            includeOpening: true,
             includeFanMotor: true,
           },
     }));
@@ -344,8 +393,16 @@ function AhuSegmentEditor({
             key === "includeStructure" ? checked : s.includeStructure,
           includeDrainPan:
             key === "includeDrainPan" ? checked : s.includeDrainPan,
+          includeAccessDoor:
+            key === "includeAccessDoor" ? checked : s.includeAccessDoor,
+          includeMixingBox:
+            key === "includeMixingBox" ? checked : s.includeMixingBox,
+          includeFilters: key === "includeFilters" ? checked : s.includeFilters,
           includeCoil: key === "includeCoil" ? checked : s.includeCoil,
+          includeElectricHeater:
+            key === "includeElectricHeater" ? checked : s.includeElectricHeater,
           includeDamper: key === "includeDamper" ? checked : s.includeDamper,
+          includeOpening: key === "includeOpening" ? checked : s.includeOpening,
           includeFanMotor:
             key === "includeFanMotor" ? checked : s.includeFanMotor,
         },
@@ -565,214 +622,655 @@ function AhuSegmentEditor({
 
           <div className="border-border space-y-3 border-t pt-4">
             <h4 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-              Parameter kalkulasi
+              Parameter kalkulasi (table mode)
             </h4>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-              <div className="space-y-1">
-                <Label className="text-xs">Jumlah section</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  className="w-full"
-                  value={ahu.nSections != null ? ahu.nSections : 1}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setAhu((p) => ({
-                      ...p,
-                      nSections:
-                        v === ""
-                          ? undefined
-                          : Math.max(1, Math.floor(Number(v) || 1)),
-                    }));
-                  }}
-                />
-              </div>
-            </div>
-            <p className="text-muted-foreground text-xs font-medium">Coil</p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <div className="space-y-1">
-                <Label className="text-xs">FH (mm)</Label>
-                <Input
-                  type="number"
-                  placeholder={`default H (${seg.dimH ?? "—"})`}
-                  value={ahu.coil?.FH ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setCoil({
-                      FH: v === "" ? undefined : Number(v),
-                    });
-                  }}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">FL (mm)</Label>
-                <Input
-                  type="number"
-                  placeholder={`default W (${seg.dimW ?? "—"})`}
-                  value={ahu.coil?.FL ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setCoil({
-                      FL: v === "" ? undefined : Number(v),
-                    });
-                  }}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Rows</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={ahu.coil?.rows ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setCoil({
-                      rows: v === "" ? undefined : Number(v),
-                    });
-                  }}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">FPI</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={ahu.coil?.FPI ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setCoil({
-                      FPI: v === "" ? undefined : Number(v),
-                    });
-                  }}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Circuits</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={ahu.coil?.circuits ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setCoil({
-                      circuits: v === "" ? undefined : Number(v),
-                    });
-                  }}
-                />
-              </div>
-            </div>
-            <p className="text-muted-foreground text-xs font-medium">Damper</p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-1">
-                <Label className="text-xs">Lebar W (mm)</Label>
-                <Input
-                  type="number"
-                  placeholder={`default ${seg.dimW ?? "—"}`}
-                  value={ahu.damper?.W ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setDamper({ W: v === "" ? undefined : Number(v) });
-                  }}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Tinggi H (mm)</Label>
-                <Input
-                  type="number"
-                  placeholder={`default ${seg.dimH ?? "—"}`}
-                  value={ahu.damper?.H ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setDamper({ H: v === "" ? undefined : Number(v) });
-                  }}
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label className="text-xs">Hitung damper (boleh keduanya)</Label>
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex cursor-pointer items-center gap-2 text-sm">
-                    <Checkbox
-                      checked={ahu.damper?.includeFA !== false}
-                      onCheckedChange={(c) => {
-                        if (c === "indeterminate") return;
-                        setDamper({
-                          includeFA: c === true,
-                          type: undefined,
-                        });
-                      }}
-                    />
-                    Fresh air (FA)
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm">
-                    <Checkbox
-                      checked={ahu.damper?.includeRA !== false}
-                      onCheckedChange={(c) => {
-                        if (c === "indeterminate") return;
-                        setDamper({
-                          includeRA: c === true,
-                          type: undefined,
-                        });
-                      }}
-                    />
-                    Return air (RA)
-                  </label>
-                </div>
-              </div>
-            </div>
-            <p className="text-muted-foreground text-xs font-medium">
-              Fan &amp; motor
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <div className="space-y-1 sm:col-span-2">
-                <Label className="text-xs">Fan model (kode)</Label>
-                <Input
-                  value={ahu.fanMotor?.fanModel ?? ""}
-                  onChange={(e) => setFan({ fanModel: e.target.value || undefined })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Motor kW</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={ahu.fanMotor?.motorKW ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setFan({ motorKW: v === "" ? undefined : Number(v) });
-                  }}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Kutub motor</Label>
-                <Input
-                  type="number"
-                  min={2}
-                  step={2}
-                  value={ahu.fanMotor?.motorPoles ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setFan({
-                      motorPoles: v === "" ? undefined : Math.floor(Number(v)),
-                    });
-                  }}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Qty fan (override)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  placeholder={`default ${seg.qty}`}
-                  value={ahu.fanMotor?.qty ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setFan({
-                      qty: v === "" ? undefined : Math.max(1, Math.floor(Number(v))),
-                    });
-                  }}
-                />
-              </div>
+            <div className="overflow-x-auto rounded-md border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[180px]">Modul</TableHead>
+                    <TableHead className="w-24 text-center">Aktif</TableHead>
+                    <TableHead>Parameter utama</TableHead>
+                    <TableHead>Opsi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">General AHU</TableCell>
+                    <TableCell className="text-center text-xs text-muted-foreground">
+                      always
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Label className="text-xs">Jumlah section</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          className="h-8 w-24"
+                          value={ahu.nSections != null ? ahu.nSections : 1}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setAhu((p) => ({
+                              ...p,
+                              nSections:
+                                v === ""
+                                  ? undefined
+                                  : Math.max(1, Math.floor(Number(v) || 1)),
+                            }));
+                          }}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      Dimensi default mengambil dari H/W/D segmen.
+                    </TableCell>
+                  </TableRow>
+
+                  <TableRow>
+                    <TableCell className="font-medium">Access Door</TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={scope.includeAccessDoor}
+                        disabled={scope.isFullAhu}
+                        onCheckedChange={(c) => {
+                          if (typeof c !== "boolean") return;
+                          setScopeModule("includeAccessDoor", c);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Label className="text-xs">Qty</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          className="h-8 w-20"
+                          value={ahu.accessDoor?.qty ?? ""}
+                          placeholder="1"
+                          onChange={(e) =>
+                            setAccessDoor({
+                              qty:
+                                e.target.value === ""
+                                  ? undefined
+                                  : Math.max(1, Math.floor(Number(e.target.value) || 1)),
+                            })
+                          }
+                        />
+                        <Label className="text-xs">H</Label>
+                        <Input
+                          type="number"
+                          className="h-8 w-24"
+                          value={ahu.accessDoor?.height ?? ""}
+                          placeholder={String(seg.dimH ?? "")}
+                          onChange={(e) =>
+                            setAccessDoor({
+                              height: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Label className="text-xs">W</Label>
+                        <Input
+                          type="number"
+                          className="h-8 w-24"
+                          value={ahu.accessDoor?.width ?? ""}
+                          placeholder={String(seg.dimW ?? "")}
+                          onChange={(e) =>
+                            setAccessDoor({
+                              width: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <label className="flex items-center gap-2 text-xs">
+                        <Checkbox
+                          checked={ahu.accessDoor?.withWindow === true}
+                          onCheckedChange={(c) =>
+                            setAccessDoor({ withWindow: c === true })
+                          }
+                        />
+                        With window kit
+                      </label>
+                    </TableCell>
+                  </TableRow>
+
+                  <TableRow>
+                    <TableCell className="font-medium">Mixing Box</TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={scope.includeMixingBox}
+                        disabled={scope.isFullAhu}
+                        onCheckedChange={(c) => {
+                          if (typeof c !== "boolean") return;
+                          setScopeModule("includeMixingBox", c);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder="FA Flow CMH"
+                          value={ahu.mixingBox?.faFlowCMH ?? ""}
+                          onChange={(e) =>
+                            setMixingBox({
+                              faFlowCMH:
+                                e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder="RA Flow CMH"
+                          value={ahu.mixingBox?.raFlowCMH ?? ""}
+                          onChange={(e) =>
+                            setMixingBox({
+                              raFlowCMH:
+                                e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder="FA W"
+                          value={ahu.mixingBox?.faDamperW ?? ""}
+                          onChange={(e) =>
+                            setMixingBox({
+                              faDamperW:
+                                e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder="FA H"
+                          value={ahu.mixingBox?.faDamperH ?? ""}
+                          onChange={(e) =>
+                            setMixingBox({
+                              faDamperH:
+                                e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder="RA W"
+                          value={ahu.mixingBox?.raDamperW ?? ""}
+                          onChange={(e) =>
+                            setMixingBox({
+                              raDamperW:
+                                e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder="RA H"
+                          value={ahu.mixingBox?.raDamperH ?? ""}
+                          onChange={(e) =>
+                            setMixingBox({
+                              raDamperH:
+                                e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      Minimal isi 1 pasang damper (FA atau RA).
+                    </TableCell>
+                  </TableRow>
+
+                  <TableRow>
+                    <TableCell className="font-medium">Filters</TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={scope.includeFilters}
+                        disabled={scope.isFullAhu}
+                        onCheckedChange={(c) => {
+                          if (typeof c !== "boolean") return;
+                          setScopeModule("includeFilters", c);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                        <Input
+                          type="number"
+                          min={0}
+                          className="h-8"
+                          placeholder="Panel qty"
+                          value={ahu.filters?.panelQty ?? ""}
+                          onChange={(e) =>
+                            setFilters({
+                              panelQty:
+                                e.target.value === ""
+                                  ? undefined
+                                  : Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                            })
+                          }
+                        />
+                        <Input
+                          className="h-8"
+                          placeholder="Panel class (G4)"
+                          value={ahu.filters?.panelClass ?? ""}
+                          onChange={(e) =>
+                            setFilters({ panelClass: e.target.value || undefined })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          min={0}
+                          className="h-8"
+                          placeholder="Bag qty"
+                          value={ahu.filters?.bagQty ?? ""}
+                          onChange={(e) =>
+                            setFilters({
+                              bagQty:
+                                e.target.value === ""
+                                  ? undefined
+                                  : Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                            })
+                          }
+                        />
+                        <Input
+                          className="h-8"
+                          placeholder="Bag class (F8)"
+                          value={ahu.filters?.bagClass ?? ""}
+                          onChange={(e) => setFilters({ bagClass: e.target.value || undefined })}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      Isi qty sesuai full/half size ekuivalen.
+                    </TableCell>
+                  </TableRow>
+
+                  <TableRow>
+                    <TableCell className="font-medium">Coil</TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={scope.includeCoil}
+                        disabled={scope.isFullAhu}
+                        onCheckedChange={(c) => {
+                          if (typeof c !== "boolean") return;
+                          setScopeModule("includeCoil", c);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder={`FH (${seg.dimH ?? "H"})`}
+                          value={ahu.coil?.FH ?? ""}
+                          onChange={(e) =>
+                            setCoil({ FH: e.target.value === "" ? undefined : Number(e.target.value) })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder={`FL (${seg.dimW ?? "W"})`}
+                          value={ahu.coil?.FL ?? ""}
+                          onChange={(e) =>
+                            setCoil({ FL: e.target.value === "" ? undefined : Number(e.target.value) })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          min={1}
+                          className="h-8"
+                          placeholder="Rows"
+                          value={ahu.coil?.rows ?? ""}
+                          onChange={(e) =>
+                            setCoil({
+                              rows: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          min={1}
+                          className="h-8"
+                          placeholder="FPI"
+                          value={ahu.coil?.FPI ?? ""}
+                          onChange={(e) =>
+                            setCoil({
+                              FPI: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          min={1}
+                          className="h-8"
+                          placeholder="Circuits"
+                          value={ahu.coil?.circuits ?? ""}
+                          onChange={(e) =>
+                            setCoil({
+                              circuits: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      Model coil dari dimensi + rows/FPI/circuits.
+                    </TableCell>
+                  </TableRow>
+
+                  <TableRow>
+                    <TableCell className="font-medium">Electric Heater</TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={scope.includeElectricHeater}
+                        disabled={scope.isFullAhu}
+                        onCheckedChange={(c) => {
+                          if (typeof c !== "boolean") return;
+                          setScopeModule("includeElectricHeater", c);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder={`H (${seg.dimH ?? "H"})`}
+                          value={ahu.electricHeater?.height ?? ""}
+                          onChange={(e) =>
+                            setElectricHeater({
+                              height: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder={`W (${seg.dimW ?? "W"})`}
+                          value={ahu.electricHeater?.width ?? ""}
+                          onChange={(e) =>
+                            setElectricHeater({
+                              width: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder="Depth"
+                          value={ahu.electricHeater?.depth ?? ""}
+                          onChange={(e) =>
+                            setElectricHeater({
+                              depth: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          min={1}
+                          className="h-8"
+                          placeholder="Steps"
+                          value={ahu.electricHeater?.steps ?? ""}
+                          onChange={(e) =>
+                            setElectricHeater({
+                              steps:
+                                e.target.value === ""
+                                  ? undefined
+                                  : Math.max(1, Math.floor(Number(e.target.value) || 1)),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8"
+                          placeholder="Load kW"
+                          value={ahu.electricHeater?.totalLoadKW ?? ""}
+                          onChange={(e) =>
+                            setElectricHeater({
+                              totalLoadKW:
+                                e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      Estimasi fallback: load kW saat catalog heater belum tersedia.
+                    </TableCell>
+                  </TableRow>
+
+                  <TableRow>
+                    <TableCell className="font-medium">Damper</TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={scope.includeDamper}
+                        disabled={scope.isFullAhu}
+                        onCheckedChange={(c) => {
+                          if (typeof c !== "boolean") return;
+                          setScopeModule("includeDamper", c);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Input
+                          type="number"
+                          className="h-8 w-28"
+                          placeholder={`W (${seg.dimW ?? "—"})`}
+                          value={ahu.damper?.W ?? ""}
+                          onChange={(e) =>
+                            setDamper({
+                              W: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8 w-28"
+                          placeholder={`H (${seg.dimH ?? "—"})`}
+                          value={ahu.damper?.H ?? ""}
+                          onChange={(e) =>
+                            setDamper({
+                              H: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-3">
+                        <label className="flex items-center gap-2 text-xs">
+                          <Checkbox
+                            checked={ahu.damper?.includeFA !== false}
+                            onCheckedChange={(c) => {
+                              if (c === "indeterminate") return;
+                              setDamper({ includeFA: c === true, type: undefined });
+                            }}
+                          />
+                          Fresh air (FA)
+                        </label>
+                        <label className="flex items-center gap-2 text-xs">
+                          <Checkbox
+                            checked={ahu.damper?.includeRA !== false}
+                            onCheckedChange={(c) => {
+                              if (c === "indeterminate") return;
+                              setDamper({ includeRA: c === true, type: undefined });
+                            }}
+                          />
+                          Return air (RA)
+                        </label>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+
+                  <TableRow>
+                    <TableCell className="font-medium">Inlet/Outlet Opening</TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={scope.includeOpening}
+                        disabled={scope.isFullAhu}
+                        onCheckedChange={(c) => {
+                          if (typeof c !== "boolean") return;
+                          setScopeModule("includeOpening", c);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          className="h-8 w-20"
+                          placeholder="Qty"
+                          value={ahu.opening?.qty ?? ""}
+                          onChange={(e) =>
+                            setOpening({
+                              qty:
+                                e.target.value === ""
+                                  ? undefined
+                                  : Math.max(1, Math.floor(Number(e.target.value) || 1)),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8 w-28"
+                          placeholder={`W (${seg.dimW ?? "—"})`}
+                          value={ahu.opening?.width ?? ""}
+                          onChange={(e) =>
+                            setOpening({
+                              width: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          className="h-8 w-28"
+                          placeholder={`H (${seg.dimH ?? "—"})`}
+                          value={ahu.opening?.height ?? ""}
+                          onChange={(e) =>
+                            setOpening({
+                              height: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="grid gap-1">
+                        <label className="flex items-center gap-2 text-xs">
+                          <Checkbox
+                            checked={ahu.opening?.includeFlex === true}
+                            onCheckedChange={(c) => setOpening({ includeFlex: c === true })}
+                          />
+                          Flexible connector
+                        </label>
+                        <label className="flex items-center gap-2 text-xs">
+                          <Checkbox
+                            checked={ahu.opening?.includeLouvre === true}
+                            onCheckedChange={(c) => setOpening({ includeLouvre: c === true })}
+                          />
+                          Inlet louvre
+                        </label>
+                        <label className="flex items-center gap-2 text-xs">
+                          <Checkbox
+                            checked={ahu.opening?.includeWireGauze === true}
+                            onCheckedChange={(c) => setOpening({ includeWireGauze: c === true })}
+                          />
+                          Wire gauze
+                        </label>
+                        <label className="flex items-center gap-2 text-xs">
+                          <Checkbox
+                            checked={ahu.opening?.includeActuator === true}
+                            onCheckedChange={(c) => setOpening({ includeActuator: c === true })}
+                          />
+                          Actuator
+                        </label>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+
+                  <TableRow>
+                    <TableCell className="font-medium">Fan &amp; motor</TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={scope.includeFanMotor}
+                        disabled={scope.isFullAhu}
+                        onCheckedChange={(c) => {
+                          if (typeof c !== "boolean") return;
+                          setScopeModule("includeFanMotor", c);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                        <Input
+                          className="h-8 lg:col-span-2"
+                          placeholder="Fan model (kode)"
+                          value={ahu.fanMotor?.fanModel ?? ""}
+                          onChange={(e) => setFan({ fanModel: e.target.value || undefined })}
+                        />
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          className="h-8"
+                          placeholder="Motor kW"
+                          value={ahu.fanMotor?.motorKW ?? ""}
+                          onChange={(e) =>
+                            setFan({
+                              motorKW: e.target.value === "" ? undefined : Number(e.target.value),
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          min={2}
+                          step={2}
+                          className="h-8"
+                          placeholder="Poles"
+                          value={ahu.fanMotor?.motorPoles ?? ""}
+                          onChange={(e) =>
+                            setFan({
+                              motorPoles:
+                                e.target.value === ""
+                                  ? undefined
+                                  : Math.floor(Number(e.target.value)),
+                            })
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min={1}
+                        className="h-8 w-28"
+                        placeholder={`Qty default ${seg.qty}`}
+                        value={ahu.fanMotor?.qty ?? ""}
+                        onChange={(e) =>
+                          setFan({
+                            qty:
+                              e.target.value === ""
+                                ? undefined
+                                : Math.max(1, Math.floor(Number(e.target.value) || 1)),
+                          })
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             </div>
           </div>
         </CardContent>

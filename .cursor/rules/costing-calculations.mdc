@@ -1,0 +1,13 @@
+---
+description: AHU costing math, recalc, and rollups
+globs: lib/calculations/**
+alwaysApply: false
+---
+
+# Calculations & AHU recalc
+
+- **Single place per concern**: Frame/panel, coil, damper, fan, structure, skid stay in `lib/calculations/` (or callers in `lib/ahu-segment-costing.ts`). Do not duplicate formulas in components.
+- **Inputs**: Segment dimensions and `ahuRecalcParams` merge are defined in `lib/ahu-recalc-params.ts` and validated in `lib/ahu-recalc-validation.ts`. Changing validation rules must stay aligned with `components/costing/costing-workspace.tsx`.
+- **Recalculate**: API `POST .../segments/[segmentId]/recalculate` persists sections and line items; then `rollupProjectFinancials`. Follow existing transaction patterns.
+- **Parity**: If changing formulas meant to match Excel, document rounding steps and add or update tests (`**/*.test.ts` near logic or `__tests__`).
+- **Scope flags**: `lib/costing-scope.ts` controls modular blocks (full AHU vs sub-assemblies). Changing flags affects both UI and server — update both.

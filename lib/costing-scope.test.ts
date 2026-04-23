@@ -30,6 +30,16 @@ describe("normalizeCostingScope", () => {
     expect(resolveActiveModules(s).framePanel).toBe(false);
   });
 
+  it("supports new opening module in partial scope", () => {
+    const s = normalizeCostingScope({
+      isFullAhu: false,
+      includeOpening: true,
+    });
+    const m = resolveActiveModules(s);
+    expect(m.opening).toBe(true);
+    expect(m.coil).toBe(false);
+  });
+
   it("empty costingScope object stays full AHU", () => {
     const s = normalizeCostingScope({});
     expect(s.isFullAhu).toBe(true);

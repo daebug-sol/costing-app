@@ -17,9 +17,22 @@ export type {
 export { calculateCoil } from "./coil";
 export { calculateDamper } from "./damper";
 export { calculateDrainPan } from "./drainPan";
-export { d, excelRound, excelRoundUp, ifBlank } from "./excel-math";
+export {
+  d,
+  excelRound,
+  excelRoundDown,
+  excelRoundUp,
+  ifBlank,
+} from "./excel-math";
 export { calculateFanMotor } from "./fanMotor";
 export { calculateFramePanel } from "./framePanel";
+export {
+  calculateAccessDoor,
+  calculateElectricHeater,
+  calculateFilters,
+  calculateMixingBox,
+  calculateOpenings,
+} from "./pdf-modules";
 export { calculateSkid } from "./skid";
 export { calculateStructure } from "./structure";
 export type { CalcLineItem, MaterialPrice, ProfileData } from "./types";

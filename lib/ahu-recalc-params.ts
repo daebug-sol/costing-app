@@ -15,6 +15,26 @@ export type AhuRecalcParams = {
   nSections?: number;
   /** Scope modular: full AHU vs sub-assembly terpilih. */
   costingScope?: CostingScope;
+  accessDoor?: {
+    qty?: number;
+    height?: number;
+    width?: number;
+    withWindow?: boolean;
+  };
+  mixingBox?: {
+    faFlowCMH?: number;
+    raFlowCMH?: number;
+    faDamperW?: number;
+    faDamperH?: number;
+    raDamperW?: number;
+    raDamperH?: number;
+  };
+  filters?: {
+    panelQty?: number;
+    bagQty?: number;
+    panelClass?: string;
+    bagClass?: string;
+  };
   coil?: {
     FH?: number;
     FL?: number;
@@ -26,6 +46,13 @@ export type AhuRecalcParams = {
     /** kW sensible — untuk spesifikasi quotation (opsional). */
     Qs?: number;
   };
+  electricHeater?: {
+    width?: number;
+    height?: number;
+    depth?: number;
+    steps?: number;
+    totalLoadKW?: number;
+  };
   damper?: {
     W?: number;
     H?: number;
@@ -33,6 +60,15 @@ export type AhuRecalcParams = {
     type?: "FA" | "RA";
     includeFA?: boolean;
     includeRA?: boolean;
+  };
+  opening?: {
+    qty?: number;
+    width?: number;
+    height?: number;
+    includeFlex?: boolean;
+    includeLouvre?: boolean;
+    includeWireGauze?: boolean;
+    includeActuator?: boolean;
   };
   fanMotor?: {
     fanModel?: string;
@@ -54,15 +90,46 @@ export function mergeRecalcParams(
   request: Record<string, unknown>
 ): AhuRecalcParams {
   const r = request as AhuRecalcParams & {
+    accessDoor?: Record<string, unknown>;
+    mixingBox?: Record<string, unknown>;
+    filters?: Record<string, unknown>;
     coil?: Record<string, unknown>;
+    electricHeater?: Record<string, unknown>;
     damper?: Record<string, unknown>;
+    opening?: Record<string, unknown>;
     fanMotor?: Record<string, unknown>;
     costingScope?: Record<string, unknown>;
+  };
+  const accessDoor = {
+    ...(stored.accessDoor ?? {}),
+    ...(r.accessDoor && typeof r.accessDoor === "object" && !Array.isArray(r.accessDoor)
+      ? r.accessDoor
+      : {}),
+  };
+  const mixingBox = {
+    ...(stored.mixingBox ?? {}),
+    ...(r.mixingBox && typeof r.mixingBox === "object" && !Array.isArray(r.mixingBox)
+      ? r.mixingBox
+      : {}),
+  };
+  const filters = {
+    ...(stored.filters ?? {}),
+    ...(r.filters && typeof r.filters === "object" && !Array.isArray(r.filters)
+      ? r.filters
+      : {}),
   };
   const coil = {
     ...(stored.coil ?? {}),
     ...(r.coil && typeof r.coil === "object" && !Array.isArray(r.coil)
       ? r.coil
+      : {}),
+  };
+  const electricHeater = {
+    ...(stored.electricHeater ?? {}),
+    ...(r.electricHeater &&
+    typeof r.electricHeater === "object" &&
+    !Array.isArray(r.electricHeater)
+      ? r.electricHeater
       : {}),
   };
   const damper = {
@@ -75,6 +142,12 @@ export function mergeRecalcParams(
     ...(stored.fanMotor ?? {}),
     ...(r.fanMotor && typeof r.fanMotor === "object" && !Array.isArray(r.fanMotor)
       ? r.fanMotor
+      : {}),
+  };
+  const opening = {
+    ...(stored.opening ?? {}),
+    ...(r.opening && typeof r.opening === "object" && !Array.isArray(r.opening)
+      ? r.opening
       : {}),
   };
   let costingScope: CostingScope | undefined;
@@ -101,8 +174,13 @@ export function mergeRecalcParams(
   return {
     nSections: r.nSections ?? stored.nSections,
     costingScope,
+    accessDoor: Object.keys(accessDoor).length ? accessDoor : undefined,
+    mixingBox: Object.keys(mixingBox).length ? mixingBox : undefined,
+    filters: Object.keys(filters).length ? filters : undefined,
     coil: Object.keys(coil).length ? coil : undefined,
+    electricHeater: Object.keys(electricHeater).length ? electricHeater : undefined,
     damper: Object.keys(damper).length ? damper : undefined,
+    opening: Object.keys(opening).length ? opening : undefined,
     fanMotor: Object.keys(fanMotor).length ? fanMotor : undefined,
   };
 }

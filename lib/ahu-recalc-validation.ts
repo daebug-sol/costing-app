@@ -97,5 +97,64 @@ export function validateAhuRecalculateContext(input: {
     }
   }
 
+  if (modules.accessDoor) {
+    const d = input.merged.accessDoor ?? {};
+    const qty = Math.max(0, Math.floor(finite(d.qty, 1)));
+    const h = finite(d.height, input.dimH ?? 0);
+    const w = finite(d.width, input.dimW ?? 0);
+    if (qty <= 0 || h <= 0 || w <= 0) {
+      return {
+        ok: false,
+        message:
+          "Untuk modul Access Door: isi qty dan dimensi door (height × width) > 0.",
+      };
+    }
+  }
+
+  if (modules.mixingBox) {
+    const m = input.merged.mixingBox ?? {};
+    const faW = finite(m.faDamperW, 0);
+    const faH = finite(m.faDamperH, 0);
+    const raW = finite(m.raDamperW, 0);
+    const raH = finite(m.raDamperH, 0);
+    const hasFa = faW > 0 && faH > 0;
+    const hasRa = raW > 0 && raH > 0;
+    if (!hasFa && !hasRa) {
+      return {
+        ok: false,
+        message:
+          "Untuk modul Mixing Box: isi minimal satu dimensi damper FA atau RA (W × H).",
+      };
+    }
+  }
+
+  if (modules.electricHeater) {
+    const e = input.merged.electricHeater ?? {};
+    const load = finite(e.totalLoadKW, 0);
+    const h = finite(e.height, input.dimH ?? 0);
+    const w = finite(e.width, input.dimW ?? 0);
+    if (load <= 0 || h <= 0 || w <= 0) {
+      return {
+        ok: false,
+        message:
+          "Untuk modul Electric Heater: isi total load (kW) dan dimensi heater (H × W) > 0.",
+      };
+    }
+  }
+
+  if (modules.opening) {
+    const o = input.merged.opening ?? {};
+    const qty = Math.max(0, Math.floor(finite(o.qty, 1)));
+    const h = finite(o.height, input.dimH ?? 0);
+    const w = finite(o.width, input.dimW ?? 0);
+    if (qty <= 0 || h <= 0 || w <= 0) {
+      return {
+        ok: false,
+        message:
+          "Untuk modul Inlet/Outlet Opening: isi qty dan dimensi opening (height × width) > 0.",
+      };
+    }
+  }
+
   return { ok: true };
 }

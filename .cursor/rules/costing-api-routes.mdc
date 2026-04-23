@@ -1,0 +1,13 @@
+---
+description: API routes — validation, errors, Prisma
+globs: app/api/**/*.ts
+alwaysApply: false
+---
+
+# API routes
+
+- **Input**: Parse JSON safely; validate required fields and types before Prisma. Return `400` with a clear `{ error, detail? }` message for client mistakes.
+- **Errors**: Log server-side with `console.error` or project logger; do not leak stack traces or internal paths in production responses (use generic messages for 500).
+- **Prisma**: Use `prisma` from `@/lib/prisma`. Use transactions when multiple writes must succeed or fail together.
+- **Auth (future)**: When session/auth exists, reject unauthenticated mutating requests and scope queries by tenant/user — see harness doc.
+- **Idempotency**: Destructive operations (bulk delete) should match existing patterns and confirm expected behavior.

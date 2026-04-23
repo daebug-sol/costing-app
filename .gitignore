@@ -20,6 +20,9 @@
 # production
 /build
 
+# generated Excel dumps (run: npm run extract-formulas)
+/excel-dumps/
+
 # misc
 .DS_Store
 *.pem

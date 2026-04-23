@@ -1,0 +1,14 @@
+---
+description: AHU recalc params, segment costing, rollups (lib)
+globs: lib/ahu-*.ts
+alwaysApply: false
+---
+
+# AHU lib modules
+
+- **`ahu-recalc-params.ts`**: Shape of `ahuRecalcParams` JSON; keep in sync with UI and recalculate API body.
+- **`ahu-recalc-validation.ts`**: Scope and dimension rules — changing validation requires coordinated UI copy.
+- **`ahu-segment-costing.ts`**: Orchestrates blocks; calls `lib/calculations/*`.
+- **`project-rollup.ts` / `cost-summary.ts`**: Project-level HPP and selling — do not double-apply margin.
+
+See also **`costing-calculations.mdc`** for pure calculation files under `lib/calculations/`.

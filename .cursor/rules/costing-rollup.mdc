@@ -1,0 +1,12 @@
+---
+description: Project rollups and manual segment rollups
+globs: lib/project-rollup.ts
+alwaysApply: false
+---
+
+# Rollups
+
+- **`rollupProjectFinancials`**: Aggregates segment subtotals into `CostingProject.totalHPP` / `totalSelling` using margin/overhead settings. Do not duplicate this logic in API routes.
+- **`manual-costing-rollup.ts`**: Manual segments — keep consistent with AHU rollup expectations for quotations.
+
+Related: `lib/cost-summary.ts` (pure helpers) — keep formulas aligned with UI expectations.

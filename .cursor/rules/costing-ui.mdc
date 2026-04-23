@@ -1,0 +1,13 @@
+---
+description: UI — shadcn, Tailwind, accessibility
+globs: components/**/*.tsx,app/**/*.tsx
+alwaysApply: false
+---
+
+# UI / UX
+
+- **Components**: Prefer `components/ui/*` (Radix/shadcn patterns already in repo). Reuse `Button`, `Card`, `Input`, `Table`, etc. Do not add a second design system.
+- **Styling**: Use Tailwind utilities and existing tokens (`bg-card`, `text-muted-foreground`, `border-border`). Avoid arbitrary one-off colors unless extending the theme intentionally.
+- **Density**: Match neighboring screens (costing, database, documentation). No random huge padding or font-size jumps on a single view.
+- **Forms**: Pair `<Label>` with inputs; show loading/disabled on async actions; surface API errors via existing toast/store patterns.
+- **Scope**: UI tasks should not change calculation logic unless the task explicitly asks for both.

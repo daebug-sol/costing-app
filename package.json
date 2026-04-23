@@ -10,6 +10,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
+    "extract-formulas": "node scripts/extract-formulas.mjs --split excel-dumps",
+    "extract-formulas:list": "node scripts/extract-formulas.mjs --list",
     "db:migrate-segments": "node scripts/migrate-sqlite-to-segments.mjs && prisma db push --accept-data-loss"
   },
   "dependencies": {
