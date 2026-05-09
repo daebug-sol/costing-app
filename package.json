@@ -10,6 +10,10 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
+    "ui:test": "playwright test",
+    "ui:test:headed": "playwright test --headed",
+    "ui:test:update": "playwright test --update-snapshots",
+    "ui:test:report": "playwright show-report",
     "extract-formulas": "node scripts/extract-formulas.mjs --split excel-dumps",
     "extract-formulas:list": "node scripts/extract-formulas.mjs --list",
     "db:migrate-segments": "node scripts/migrate-sqlite-to-segments.mjs && prisma db push --accept-data-loss"
@@ -18,6 +22,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@nivo/sankey": "^0.99.0",
     "@prisma/adapter-better-sqlite3": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "better-sqlite3": "^12.8.0",
@@ -40,6 +45,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^7.6.13",
     "@types/jest": "^30.0.0",

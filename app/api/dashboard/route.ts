@@ -1,73 +1,104 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { buildDashboardAnalyticsPayload } from "@/lib/dashboard-analytics";
+import { EMPTY_DASHBOARD_RESPONSE } from "@/lib/dashboard-contract";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const [projects, quotations] = await Promise.all([
+    const { searchParams } = new URL(request.url);
+    const projectIdParam = searchParams.get("projectId");
+    const selectedProjectId = projectIdParam && projectIdParam.trim() ? projectIdParam.trim() : null;
+
+    const [projects, quotations, settings] = await Promise.all([
       prisma.costingProject.findMany({
         orderBy: { updatedAt: "desc" },
         select: {
           id: true,
           name: true,
           status: true,
+          qty: true,
           totalHPP: true,
           totalSelling: true,
+          overhead: true,
+          contingency: true,
+          eskalasi: true,
+          asuransi: true,
+          mobilisasi: true,
+          margin: true,
           updatedAt: true,
           segments: {
-            orderBy: { sortOrder: "asc" },
-            take: 1,
-            select: { ahuModel: true, flowCMH: true },
+            select: {
+              id: true,
+              type: true,
+              title: true,
+              subtotal: true,
+              sections: {
+                select: {
+                  category: true,
+                  subtotal: true,
+                  lineItems: {
+                    select: {
+                      description: true,
+                      subtotal: true,
+                    },
+                  },
+                },
+              },
+              manualGroups: {
+                select: {
+                  name: true,
+                  subtotal: true,
+                  items: {
+                    select: {
+                      name: true,
+                      category: true,
+                      subtotal: true,
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       }),
       prisma.quotation.findMany({
-        select: { status: true },
+        orderBy: { tanggal: "asc" },
+        select: {
+          id: true,
+          status: true,
+          tanggal: true,
+          projectId: true,
+          totalBeforeDisc: true,
+          totalAfterDisc: true,
+          totalPPN: true,
+          totalPPH: true,
+          grandTotal: true,
+          paymentTerms: true,
+          project: {
+            select: {
+              id: true,
+              name: true,
+              totalHPP: true,
+              totalSelling: true,
+            },
+          },
+        },
+      }),
+      prisma.appSettings.findUnique({
+        where: { id: "default" },
+        select: { paymentTerms: true },
       }),
     ]);
 
-    const totalProjects = projects.length;
-    const activeCosting = projects.filter(
-      (p) => p.status.toLowerCase() === "draft"
-    ).length;
-
-    const pendingQuotation = quotations.filter(
-      (q) => q.status.toLowerCase() === "draft"
-    ).length;
-    const approved = quotations.filter(
-      (q) => q.status.toLowerCase() === "approved"
-    ).length;
-
-    const flatProject = (p: (typeof projects)[number]) => {
-      const s0 = p.segments[0];
-      return {
-        id: p.id,
-        name: p.name,
-        status: p.status,
-        totalHPP: p.totalHPP,
-        totalSelling: p.totalSelling,
-        updatedAt: p.updatedAt,
-        ahuModel: s0?.ahuModel ?? null,
-        flowCMH: s0?.flowCMH ?? null,
-      };
-    };
-    const recentProjects = projects.slice(0, 5).map(flatProject);
-    const chartProjects = recentProjects;
-
-    return NextResponse.json({
-      kpis: {
-        totalProjects,
-        activeCosting,
-        pendingQuotation,
-        approved,
-      },
-      recentProjects,
-      chartProjects,
+    const payload = buildDashboardAnalyticsPayload({
+      projects,
+      quotations,
+      defaultPaymentTerms: settings?.paymentTerms ?? "DP 50%, balance CBD",
+      selectedProjectId,
     });
+    return NextResponse.json(payload);
   } catch (e) {
     console.error(e);
-    return NextResponse.json(
-      { error: "Failed to load dashboard" },
-      { status: 500 }
-    );
+    return NextResponse.json(EMPTY_DASHBOARD_RESPONSE);
   }
 }
