@@ -13,3 +13,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `docs/GIT-WORKTREES.md` | **Worktrees**: branch per feature in a separate folder; open that folder in Cursor to shrink context. Scripts: `scripts/new-worktree.ps1`, `remove-worktree.ps1`. |
 
 When a task touches costing math, use the **costing-formula-change** skill. When deploying or hardening for production, read **PRODUCTION-HARNESS.md** and the **production-release** skill. When a task touches UI/UX (any change under `app/**/*.tsx` or `components/**/*.tsx`), read **UI-HARNESS.md** and walk **UI-PR-CHECKLIST.md** before merge.
+
+## Cursor Cloud
+
+Repo-level cloud agents use `.cursor/environment.json`: on VM startup they run `npm ci` (which executes `postinstall` → `prisma generate`), then `npx playwright install-deps chromium`, `npx playwright install chromium`, and an explicit `npx prisma generate` so the Prisma client is always present for Next.js and scripts. The base image is `.cursor/Dockerfile` (Node 22 Bookworm + native build tools + Playwright Chromium OS libraries). Quick checks: `npx playwright test --list`, `npm run lint`, `npm test`.
