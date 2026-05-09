@@ -43,6 +43,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# local SQLite (dev; do not commit)
+/prisma/dev.db
+
 /lib/generated/prisma
 
 # playwright (UI harness — see docs/UI-HARNESS.md §4)
