@@ -6,8 +6,8 @@ export default function DocumentationPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center bg-slate-50">
-          <Loader2 className="size-8 animate-spin text-slate-400" />
+        <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center border-t border-border bg-muted/30">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
         </div>
       }
     >

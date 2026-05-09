@@ -30,7 +30,11 @@ snapshots. Override with
 ```
 tests/ui/
   README.md                  <- this file
-  dashboard.visual.spec.ts   <- "/" — see UX scenario 1
+  dashboard.visual.spec.ts      <- "/" dashboard shell
+  costing.visual.spec.ts        <- "/costing" workspace shell
+  database.visual.spec.ts       <- "/database" shell
+  documentation.visual.spec.ts  <- "/documentation" shell
+  settings.visual.spec.ts       <- "/settings" shell
   __screenshots__/           <- committed PNG baselines (created on first run)
 ```
 

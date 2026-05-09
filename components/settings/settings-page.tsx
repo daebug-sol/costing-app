@@ -132,9 +132,7 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-[720px] space-y-6 px-4 py-6 sm:px-6 lg:py-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Settings
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Pengaturan</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Profil perusahaan, default costing, forex, dan syarat penawaran
         </p>
@@ -142,11 +140,11 @@ export function SettingsPage() {
 
       <Card className="border-border ">
         <CardHeader>
-          <CardTitle className="text-lg">Company Profile</CardTitle>
+          <CardTitle className="text-lg">Profil perusahaan</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="co-name">Company name</Label>
+            <Label htmlFor="co-name">Nama perusahaan</Label>
             <Input
               id="co-name"
               value={row.companyName}
@@ -154,7 +152,7 @@ export function SettingsPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="co-addr">Address</Label>
+            <Label htmlFor="co-addr">Alamat</Label>
             <textarea
               id="co-addr"
               className="border-input bg-background focus-visible:ring-ring flex min-h-[88px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
@@ -166,7 +164,7 @@ export function SettingsPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="co-phone">Phone</Label>
+              <Label htmlFor="co-phone">Telepon</Label>
               <Input
                 id="co-phone"
                 placeholder="+62-812-3456-7890"
@@ -233,7 +231,7 @@ export function SettingsPage() {
             {saving === "company" ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
-              "Save"
+              "Simpan"
             )}
           </Button>
         </CardFooter>
@@ -366,7 +364,7 @@ export function SettingsPage() {
             {saving === "pj" ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
-              "Save"
+              "Simpan"
             )}
           </Button>
         </CardFooter>
@@ -374,7 +372,7 @@ export function SettingsPage() {
 
       <Card className="border-border ">
         <CardHeader>
-          <CardTitle className="text-lg">Default Rates</CardTitle>
+          <CardTitle className="text-lg">Rate default costing</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -430,7 +428,7 @@ export function SettingsPage() {
             {saving === "rates" ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
-              "Save"
+              "Simpan"
             )}
           </Button>
         </CardFooter>
@@ -438,7 +436,7 @@ export function SettingsPage() {
 
       <Card className="border-border ">
         <CardHeader>
-          <CardTitle className="text-lg">Forex Rates</CardTitle>
+          <CardTitle className="text-lg">Kurs forex</CardTitle>
           <p className="text-xs font-normal text-muted-foreground">
             Last updated:{" "}
             {new Date(row.updatedAt).toLocaleString("id-ID", {
@@ -500,7 +498,7 @@ export function SettingsPage() {
             {saving === "forex" ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
-              "Update"
+              "Simpan"
             )}
           </Button>
         </CardFooter>
@@ -508,11 +506,11 @@ export function SettingsPage() {
 
       <Card className="border-border ">
         <CardHeader>
-          <CardTitle className="text-lg">Default Quotation Terms</CardTitle>
+          <CardTitle className="text-lg">Syarat default penawaran</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="pay">Payment terms</Label>
+            <Label htmlFor="pay">Syarat pembayaran</Label>
             <Input
               id="pay"
               value={row.paymentTerms}
@@ -522,7 +520,7 @@ export function SettingsPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="del">Delivery terms</Label>
+            <Label htmlFor="del">Syarat pengiriman</Label>
             <Input
               id="del"
               value={row.deliveryTerms}
@@ -532,7 +530,7 @@ export function SettingsPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="war">Warranty terms</Label>
+            <Label htmlFor="war">Syarat garansi</Label>
             <Input
               id="war"
               value={row.warrantyTerms}
@@ -542,7 +540,7 @@ export function SettingsPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="val">Validity (days)</Label>
+            <Label htmlFor="val">Masa berlaku (hari)</Label>
             <Input
               id="val"
               type="number"
@@ -555,7 +553,7 @@ export function SettingsPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="tc">Terms &amp; conditions (default)</Label>
+            <Label htmlFor="tc">Syarat &amp; ketentuan default</Label>
             <textarea
               id="tc"
               className="border-input bg-background focus-visible:ring-ring flex min-h-[120px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
@@ -586,7 +584,7 @@ export function SettingsPage() {
             {saving === "terms" ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
-              "Save"
+              "Simpan"
             )}
           </Button>
         </CardFooter>

@@ -234,3 +234,17 @@ Update this file when:
 
 Treat this document, together with `PRODUCTION-HARNESS.md`, as the answer to
 *"is the UI ready to ship?"* beyond what the linter and unit tests can see.
+
+---
+
+## 8. Transformation cadence (UI-only track)
+
+For large UI/UX transformations, use this three-pass cadence and keep domain
+logic untouched:
+
+1. **Foundation pass** — standardize shell, tokens, and core copy patterns.
+2. **Flow pass** — improve task flow and state feedback per route.
+3. **Polish pass** — close a11y checklist and visual baselines for all
+   touched routes.
+
+Every pass ends with `UI-PR-CHECKLIST.md` walkthrough + visual diff review.
