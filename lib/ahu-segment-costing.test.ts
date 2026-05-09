@@ -1,6 +1,14 @@
 import type { ComponentCatalog, MaterialPrice, ProfileData } from "@prisma/client";
 import { computeAhuSegmentCostingBlocks } from "./ahu-segment-costing";
 import { normalizeCostingScope } from "./costing-scope";
+import {
+  calculateCoil,
+  calculateDamper,
+  calculateDrainPan,
+  calculateFramePanel,
+  calculateSkid,
+  calculateStructure,
+} from "./calculations";
 
 function material(code: string, name: string, pricePerKg: number): MaterialPrice {
   return {
@@ -114,5 +122,81 @@ describe("computeAhuSegmentCostingBlocks", () => {
     expect(byCategory.get("Inlet/Outlet Opening")).toBeGreaterThan(0);
     expect(byCategory.get("Frame & Panel")).toBe(0);
     expect(byCategory.get("Fan & Motor")).toBe(0);
+  });
+
+  it("matches golden subtotal parity for core modules at 1420/1930/1625", () => {
+    const dimH = 1420;
+    const dimW = 1930;
+    const dimD = 1625;
+    const blocks = computeAhuSegmentCostingBlocks({
+      dimH,
+      dimW,
+      dimD,
+      profileType: "5060Y-NA06",
+      segmentQty: 1,
+      nSections: 2,
+      scope: normalizeCostingScope({ isFullAhu: true }),
+      mergedParams: {
+        coil: { FH: 762, FL: 733, rows: 6, FPI: 10, circuits: 1 },
+        damper: { W: dimW, H: dimH, includeFA: true, includeRA: true },
+      },
+      materials,
+      profiles,
+      components,
+    });
+
+    const subtotalByCategory = new Map(
+      blocks.map((b) => [b.category, b.items.reduce((sum, item) => sum + item.subtotal, 0)])
+    );
+
+    const expected = new Map<string, number>([
+      [
+        "Frame & Panel",
+        calculateFramePanel({
+          H: dimH,
+          W: dimW,
+          D: dimD,
+          profileType: "5060Y-NA06",
+          nSections: 2,
+          materials,
+          profiles,
+        }).reduce((sum, item) => sum + item.subtotal, 0),
+      ],
+      ["Skid", calculateSkid({ W: dimW, D: dimD, materials }).reduce((sum, item) => sum + item.subtotal, 0)],
+      [
+        "Structure",
+        calculateStructure({ H: dimH, W: dimW, D: dimD, materials }).reduce(
+          (sum, item) => sum + item.subtotal,
+          0
+        ),
+      ],
+      [
+        "Drain Pan",
+        calculateDrainPan({ H: dimH, W: dimW, D: dimD, materials }).reduce((sum, item) => sum + item.subtotal, 0),
+      ],
+      [
+        "Coil",
+        calculateCoil({
+          FH: 762,
+          FL: 733,
+          rows: 6,
+          FPI: 10,
+          circuits: 1,
+          materials,
+        }).reduce((sum, item) => sum + item.subtotal, 0),
+      ],
+      [
+        "Damper",
+        [
+          ...calculateDamper({ W: dimW, H: dimH, type: "FA", profiles, materials, components }),
+          ...calculateDamper({ W: dimW, H: dimH, type: "RA", profiles, materials, components }),
+        ].reduce((sum, item) => sum + item.subtotal, 0),
+      ],
+    ]);
+
+    for (const [category, expectedSubtotal] of expected.entries()) {
+      const actual = subtotalByCategory.get(category) ?? 0;
+      expect(Math.abs(actual - expectedSubtotal)).toBeLessThan(1e-6);
+    }
   });
 });

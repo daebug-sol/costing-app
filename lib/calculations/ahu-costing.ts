@@ -35,6 +35,23 @@ export type CoilRowIntermediate = {
   J209?: Decimal.Value | null;
 };
 
+export type StructureWeightInput = {
+  H: Decimal.Value;
+  W: Decimal.Value;
+  D?: Decimal.Value;
+};
+
+export type CoilCostBlockInput = {
+  FH: Decimal.Value;
+  FL: Decimal.Value;
+  rows: Decimal.Value;
+  FPI: Decimal.Value;
+  circuits: Decimal.Value;
+  alFinPricePerKg: Decimal.Value;
+  copperPricePerKg: Decimal.Value;
+  giPricePerKg: Decimal.Value;
+};
+
 // --- Small, exact helpers (examples from dump) ---
 
 /**
@@ -95,22 +112,58 @@ export function coilCostRoundUpSample(i209: Decimal.Value, g209: Decimal.Value, 
 export function calculateFrameWeight(_input: FramePanelDims & { profileCode: string }): {
   totalKg: Decimal;
 } {
-  void _input;
-  throw new Error(
-    "calculateFrameWeight: implement from excel-formulas-dump.json → sheet \"2. AHU-Frame & Panel\""
-  );
+  /**
+   * Base parity-safe mass model:
+   * panel skin mass only (GI 1.0mm + 5% liner waste) with
+   * rectangular AHU casing area: 2*(HW + WD + HD).
+   *
+   * Profile/corner/clip pieces still come from module-level calculators.
+   */
+  void _input.profileCode;
+  const Hm = d(_input.H).div(1000);
+  const Wm = d(_input.W).div(1000);
+  const Dm = d(_input.D).div(1000);
+  const areaM2 = d(2).mul(Hm.mul(Wm).add(Wm.mul(Dm)).add(Hm.mul(Dm)));
+  const density = d(8030);
+  const thicknessM = d("0.001");
+  const linerWaste = d("1.05");
+  const totalKg = areaM2.mul(density).mul(thicknessM).mul(linerWaste);
+  return { totalKg };
 }
 
 /**
  * Structure block — sheet `3. AHU-Structure`.
  */
-export function calculateStructureWeight(_input: Record<string, Decimal.Value>): {
+export function calculateStructureWeight(_input: StructureWeightInput): {
   totalKg: Decimal;
 } {
-  void _input;
-  throw new Error(
-    'calculateStructureWeight: implement from excel-formulas-dump.json → sheet "3. AHU-Structure"'
-  );
+  /**
+   * Mirrors the same five GI rows used by `calculateStructure`:
+   * - supply flange W/H
+   * - fan partition
+   * - filter rail H/W
+   */
+  void _input.D;
+  const Hm = d(_input.H).div(1000);
+  const Wm = d(_input.W).div(1000);
+  const giDensity = d(8030);
+  const t = d("0.0015");
+  const widthStrip = d("0.1");
+  const waste = d("1.15");
+
+  const kgSupFlangeW = t.mul(widthStrip).mul(Wm).mul(giDensity).mul(waste).mul(2);
+  const kgSupFlangeH = t.mul(widthStrip).mul(Hm).mul(giDensity).mul(waste).mul(2);
+  const kgFanPart = t.mul(Hm).mul(Wm).mul(giDensity).mul(waste);
+  const kgFilterH = t.mul(widthStrip).mul(Hm).mul(giDensity).mul(waste).mul(4);
+  const kgFilterW = t.mul(widthStrip).mul(Wm).mul(giDensity).mul(waste).mul(4);
+
+  return {
+    totalKg: kgSupFlangeW
+      .add(kgSupFlangeH)
+      .add(kgFanPart)
+      .add(kgFilterH)
+      .add(kgFilterW),
+  };
 }
 
 /**
@@ -142,11 +195,49 @@ export function calculateDrainPanCost(input: DrainPanCostParams): {
 /**
  * Coil cost block — sheet `CoilCost 20251027`.
  */
-export function calculateCoilCostBlock(_input: Record<string, Decimal.Value>): {
+export function calculateCoilCostBlock(_input: CoilCostBlockInput): {
   lines: { ref: string; amount: Decimal }[];
 } {
-  void _input;
-  throw new Error(
-    'calculateCoilCostBlock: implement from excel-formulas-dump.json → sheet "CoilCost 20251027"'
-  );
+  const FH = d(_input.FH);
+  const FL = d(_input.FL);
+  const rows = d(_input.rows);
+  const circuits = d(_input.circuits);
+  const fpi = d(_input.FPI);
+  const fpiSafe = fpi.lte(0) ? d(1) : fpi;
+
+  const fhM = FH.div(1000);
+  const flM = FL.div(1000);
+
+  // Fin kg: same base equation as module calculator.
+  const finKg = fhM
+    .mul(flM)
+    .mul(FL.div(fpiSafe.mul("25.4")))
+    .mul("0.00011")
+    .mul(2700)
+    .mul("1.034");
+
+  // Tube kg: pi*((OD^2-ID^2)/4)*rows*circuits*FHm*density*allowance
+  const tubeCrossSection = d(Math.PI).mul(d("0.009525").pow(2).minus(d("0.008525").pow(2))).div(4);
+  const tubeKg = tubeCrossSection.mul(rows).mul(circuits).mul(fhM).mul(8900).mul("1.02");
+
+  // Header kg (GI row)
+  const headerKg = d("0.0015")
+    .mul("0.268")
+    .mul(fhM.add("0.1"))
+    .mul(8030)
+    .mul("1.15")
+    .mul(2);
+
+  const finCost = finKg.mul(_input.alFinPricePerKg);
+  const tubeCost = tubeKg.mul(_input.copperPricePerKg);
+  const headerCost = headerKg.mul(_input.giPricePerKg);
+
+  return {
+    lines: [
+      { ref: "FIN", amount: finCost },
+      { ref: "TUBE", amount: tubeCost },
+      { ref: "HEADER", amount: headerCost },
+      { ref: "TOTAL", amount: finCost.add(tubeCost).add(headerCost) },
+    ],
+  };
 }

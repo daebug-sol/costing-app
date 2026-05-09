@@ -9,5 +9,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `.cursor/rules/*.mdc` | **Rules**: core stack/scope, calculations, API routes, UI — always-on or glob-scoped. |
 | `.cursor/skills/*/SKILL.md` | **Skills**: playbooks for formula changes, Prisma/data, exports, production release. |
 | `docs/PRODUCTION-HARNESS.md` | **Harness**: SaaS/production checklist (auth, tenancy, DB, CI, ops) — not replaceable by prompts alone. |
+| `docs/GIT-WORKTREES.md` | **Worktrees**: branch per feature in a separate folder; open that folder in Cursor to shrink context. Scripts: `scripts/new-worktree.ps1`, `remove-worktree.ps1`. |
 
 When a task touches costing math, use the **costing-formula-change** skill. When deploying or hardening for production, read **PRODUCTION-HARNESS.md** and the **production-release** skill.

@@ -28,4 +28,56 @@ describe("calculateDrainPan", () => {
     });
     expect(Math.abs(sumKg - weightKg.toNumber()) < 0.0001).toBe(true);
   });
+
+  it("matches Decimal parity for a compact drain pan scenario", () => {
+    const H = 900;
+    const W = 1000;
+    const D = 800;
+    const materials = [
+      {
+        code: "SUS304-1.5",
+        name: "SS304",
+        category: "SS",
+        density: 8000,
+        pricePerKg: 50000,
+        currency: "IDR",
+        unit: "kg",
+      },
+    ] as MaterialPrice[];
+    const items = calculateDrainPan({ H, W, D, materials });
+    const sumKg = items.reduce((s, it) => s + it.qty, 0);
+    const { weightKg } = calculateDrainPanCost({
+      H,
+      W,
+      D,
+      pricePerKgSs304: 50000,
+    });
+    expect(Math.abs(sumKg - weightKg.toNumber()) < 0.0001).toBe(true);
+  });
+
+  it("matches Decimal parity for a larger drain pan scenario", () => {
+    const H = 1800;
+    const W = 2400;
+    const D = 2200;
+    const materials = [
+      {
+        code: "SUS304-1.5",
+        name: "SS304",
+        category: "SS",
+        density: 8000,
+        pricePerKg: 50000,
+        currency: "IDR",
+        unit: "kg",
+      },
+    ] as MaterialPrice[];
+    const items = calculateDrainPan({ H, W, D, materials });
+    const sumKg = items.reduce((s, it) => s + it.qty, 0);
+    const { weightKg } = calculateDrainPanCost({
+      H,
+      W,
+      D,
+      pricePerKgSs304: 50000,
+    });
+    expect(Math.abs(sumKg - weightKg.toNumber()) < 0.0001).toBe(true);
+  });
 });
