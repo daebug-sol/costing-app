@@ -415,7 +415,7 @@ export function CustomDatabasePanel({
     };
 
     window.addEventListener("keydown", onKeyDown, { capture: true });
-    return () => window.removeEventListener("keydown", onKeyDown, { capture: true } as any);
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
   }, [activeFileId, table, focusedCell, selectedCell, columns, focusCellInput]);
 
   const activeFormulaRefs = useMemo(() => {
@@ -942,13 +942,13 @@ export function CustomDatabasePanel({
         <Dialog open={newFileDialogOpen} onOpenChange={setNewFileDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New File</DialogTitle>
+              <DialogTitle>Buat file baru</DialogTitle>
               <DialogDescription>
                 Tentukan nama file dan kategori kolom dinamis untuk custom database.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
-              <Label htmlFor="file-name">File name</Label>
+              <Label htmlFor="file-name">Nama file</Label>
               <Input
                 id="file-name"
                 value={newFileName}
@@ -958,7 +958,7 @@ export function CustomDatabasePanel({
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Schema dynamic columns (optional)</Label>
+                <Label>Skema kolom dinamis (opsional)</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -967,7 +967,7 @@ export function CustomDatabasePanel({
                   }
                 >
                   <Plus className="size-4" />
-                  Add schema column
+                  Tambah kolom skema
                 </Button>
               </div>
               <div className="space-y-2">
@@ -1545,7 +1545,7 @@ export function CustomDatabasePanel({
               setAddColumnDialogOpen(true);
             }}
           >
-            Add Column
+            Tambah kolom
           </button>
           <button
             type="button"
@@ -1555,7 +1555,7 @@ export function CustomDatabasePanel({
               void addRow();
             }}
           >
-            Add Row
+            Tambah baris
           </button>
           {ctxMenu.rowId ? (
             <button
@@ -1567,7 +1567,7 @@ export function CustomDatabasePanel({
                 if (rowId) void deleteRow(rowId);
               }}
             >
-              Delete Row
+              Hapus baris
             </button>
           ) : null}
           {ctxMenu.columnId && !isLocked(ctxMenu.columnId) ? (
@@ -1580,7 +1580,7 @@ export function CustomDatabasePanel({
                 if (colId) void deleteColumn(colId);
               }}
             >
-              Delete Column
+              Hapus kolom
             </button>
           ) : null}
           {(ctxMenu.rowId && ctxMenu.columnId) || selectedCell ? (
@@ -1594,7 +1594,7 @@ export function CustomDatabasePanel({
                 if (rowId && colId) void clearCell(rowId, colId);
               }}
             >
-              Delete Cell
+              Kosongkan sel
             </button>
           ) : null}
         </div>
@@ -1603,7 +1603,7 @@ export function CustomDatabasePanel({
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Import mode</DialogTitle>
+            <DialogTitle>Mode import</DialogTitle>
             <DialogDescription>
               Pilih cara import Excel untuk file custom database ini.
             </DialogDescription>
@@ -1632,7 +1632,7 @@ export function CustomDatabasePanel({
                 await importIntoTable(file, "new");
               }}
             >
-              Create New File
+              Buat file baru
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1641,13 +1641,13 @@ export function CustomDatabasePanel({
       <Dialog open={addColumnDialogOpen} onOpenChange={setAddColumnDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Column</DialogTitle>
+            <DialogTitle>Tambah kolom</DialogTitle>
             <DialogDescription>
               Tambah kolom dinamis di area antara Name dan UOM.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="add-column-name">Column name</Label>
+            <Label htmlFor="add-column-name">Nama kolom</Label>
             <Input
               id="add-column-name"
               value={addColumnName}
@@ -1660,8 +1660,8 @@ export function CustomDatabasePanel({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="text">Text</SelectItem>
-                <SelectItem value="number">Number</SelectItem>
+                <SelectItem value="text">Teks</SelectItem>
+                <SelectItem value="number">Angka</SelectItem>
                 <SelectItem value="currency">Finance/Forex</SelectItem>
                 <SelectItem value="uom">UOM</SelectItem>
                 <SelectItem value="formula">Formula</SelectItem>
@@ -1670,7 +1670,7 @@ export function CustomDatabasePanel({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setAddColumnDialogOpen(false)}>
-              Cancel
+              Batal
             </Button>
             <Button
               type="button"
@@ -1683,7 +1683,7 @@ export function CustomDatabasePanel({
                 setAddColumnDialogOpen(false);
               }}
             >
-              Add
+              Tambah
             </Button>
           </DialogFooter>
         </DialogContent>

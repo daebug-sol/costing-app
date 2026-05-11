@@ -1913,6 +1913,13 @@ export function CostingWorkspace() {
         </div>
       )}
 
+      <div className="mx-auto w-full max-w-[1400px] px-4 pt-5 sm:px-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Costing</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Kelola proyek, assembly, dan rincian biaya tanpa mengubah logika perhitungan.
+        </p>
+      </div>
+
       <div className="min-h-0 flex-1 overflow-hidden p-3 lg:p-4">
         <div className="grid h-full min-h-0 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,40%)_minmax(0,60%)]">
       {/* Left */}
@@ -1929,7 +1936,7 @@ export function CostingWorkspace() {
               onClick={() => setNewOpen(true)}
             >
               <Plus className="size-3.5" />
-              Create New
+              Tambah proyek
             </Button>
           </div>
           <div className="relative mt-2">
@@ -2033,7 +2040,7 @@ export function CostingWorkspace() {
             <EmptyState
               icon={FolderKanban}
               title="Belum ada proyek"
-              description='Klik tombol "Create New" di atas untuk membuat proyek costing.'
+              description='Klik tombol "Tambah proyek" di atas untuk membuat proyek costing.'
               className="py-8"
             />
           ) : filteredProjects.length === 0 ? (
@@ -2110,7 +2117,7 @@ export function CostingWorkspace() {
           <EmptyState
             icon={FolderKanban}
             title="Pilih atau buat proyek"
-            description='Pilih proyek di daftar kiri, atau buat baru dengan tombol "Create New" di pojok atas daftar.'
+            description='Pilih proyek di daftar kiri, atau buat baru dengan tombol "Tambah proyek" di pojok atas daftar.'
             className="h-[min(480px,calc(100vh-8rem))]"
           />
         ) : (

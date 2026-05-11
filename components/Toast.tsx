@@ -34,10 +34,10 @@ export function Toaster() {
           className={cn(
             "flex items-start gap-3 rounded-lg border px-3 py-2.5 text-sm shadow-lg",
             t.variant === "success" &&
-              "border-emerald-200 bg-white text-slate-800",
-            t.variant === "error" && "border-red-200 bg-white text-slate-800",
+              "border-emerald-200 bg-card text-foreground",
+            t.variant === "error" && "border-red-200 bg-card text-foreground",
             t.variant === "warning" &&
-              "border-amber-200 bg-white text-slate-800"
+              "border-amber-200 bg-card text-foreground"
           )}
         >
           {iconFor(t.variant)}
@@ -45,7 +45,7 @@ export function Toaster() {
           <button
             type="button"
             onClick={() => dismiss(t.id)}
-            className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground shrink-0 rounded p-0.5"
             aria-label="Dismiss"
           >
             <X className="size-4" />

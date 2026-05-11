@@ -378,7 +378,7 @@ export function DocumentationModule() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    const cancelled = false;
     (async () => {
       setLoading(true);
       await Promise.all([loadList(), loadSettings(), loadAvailable()]);
@@ -505,7 +505,7 @@ export function DocumentationModule() {
   useEffect(() => {
     if (!fromProject || !settings || loading || fromProjectHandled.current) return;
     fromProjectHandled.current = true;
-    let cancelled = false;
+    const cancelled = false;
     (async () => {
       const r = await fetch("/api/quotations", { method: "POST" });
       if (!r.ok || cancelled) return;
@@ -1059,7 +1059,8 @@ export function DocumentationModule() {
           <Button
             type="button"
             size="sm"
-            className="border-red-700/90 bg-[#E5252A] text-white hover:bg-[#c91f24] dark:border-red-600 dark:bg-[#E5252A] dark:hover:bg-[#c91f24]"
+            variant="outline"
+            className="border-border bg-card text-foreground"
             onClick={() => setExportOpen("pdf")}
           >
             Export PDF <ChevronDown className="ml-1 size-4" />
@@ -1067,7 +1068,8 @@ export function DocumentationModule() {
           <Button
             type="button"
             size="sm"
-            className="border-emerald-700/90 bg-[#217346] text-white hover:bg-[#1a5c38] dark:border-emerald-600 dark:bg-[#217346] dark:hover:bg-[#1a5c38]"
+            variant="outline"
+            className="border-border bg-card text-foreground"
             onClick={() => setExportOpen("excel")}
           >
             Export Excel <ChevronDown className="ml-1 size-4" />

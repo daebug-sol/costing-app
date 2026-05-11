@@ -556,11 +556,11 @@ export function DashboardPage() {
       </Card>
 
       <p className="text-center text-xs text-muted-foreground">
-        <Link href="/costing" className="text-blue-600 hover:underline">
+        <Link href="/costing" className="text-primary underline-offset-4 hover:underline">
           Costing
         </Link>
         {" · "}
-        <Link href="/documentation" className="text-blue-600 hover:underline">
+        <Link href="/documentation" className="text-primary underline-offset-4 hover:underline">
           Documentation
         </Link>
       </p>
