@@ -32,7 +32,7 @@ Status modul:
 - **Strict parity modul inti**: `100%` (6/6 modul).
 - **Partial parity modul inti**: `100%` (6/6 modul minimal partial).
 
-**Siklus eksekusi (terbaru):** dump-backed subtotal/range regression sudah mencakup Frame, Coil, Damper; golden subtotal Structure + Skid + Drain Pan hardening; serta verifikasi integrasi route `recalculate`.
+**Siklus eksekusi (terbaru):** dump-backed subtotal/range regression sudah mencakup Frame, Coil, Damper; struktur diperkuat dengan konstanta dump (`F18=7860`, `C18=1.5`, `D18=100`) hingga layer line-item dan parity konsisten; serta integrasi route `recalculate` kini mengunci assertion numerik terhadap baseline dump (bukan hanya alur mock).
 
 ## Matrix parity modul inti (6 modul)
 
@@ -40,7 +40,7 @@ Status modul:
 | --- | --- | --- | --- | --- |
 | Frame & Panel | `2. AHU-Frame & Panel` | Full | Full | Dump-backed range/subtotal test meliputi chain geometri + subtotal `N96/O96` (`SUM(N18:N95)` / `SUM(O18:O95)`) di `lib/calculations/ahu-costing.test.ts`. |
 | Skid | `1. AHU-Skid` | Full | Full | Test baseline + skenario tambahan + subtotal closed-form untuk konstanta skid (`0.003*0.1`, `0.002*0.08`, density `7860`) di `lib/calculations/skid.test.ts`. |
-| Structure | `3. AHU-Structure` | Full | Full | Test golden subtotal lintas fungsi (`calculateStructure` vs `calculateStructureWeight`) + verifikasi konstanta dump (`F18`, `C18`, `D18`) di `lib/calculations/structure.test.ts`. |
+| Structure | `3. AHU-Structure` | Full | Full | Test golden subtotal lintas fungsi + verifikasi konstanta dump (`F18=7860`, `C18=1.5`, `D18=100`) dan formula line-item memakai density workbook secara eksplisit di `lib/calculations/structure.test.ts` dan `lib/ahu-segment-costing.test.ts`. |
 | Drain Pan | `drainpan` | Full | Full | Ada sinkronisasi formula via `calculateDrainPanCost` + test parity lintas fungsi di `lib/calculations/drainPan.test.ts`. |
 | Coil | `CoilCost 20251027` | Full | Full | Dump-backed test mencakup row chain utama + subtotal range (`V235 = SUM(R235:R238)`) dan validasi `calculateCoilCostBlock` total material. |
 | Damper | `VolDamperCost2023 FA ` / `VolDamperCost2023 RA ` | Full | Full | Dump-backed test mencakup chain `P44/Q44/P45/Q45` dan subtotal cost `S59 = SUM(S50:S58)` untuk FA dan RA. |
@@ -54,7 +54,7 @@ Status modul:
 ## Integrasi recalculate
 
 - **Status**: Verified.
-- Bukti: test route `app/api/projects/[id]/segments/[segmentId]/recalculate/route.test.ts` memverifikasi flow validasi -> compute -> JSON response dengan mock Prisma.
+- Bukti: test route `app/api/projects/[id]/segments/[segmentId]/recalculate/route.test.ts` memverifikasi flow validasi -> compute -> persist section/subtotal -> JSON response, dengan assertion numerik subtotal Structure yang dihitung dari konstanta workbook dump.
 
 ## Definisi done (untuk update audit berikutnya)
 

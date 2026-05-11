@@ -146,7 +146,8 @@ export function calculateStructureWeight(_input: StructureWeightInput): {
   void _input.D;
   const Hm = d(_input.H).div(1000);
   const Wm = d(_input.W).div(1000);
-  const giDensity = d(8030);
+  // Keep aligned with workbook `3. AHU-Structure` material density (F18).
+  const giDensity = d(7860);
   const t = d("0.0015");
   const widthStrip = d("0.1");
   const waste = d("1.15");

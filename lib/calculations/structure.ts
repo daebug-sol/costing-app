@@ -1,7 +1,8 @@
 import type { CalcLineItem, MaterialPrice } from "./types";
 import { finite, findMaterial } from "./types";
 
-const GI_DENSITY = 8030;
+// Workbook parity baseline (`3. AHU-Structure` F18) uses 7860 kg/m3.
+const GI_DENSITY = 7860;
 
 function line(
   partial: Omit<CalcLineItem, "currency" | "wasteFactor" | "subtotal"> & {
