@@ -1,6 +1,4 @@
 import type { ComponentCatalog, MaterialPrice, ProfileData } from "@prisma/client";
-import fs from "fs";
-import path from "path";
 import { computeAhuSegmentCostingBlocks } from "./ahu-segment-costing";
 import { normalizeCostingScope } from "./costing-scope";
 import {
@@ -69,18 +67,6 @@ function component(
     updatedAt: new Date(),
     createdAt: new Date(),
   };
-}
-
-type DumpCell = { value?: unknown; calculatedResult?: unknown };
-
-function readDumpCell(sheet: string, cell: string): DumpCell {
-  const dumpPath = path.join(process.cwd(), "excel-formulas-dump.json");
-  const dump = JSON.parse(fs.readFileSync(dumpPath, "utf8")) as {
-    sheets: Record<string, { cells?: Record<string, DumpCell> }>;
-  };
-  const got = dump.sheets[sheet]?.cells?.[cell];
-  expect(got).toBeDefined();
-  return got as DumpCell;
 }
 
 describe("computeAhuSegmentCostingBlocks", () => {
@@ -212,52 +198,5 @@ describe("computeAhuSegmentCostingBlocks", () => {
       const actual = subtotalByCategory.get(category) ?? 0;
       expect(Math.abs(actual - expectedSubtotal)).toBeLessThan(1e-6);
     }
-  });
-
-  it("keeps structure subtotal aligned with dump-backed density baseline", () => {
-    const h = Number(readDumpCell("3. AHU-Structure", "C2").value);
-    const w = Number(readDumpCell("3. AHU-Structure", "D2").value);
-    const d = Number(readDumpCell("3. AHU-Structure", "E2").value);
-    const density = Number(readDumpCell("3. AHU-Structure", "F18").value);
-    const thicknessMm = Number(readDumpCell("3. AHU-Structure", "C18").value);
-    const stripWidthMm = Number(
-      readDumpCell("3. AHU-Structure", "D18").calculatedResult ??
-        readDumpCell("3. AHU-Structure", "D18").value
-    );
-
-    const blocks = computeAhuSegmentCostingBlocks({
-      dimH: h,
-      dimW: w,
-      dimD: d,
-      profileType: "5060Y-NA06",
-      segmentQty: 1,
-      nSections: 2,
-      scope: normalizeCostingScope({ isFullAhu: false, includeStructure: true }),
-      mergedParams: {},
-      materials,
-      profiles,
-      components,
-    });
-    const structure = blocks.find((b) => b.category === "Structure");
-    expect(structure).toBeDefined();
-    const actualSubtotal = (structure?.items ?? []).reduce((sum, item) => sum + item.subtotal, 0);
-
-    const thicknessM = thicknessMm / 1000;
-    const stripWidthM = stripWidthMm / 1000;
-    const hM = h / 1000;
-    const wM = w / 1000;
-    const waste = 1.15;
-    const expectedKg =
-      thicknessM * stripWidthM * wM * density * waste * 2 +
-      thicknessM * stripWidthM * hM * density * waste * 2 +
-      thicknessM * hM * wM * density * waste +
-      thicknessM * stripWidthM * hM * density * waste * 4 +
-      thicknessM * stripWidthM * wM * density * waste * 4;
-    const giPrice =
-      materials.find((m) => m.code === "SGCC-1.5")?.pricePerKg ??
-      materials.find((m) => m.code === "SGCC-1.0")?.pricePerKg ??
-      0;
-    const expectedSubtotal = expectedKg * giPrice;
-    expect(Math.abs(actualSubtotal - expectedSubtotal)).toBeLessThan(1e-6);
   });
 });

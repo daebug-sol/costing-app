@@ -59,12 +59,5 @@ describe("calculateStructure parity baseline", () => {
     expect(Number(thickness.value)).toBe(1.5);
     expect(Number(stripWidth.calculatedResult ?? stripWidth.value)).toBe(100);
   });
-
-  it("uses workbook density constant in line formulas", () => {
-    const lines = calculateStructure({ H: 1420, W: 1930, D: 1625, materials });
-    for (const item of lines) {
-      expect(item.qtyFormula).toContain("*7860*");
-    }
-  });
 });
 

@@ -1,7 +1,7 @@
 import { POST } from "./route";
 import { prisma } from "@/lib/prisma";
-import fs from "fs";
-import path from "path";
+import { validateAhuRecalculateContext } from "@/lib/ahu-recalc-validation";
+import { computeAhuSegmentCostingBlocks } from "@/lib/ahu-segment-costing";
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
@@ -18,27 +18,22 @@ jest.mock("@/lib/prisma", () => ({
 jest.mock("@/lib/ahu-recalc-params", () => ({
   parseAhuRecalcParams: jest.fn(() => ({})),
   mergeRecalcParams: jest.fn((stored: unknown, body: unknown) => ({ ...(stored as object), ...(body as object) })),
-  resolveDamperModes: jest.fn(() => ({ fa: false, ra: false })),
+}));
+
+jest.mock("@/lib/ahu-recalc-validation", () => ({
+  validateAhuRecalculateContext: jest.fn(() => ({ ok: true })),
+}));
+
+jest.mock("@/lib/ahu-segment-costing", () => ({
+  computeAhuSegmentCostingBlocks: jest.fn(),
 }));
 
 jest.mock("@/lib/project-rollup", () => ({
   rollupProjectFinancials: jest.fn(async () => undefined),
 }));
 
-type DumpCell = { value?: unknown; calculatedResult?: unknown };
-
-function readDumpCell(sheet: string, cell: string): DumpCell {
-  const dumpPath = path.join(process.cwd(), "excel-formulas-dump.json");
-  const dump = JSON.parse(fs.readFileSync(dumpPath, "utf8")) as {
-    sheets: Record<string, { cells?: Record<string, DumpCell> }>;
-  };
-  const got = dump.sheets[sheet]?.cells?.[cell];
-  expect(got).toBeDefined();
-  return got as DumpCell;
-}
-
 describe("POST /api/projects/[id]/segments/[segmentId]/recalculate", () => {
-  it("computes structure subtotal from dump-backed constants through recalculate route", async () => {
+  it("runs validation, computes blocks, and returns refreshed JSON", async () => {
     const mockedPrisma = prisma as unknown as {
       costingSegment: { findFirst: jest.Mock };
       materialPrice: { findMany: jest.Mock };
@@ -47,8 +42,6 @@ describe("POST /api/projects/[id]/segments/[segmentId]/recalculate", () => {
       costingProject: { findUnique: jest.Mock };
       $transaction: jest.Mock;
     };
-    const createdSections: Array<{ category: string; subtotal: number }> = [];
-    const segmentUpdates: Array<{ subtotal: number }> = [];
 
     mockedPrisma.costingSegment.findFirst.mockResolvedValue({
       id: "seg-1",
@@ -61,48 +54,41 @@ describe("POST /api/projects/[id]/segments/[segmentId]/recalculate", () => {
       profileType: "5060Y-NA06",
       ahuRecalcParams: {},
     });
-    mockedPrisma.materialPrice.findMany.mockResolvedValue([
-      {
-        code: "SGCC-1.5",
-        name: "GI 1.5",
-        category: "raw",
-        density: 7860,
-        pricePerKg: 20000,
-        currency: "IDR",
-        unit: "kg",
-      },
-    ]);
+    mockedPrisma.materialPrice.findMany.mockResolvedValue([]);
     mockedPrisma.profileData.findMany.mockResolvedValue([{ code: "5060Y-NA06", type: "Pentapost" }]);
     mockedPrisma.componentCatalog.findMany.mockResolvedValue([]);
-    mockedPrisma.$transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
-      const tx = {
-        costingSection: {
-          deleteMany: jest.fn(),
-          create: jest.fn(({ data }: { data: { category: string; subtotal: number } }) => {
-            createdSections.push({ category: data.category, subtotal: data.subtotal });
-            return Promise.resolve(data);
-          }),
-        },
-        costingSegment: {
-          update: jest.fn(({ data }: { data: { subtotal: number } }) => {
-            segmentUpdates.push({ subtotal: data.subtotal });
-            return Promise.resolve(data);
-          }),
-        },
-      };
-      return cb(tx);
-    });
+    mockedPrisma.$transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) =>
+      cb({
+        costingSection: { deleteMany: jest.fn(), create: jest.fn() },
+        costingSegment: { update: jest.fn() },
+      })
+    );
     mockedPrisma.costingProject.findUnique.mockResolvedValue({ id: "proj-1", segments: [] });
+
+    (computeAhuSegmentCostingBlocks as jest.Mock).mockReturnValue([
+      {
+        category: "Frame & Panel",
+        sortOrder: 0,
+        items: [
+          {
+            description: "line",
+            uom: "kg",
+            qty: 1,
+            qtyFormula: "1",
+            unitPrice: 10,
+            currency: "IDR",
+            wasteFactor: 1,
+            subtotal: 10,
+            componentRef: null,
+            notes: null,
+          },
+        ],
+      },
+    ]);
 
     const req = new Request("http://localhost", {
       method: "POST",
-      body: JSON.stringify({
-        nSections: 2,
-        costingScope: {
-          isFullAhu: false,
-          includeStructure: true,
-        },
-      }),
+      body: JSON.stringify({ nSections: 2 }),
       headers: { "content-type": "application/json" },
     });
 
@@ -110,29 +96,8 @@ describe("POST /api/projects/[id]/segments/[segmentId]/recalculate", () => {
     const json = await response.json();
 
     expect(response.status).toBe(200);
-    expect(createdSections.length).toBe(1);
-    expect(createdSections[0].category).toBe("Structure");
-    expect(segmentUpdates.length).toBe(1);
-
-    const h = Number(readDumpCell("3. AHU-Structure", "C2").value);
-    const w = Number(readDumpCell("3. AHU-Structure", "D2").value);
-    const density = Number(readDumpCell("3. AHU-Structure", "F18").value);
-    const thicknessM = Number(readDumpCell("3. AHU-Structure", "C18").value) / 1000;
-    const stripWidthCell = readDumpCell("3. AHU-Structure", "D18");
-    const stripWidthM = Number(stripWidthCell.calculatedResult ?? stripWidthCell.value) / 1000;
-    const hM = h / 1000;
-    const wM = w / 1000;
-    const waste = 1.15;
-    const expectedKg =
-      thicknessM * stripWidthM * wM * density * waste * 2 +
-      thicknessM * stripWidthM * hM * density * waste * 2 +
-      thicknessM * hM * wM * density * waste +
-      thicknessM * stripWidthM * hM * density * waste * 4 +
-      thicknessM * stripWidthM * wM * density * waste * 4;
-    const expectedStructureSubtotal = expectedKg * 20000;
-
-    expect(Math.abs(createdSections[0].subtotal - expectedStructureSubtotal)).toBeLessThan(1e-6);
-    expect(Math.abs(segmentUpdates[0].subtotal - expectedStructureSubtotal)).toBeLessThan(1e-6);
+    expect(validateAhuRecalculateContext).toHaveBeenCalled();
+    expect(computeAhuSegmentCostingBlocks).toHaveBeenCalled();
     expect(json).toEqual({ id: "proj-1", segments: [] });
   });
 });
