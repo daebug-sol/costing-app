@@ -8,18 +8,18 @@ Gunakan bersama:
 
 ## Target sprint terdekat
 
-Target realistis iterasi berikut:
+Target realistis iterasi audit-closure:
 
-1. Naikkan **strict parity** dari `16.7%` -> minimal `50.0%`.
-2. Tutup semua stub blocker di `lib/calculations/ahu-costing.ts`.
-3. Tambah test golden per modul prioritas tinggi (bukan sample tunggal).
+1. Pertahankan **strict parity** `100%` (6/6 modul inti) dengan regression test dump-backed.
+2. Pastikan evidensi integrasi `recalculate` mencakup assertion numerik workbook-backed, bukan sekadar flow mock.
+3. Tutup gap evidensi konstanta Structure (`7860` vs `8030`) dengan sumber tunggal yang eksplisit.
 
 ## Checklist umum (sekali per iterasi)
 
 - [ ] Regenerate dump terbaru: `npm run extract-formulas`.
 - [ ] Catat `meta.generatedAt` dari `excel-formulas-dump.json` di PR notes.
 - [ ] Pastikan input mapping UI -> `ahuRecalcParams` konsisten dengan cell/range workbook.
-- [x] Jalankan test unit parity: `npm test -- ahu-costing drainPan`.
+- [x] Jalankan test unit parity: `npm test -- ahu-costing drainPan skid structure recalculate ahu-segment-costing`.
 - [x] Update status di `docs/AHU-PARITY-AUDIT.md` setelah task modul selesai.
 
 ## Modul 1 — Frame & Panel (`2. AHU-Frame & Panel`)
@@ -47,19 +47,19 @@ Target realistis iterasi berikut:
 
 ### Implementasi
 
-- [ ] Mapping range weight & material cost utama dari sheet structure.
-- [ ] Implement `calculateStructureWeight` di `lib/calculations/ahu-costing.ts` (hapus stub throw).
-- [ ] Samakan asumsi material thickness/density dengan referensi workbook (jangan hanya default code path).
+- [x] Mapping range weight & material cost utama dari sheet structure.
+- [x] Implement `calculateStructureWeight` di `lib/calculations/ahu-costing.ts` (hapus stub throw).
+- [x] Samakan asumsi material thickness/density dengan referensi workbook (jangan hanya default code path).
 
 ### Test
 
-- [ ] Tambah test golden structure untuk dimensi referensi yang sama dengan test frame.
-- [ ] Verifikasi subtotal structure terhadap dump.
+- [x] Tambah test golden structure untuk dimensi referensi yang sama dengan test frame.
+- [x] Verifikasi subtotal structure terhadap dump.
 
 ### Acceptance
 
-- [ ] Tidak ada stub/error path pada jalur structure parity.
-- [ ] Modul Structure naik ke minimal **Partial (kuat)** atau **Full** jika range sudah lengkap.
+- [x] Tidak ada stub/error path pada jalur structure parity.
+- [x] Modul Structure naik ke minimal **Partial (kuat)** atau **Full** jika range sudah lengkap.
 
 ## Modul 3 — Coil (`CoilCost 20251027`)
 
