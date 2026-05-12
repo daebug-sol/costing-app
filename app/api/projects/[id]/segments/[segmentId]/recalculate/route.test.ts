@@ -21,11 +21,14 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@/lib/ahu-recalc-params", () => ({
-  parseAhuRecalcParams: jest.fn(() => ({})),
-  mergeRecalcParams: jest.fn((stored: unknown, body: unknown) => ({ ...(stored as object), ...(body as object) })),
-  resolveDamperModes: jest.fn(() => ({ fa: false, ra: false })),
-}));
+jest.mock("@/lib/ahu-recalc-params", () => {
+  const actual = jest.requireActual<typeof import("@/lib/ahu-recalc-params")>("@/lib/ahu-recalc-params");
+  return {
+    ...actual,
+    parseAhuRecalcParams: jest.fn(() => ({})),
+    resolveDamperModes: jest.fn(() => ({ fa: false, ra: false })),
+  };
+});
 
 jest.mock("@/lib/project-rollup", () => ({
   rollupProjectFinancials: jest.fn(async () => undefined),
