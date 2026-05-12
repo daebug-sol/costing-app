@@ -41,6 +41,22 @@ export type AhuRecalcParams = {
     rows?: number;
     FPI?: number;
     circuits?: number;
+    /** Workbook `I209` — fin stack basis mm for `ROUNDUP((I209/25.4*FPI)*G211,0)` */
+    coilFaceMm?: number;
+    /** Dump `G211` multiplier for fin count chain */
+    finPitchFactorG211?: number;
+    finTubeOdMm?: number;
+    tubeOdMm?: number;
+    tubeWallMm?: number;
+    tubeStretchMm?: number;
+    tubePrimaryFactor?: number;
+    headerAssemblyKg?: number;
+    /** Workbook `I236` span for fin volume `J236` */
+    finPackSpanMm?: number;
+    /** Dump `O236` fin line waste multiplier */
+    finLineWaste?: number;
+    /** Dump `O237` tube line waste multiplier */
+    tubeLineWaste?: number;
     /** kW cooling — untuk spesifikasi quotation (opsional). */
     Qc?: number;
     /** kW sensible — untuk spesifikasi quotation (opsional). */

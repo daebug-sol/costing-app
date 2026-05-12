@@ -69,6 +69,8 @@ export function computeAhuSegmentCostingBlocks(
   const modules = resolveActiveModules(input.scope);
   const merged = input.mergedParams;
 
+  const frameBody = (merged.framePanel ?? {}) as Record<string, unknown>;
+
   const frameItems = modules.framePanel
     ? calculateFramePanel({
         H,
@@ -78,6 +80,20 @@ export function computeAhuSegmentCostingBlocks(
         nSections: input.nSections,
         profiles: input.profiles,
         materials: input.materials,
+        linerThicknessMm:
+          frameBody.linerThicknessMm !== undefined
+            ? finite(frameBody.linerThicknessMm, 0)
+            : undefined,
+        linerWasteFactor:
+          frameBody.linerWasteFactor !== undefined
+            ? finite(frameBody.linerWasteFactor, 0)
+            : undefined,
+        foamPanelThicknessMm:
+          frameBody.foamPanelThicknessMm !== undefined
+            ? finite(frameBody.foamPanelThicknessMm, 0)
+            : undefined,
+        foamWasteFactor:
+          frameBody.foamWasteFactor !== undefined ? finite(frameBody.foamWasteFactor, 0) : undefined,
       })
     : [];
 
@@ -137,6 +153,36 @@ export function computeAhuSegmentCostingBlocks(
         FPI: finite(coilBody.FPI, 10),
         circuits: finite(coilBody.circuits, 2),
         materials: input.materials,
+        coilFaceMm:
+          coilBody.coilFaceMm !== undefined
+            ? finite(coilBody.coilFaceMm, finite(coilBody.FL, W))
+            : undefined,
+        finPitchFactorG211:
+          coilBody.finPitchFactorG211 !== undefined
+            ? finite(coilBody.finPitchFactorG211, 0)
+            : undefined,
+        finTubeOdMm:
+          coilBody.finTubeOdMm !== undefined ? finite(coilBody.finTubeOdMm, 0) : undefined,
+        tubeOdMm: coilBody.tubeOdMm !== undefined ? finite(coilBody.tubeOdMm, 0) : undefined,
+        tubeWallMm: coilBody.tubeWallMm !== undefined ? finite(coilBody.tubeWallMm, 0) : undefined,
+        tubeStretchMm:
+          coilBody.tubeStretchMm !== undefined ? finite(coilBody.tubeStretchMm, 0) : undefined,
+        tubePrimaryFactor:
+          coilBody.tubePrimaryFactor !== undefined
+            ? finite(coilBody.tubePrimaryFactor, 0)
+            : undefined,
+        headerAssemblyKg:
+          coilBody.headerAssemblyKg !== undefined
+            ? finite(coilBody.headerAssemblyKg, 0)
+            : undefined,
+        finPackSpanMm:
+          coilBody.finPackSpanMm !== undefined ? finite(coilBody.finPackSpanMm, 0) : undefined,
+        finLineWaste:
+          coilBody.finLineWaste !== undefined ? finite(coilBody.finLineWaste as number, 0) : undefined,
+        tubeLineWaste:
+          coilBody.tubeLineWaste !== undefined
+            ? finite(coilBody.tubeLineWaste as number, 0)
+            : undefined,
       })
     : [];
 

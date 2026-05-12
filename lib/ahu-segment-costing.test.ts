@@ -86,6 +86,10 @@ function readDumpCell(sheet: string, cell: string): DumpCell {
 describe("computeAhuSegmentCostingBlocks", () => {
   const materials: MaterialPrice[] = [
     material("SGCC-1.0", "GI", 18_000),
+    material("SGCC-1.5", "GI 1.5", 20_000),
+    material("SUS304-1.5", "SS304", 55_000),
+    material("UNP125-304", "UNP125", 24_000),
+    material("SS316-SHAFT-M12", "Shaft", 70_570.5),
     material("AL6063", "Aluminium", 52_000),
     material("AL-FIN", "Al Fin", 62_000),
     material("COPPER-TUBE", "Copper", 120_000),
@@ -218,13 +222,6 @@ describe("computeAhuSegmentCostingBlocks", () => {
     const h = Number(readDumpCell("3. AHU-Structure", "C2").value);
     const w = Number(readDumpCell("3. AHU-Structure", "D2").value);
     const d = Number(readDumpCell("3. AHU-Structure", "E2").value);
-    const density = Number(readDumpCell("3. AHU-Structure", "F18").value);
-    const thicknessMm = Number(readDumpCell("3. AHU-Structure", "C18").value);
-    const stripWidthMm = Number(
-      readDumpCell("3. AHU-Structure", "D18").calculatedResult ??
-        readDumpCell("3. AHU-Structure", "D18").value
-    );
-
     const blocks = computeAhuSegmentCostingBlocks({
       dimH: h,
       dimW: w,
@@ -242,22 +239,10 @@ describe("computeAhuSegmentCostingBlocks", () => {
     expect(structure).toBeDefined();
     const actualSubtotal = (structure?.items ?? []).reduce((sum, item) => sum + item.subtotal, 0);
 
-    const thicknessM = thicknessMm / 1000;
-    const stripWidthM = stripWidthMm / 1000;
-    const hM = h / 1000;
-    const wM = w / 1000;
-    const waste = 1.15;
-    const expectedKg =
-      thicknessM * stripWidthM * wM * density * waste * 2 +
-      thicknessM * stripWidthM * hM * density * waste * 2 +
-      thicknessM * hM * wM * density * waste +
-      thicknessM * stripWidthM * hM * density * waste * 4 +
-      thicknessM * stripWidthM * wM * density * waste * 4;
-    const giPrice =
-      materials.find((m) => m.code === "SGCC-1.5")?.pricePerKg ??
-      materials.find((m) => m.code === "SGCC-1.0")?.pricePerKg ??
-      0;
-    const expectedSubtotal = expectedKg * giPrice;
+    const expectedSubtotal = calculateStructure({ H: h, W: w, D: d, materials }).reduce(
+      (sum, it) => sum + it.subtotal,
+      0
+    );
     expect(Math.abs(actualSubtotal - expectedSubtotal)).toBeLessThan(1e-6);
   });
 });

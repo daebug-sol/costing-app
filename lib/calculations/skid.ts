@@ -29,6 +29,14 @@ function line(
   };
 }
 
+/**
+ * Workbook `1. AHU-Skid` rows 18–20 (active when second section dims are zero):
+ * H = C/1000*D/1000*E/1000*F, J = H*I, costing mass for line = J*K (O = J*K*M).
+ */
+function skidMassKg(Cmm: number, Dmm: number, Emm: number): number {
+  return finite((Cmm / 1000) * (Dmm / 1000) * (Emm / 1000) * STEEL_D, 0);
+}
+
 export function calculateSkid(params: {
   W: number;
   D: number;
@@ -39,39 +47,32 @@ export function calculateSkid(params: {
   const mat = findMaterial(params.materials, UNP_CODE);
   const pricePerKg = mat ? finite(mat.pricePerKg, 0) : 0;
 
-  const kgLR =
-    0.003 * 0.1 * (D / 1000) * STEEL_D * 1.15 * 2;
-  const kgFB =
-    0.003 * 0.1 * (W / 1000) * STEEL_D * 1.15 * 2;
-  const kgCenter =
-    0.002 * 0.08 * (W / 1000) * STEEL_D * 1.15 * 2;
+  const I = 1.15;
+  const K = 2;
 
-  const items: CalcLineItem[] = [
-    line({
-      description: "UNP100 L/R skid (D direction)",
-      uom: "kg",
-      qty: finite(kgLR, 0),
-      qtyFormula: `0.003*0.1*(${D}/1000)*${STEEL_D}*1.15*2`,
-      unitPrice: pricePerKg,
-      componentRef: UNP_CODE,
-    }),
-    line({
-      description: "UNP100 F/B skid (W direction)",
-      uom: "kg",
-      qty: finite(kgFB, 0),
-      qtyFormula: `0.003*0.1*(${W}/1000)*${STEEL_D}*1.15*2`,
-      unitPrice: pricePerKg,
-      componentRef: UNP_CODE,
-    }),
-    line({
-      description: "Center support (W)",
-      uom: "kg",
-      qty: finite(kgCenter, 0),
-      qtyFormula: `0.002*0.08*(${W}/1000)*${STEEL_D}*1.15*2`,
-      unitPrice: pricePerKg,
-      componentRef: UNP_CODE,
-    }),
+  const rows: Array<{
+    desc: string;
+    C: number;
+    D: number;
+    E: number;
+  }> = [
+    { desc: "UNP100-304 L/R (D)", C: 3, D: 300, E: D },
+    { desc: "UNP100-304 F/B (W)", C: 3, D: 300, E: W },
+    { desc: "C40-180-40-Center Support (W)", C: 2, D: 260, E: W },
   ];
 
-  return items;
+  return rows.map((r) => {
+    const Hvol = skidMassKg(r.C, r.D, r.E);
+    const J = finite(Hvol * I, 0);
+    const qty = finite(J, 0);
+    return line({
+      description: r.desc,
+      uom: "kg",
+      qty,
+      qtyFormula: `H*I where H=C/1000*D/1000*E/1000*${STEEL_D}`,
+      unitPrice: finite(K * pricePerKg, 0),
+      componentRef: UNP_CODE,
+      notes: "O=J*K*M with unitPrice=K*M(IDR/kg)",
+    });
+  });
 }

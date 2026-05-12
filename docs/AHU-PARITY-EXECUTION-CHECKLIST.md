@@ -10,16 +10,17 @@ Gunakan bersama:
 
 Target realistis iterasi audit-closure:
 
-1. Pertahankan **strict parity** `100%` (6/6 modul inti) dengan regression test dump-backed.
-2. Pastikan evidensi integrasi `recalculate` mencakup assertion numerik workbook-backed, bukan sekadar flow mock.
-3. Tutup gap evidensi konstanta Structure (`7860` vs `8030`) dengan sumber tunggal yang eksplisit.
+1. Pertahankan **Tier-1** regression dump-backed (`ahu-costing`, modul tests).
+2. Jaga **Tier-2 oracle** (`npm test -- oracle-parity`) hijau setiap PR yang menyentuh kalkulator AHU.
+3. Pastikan evidensi integrasi `recalculate` mencakup assertion numerik workbook-backed, bukan sekadar flow mock.
 
 ## Checklist umum (sekali per iterasi)
 
 - [ ] Regenerate dump terbaru: `npm run extract-formulas`.
 - [ ] Catat `meta.generatedAt` dari `excel-formulas-dump.json` di PR notes.
 - [ ] Pastikan input mapping UI -> `ahuRecalcParams` konsisten dengan cell/range workbook.
-- [x] Jalankan test unit parity: `npm test -- ahu-costing drainPan skid structure recalculate ahu-segment-costing`.
+- [x] Jalankan **Tier-2 oracle**: `npm test -- oracle-parity`.
+- [x] Jalankan **Tier-1** parity suites: `npm test -- ahu-costing drainPan skid structure recalculate ahu-segment-costing`.
 - [x] Update status di `docs/AHU-PARITY-AUDIT.md` setelah task modul selesai.
 
 ## Modul 1 — Frame & Panel (`2. AHU-Frame & Panel`)
@@ -65,37 +66,37 @@ Target realistis iterasi audit-closure:
 
 ### Implementasi
 
-- [ ] Inventaris row/cell kontributor subtotal coil (bukan hanya `J211`/`L236` sample).
-- [ ] Implement `calculateCoilCostBlock` di `lib/calculations/ahu-costing.ts` (hapus stub throw).
-- [ ] Pastikan aturan override/blank (`ifBlank`) konsisten dengan workbook.
+- [x] Inventaris row/cell kontributor subtotal coil (bukan hanya `J211`/`L236` sample).
+- [x] Implement `calculateCoilCostBlock` di `lib/calculations/ahu-costing.ts` (delegasi ke `calculateCoil`).
+- [x] Pastikan aturan override/blank (`ifBlank`) konsisten dengan workbook pada helper parity.
 
 ### Test
 
-- [ ] Tambah golden test untuk beberapa row coil utama (material + assembly).
-- [ ] Tambah test subtotal coil block end-to-end.
+- [x] Tambah golden test untuk beberapa row coil utama (material + assembly).
+- [x] Tambah test subtotal coil block end-to-end (`oracle-parity` vs `V235`).
 
 ### Acceptance
 
-- [ ] `calculateCoilCostBlock` aktif tanpa throw.
-- [ ] Modul Coil naik dari **Partial** ke **Full** (target ideal) atau minimal **Partial (kuat)**.
+- [x] `calculateCoilCostBlock` aktif tanpa throw.
+- [x] Modul Coil Tier-2 oracle **Pass** (`oracle-parity`).
 
 ## Modul 4 — Damper (`VolDamperCost2023 FA ` / `VolDamperCost2023 RA `)
 
 ### Implementasi
 
-- [ ] Mapping parity terpisah FA vs RA (karena source sheet berbeda).
-- [ ] Sinkronkan formula blade/frame/gear ke referensi, termasuk fungsi `ROUNDDOWN` dan rounding lain.
-- [ ] Verifikasi mode include FA/RA di `resolveDamperModes` tetap sesuai saat parity layer ditambahkan.
+- [x] Mapping parity terpisah FA vs RA (karena source sheet berbeda).
+- [x] Sinkronkan formula blade/frame/gear ke referensi, termasuk fungsi `ROUNDDOWN` dan rounding lain.
+- [x] Verifikasi mode include FA/RA di `resolveDamperModes` tetap sesuai saat parity layer ditambahkan.
 
 ### Test
 
-- [ ] Tambah golden test lebih dari 1 cell (FA dan RA).
-- [ ] Tambah test subtotal gabungan mode: FA-only, RA-only, FA+RA.
+- [x] Tambah golden test lebih dari 1 cell (FA dan RA).
+- [x] Tambah test subtotal gabungan mode: FA-only, RA-only, FA+RA (`oracle-parity` vs `S59`).
 
 ### Acceptance
 
-- [ ] Damper tidak hanya sample parity; ada bukti parity subtotal.
-- [ ] Modul Damper naik ke minimal **Partial (kuat)**.
+- [x] Damper tidak hanya sample parity; ada bukti parity subtotal.
+- [x] Modul Damper Tier-2 oracle **Pass** (`oracle-parity`).
 
 ## Modul 5 — Skid (`1. AHU-Skid`)
 
@@ -143,7 +144,8 @@ Target realistis iterasi audit-closure:
 - [x] 6/6 modul inti mencapai **Full** di audit.
 - [x] Tidak ada stub parity tersisa di `lib/calculations/ahu-costing.ts`.
 - [x] Test golden + test integrasi recalculate lulus.
-- [x] Dokumen audit (`AHU-PARITY-AUDIT.md`) diperbarui dengan persentase akhir.
+- [x] **Tier-2 oracle** `npm test -- oracle-parity` hijau.
+- [x] Dokumen audit (`AHU-PARITY-AUDIT.md`) + kontrak oracle (`AHU-PARITY-ORACLE-CONTRACT.md`) diperbarui.
 
 ## Siklus sub-agent (selesai — referensi)
 

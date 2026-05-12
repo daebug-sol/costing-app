@@ -7,7 +7,11 @@
  */
 
 import Decimal from "decimal.js";
+import { calculateCoil } from "./coil";
+import { calculateDrainPan } from "./drainPan";
+import type { MaterialPrice } from "./types";
 import { d, excelRound, excelRoundUp, ifBlank } from "./excel-math";
+import { structureShellNutMassKg } from "./structure-workbook";
 
 // --- Types (inputs are `Decimal.Value` so callers pass strings or Decimal, not raw number math) ---
 
@@ -50,6 +54,15 @@ export type CoilCostBlockInput = {
   alFinPricePerKg: Decimal.Value;
   copperPricePerKg: Decimal.Value;
   giPricePerKg: Decimal.Value;
+  coilFaceMm?: number;
+  finPitchFactorG211?: number;
+  finTubeOdMm?: number;
+  tubeOdMm?: number;
+  tubeWallMm?: number;
+  tubeStretchMm?: number;
+  tubePrimaryFactor?: number;
+  headerAssemblyKg?: number;
+  finPackSpanMm?: number;
 };
 
 // --- Small, exact helpers (examples from dump) ---
@@ -137,34 +150,10 @@ export function calculateFrameWeight(_input: FramePanelDims & { profileCode: str
 export function calculateStructureWeight(_input: StructureWeightInput): {
   totalKg: Decimal;
 } {
-  /**
-   * Mirrors the same five GI rows used by `calculateStructure`:
-   * - supply flange W/H
-   * - fan partition
-   * - filter rail H/W
-   */
-  void _input.D;
-  const Hm = d(_input.H).div(1000);
-  const Wm = d(_input.W).div(1000);
-  // Keep aligned with workbook `3. AHU-Structure` material density (F18).
-  const giDensity = d(7860);
-  const t = d("0.0015");
-  const widthStrip = d("0.1");
-  const waste = d("1.15");
-
-  const kgSupFlangeW = t.mul(widthStrip).mul(Wm).mul(giDensity).mul(waste).mul(2);
-  const kgSupFlangeH = t.mul(widthStrip).mul(Hm).mul(giDensity).mul(waste).mul(2);
-  const kgFanPart = t.mul(Hm).mul(Wm).mul(giDensity).mul(waste);
-  const kgFilterH = t.mul(widthStrip).mul(Hm).mul(giDensity).mul(waste).mul(4);
-  const kgFilterW = t.mul(widthStrip).mul(Wm).mul(giDensity).mul(waste).mul(4);
-
-  return {
-    totalKg: kgSupFlangeW
-      .add(kgSupFlangeH)
-      .add(kgFanPart)
-      .add(kgFilterH)
-      .add(kgFilterW),
-  };
+  const H = d(_input.H).toNumber();
+  const W = d(_input.W).toNumber();
+  const D = _input.D !== undefined ? d(_input.D).toNumber() : 0;
+  return { totalKg: d(structureShellNutMassKg(H, W, D)) };
 }
 
 /**
@@ -174,22 +163,25 @@ export function calculateDrainPanCost(input: DrainPanCostParams): {
   weightKg: Decimal;
   materialCost: Decimal;
 } {
-  void d(input.H);
-  const W = d(input.W).div(1000);
-  const D = d(input.D).div(1000);
-  const kgPan = d("0.0015")
-    .mul(W)
-    .mul(D.add("0.15"))
-    .mul(8800)
-    .mul(1.15);
-  const kgSup = d("0.0015")
-    .mul("0.2")
-    .mul(W)
-    .mul(8800)
-    .mul(1.15)
-    .mul(2);
-  const weightKg = kgPan.add(kgSup);
-  const materialCost = weightKg.mul(input.pricePerKgSs304);
+  const mats = [
+    {
+      code: "SUS304-1.5",
+      name: "SS304",
+      category: "raw",
+      density: 8800,
+      pricePerKg: Number(input.pricePerKgSs304),
+      currency: "IDR",
+      unit: "kg",
+    },
+  ] as MaterialPrice[];
+  const lines = calculateDrainPan({
+    H: Number(input.H),
+    W: Number(input.W),
+    D: Number(input.D),
+    materials: mats,
+  });
+  const weightKg = d(lines.reduce((s, it) => s + it.qty, 0));
+  const materialCost = d(lines.reduce((s, it) => s + it.subtotal, 0));
   return { weightKg, materialCost };
 }
 
@@ -199,39 +191,57 @@ export function calculateDrainPanCost(input: DrainPanCostParams): {
 export function calculateCoilCostBlock(_input: CoilCostBlockInput): {
   lines: { ref: string; amount: Decimal }[];
 } {
-  const FH = d(_input.FH);
-  const FL = d(_input.FL);
-  const rows = d(_input.rows);
-  const circuits = d(_input.circuits);
-  const fpi = d(_input.FPI);
-  const fpiSafe = fpi.lte(0) ? d(1) : fpi;
+  const mats = [
+    {
+      code: "AL-FIN",
+      name: "Aluminium fin",
+      category: "raw",
+      density: 2700,
+      pricePerKg: Number(_input.alFinPricePerKg),
+      currency: "IDR",
+      unit: "kg",
+    },
+    {
+      code: "COPPER-TUBE",
+      name: "Copper tube",
+      category: "raw",
+      density: 8900,
+      pricePerKg: Number(_input.copperPricePerKg),
+      currency: "IDR",
+      unit: "kg",
+    },
+    {
+      code: "SGCC-1.0",
+      name: "GI header",
+      category: "raw",
+      density: 8030,
+      pricePerKg: Number(_input.giPricePerKg),
+      currency: "IDR",
+      unit: "kg",
+    },
+  ] as MaterialPrice[];
 
-  const fhM = FH.div(1000);
-  const flM = FL.div(1000);
+  const coilLines = calculateCoil({
+    FH: Number(_input.FH),
+    FL: Number(_input.FL),
+    rows: Number(_input.rows),
+    FPI: Number(_input.FPI),
+    circuits: Number(_input.circuits),
+    materials: mats,
+    coilFaceMm: _input.coilFaceMm,
+    finPitchFactorG211: _input.finPitchFactorG211,
+    finTubeOdMm: _input.finTubeOdMm,
+    tubeOdMm: _input.tubeOdMm,
+    tubeWallMm: _input.tubeWallMm,
+    tubeStretchMm: _input.tubeStretchMm,
+    tubePrimaryFactor: _input.tubePrimaryFactor,
+    headerAssemblyKg: _input.headerAssemblyKg,
+    finPackSpanMm: _input.finPackSpanMm,
+  });
 
-  // Fin kg: same base equation as module calculator.
-  const finKg = fhM
-    .mul(flM)
-    .mul(FL.div(fpiSafe.mul("25.4")))
-    .mul("0.00011")
-    .mul(2700)
-    .mul("1.034");
-
-  // Tube kg: pi*((OD^2-ID^2)/4)*rows*circuits*FHm*density*allowance
-  const tubeCrossSection = d(Math.PI).mul(d("0.009525").pow(2).minus(d("0.008525").pow(2))).div(4);
-  const tubeKg = tubeCrossSection.mul(rows).mul(circuits).mul(fhM).mul(8900).mul("1.02");
-
-  // Header kg (GI row)
-  const headerKg = d("0.0015")
-    .mul("0.268")
-    .mul(fhM.add("0.1"))
-    .mul(8030)
-    .mul("1.15")
-    .mul(2);
-
-  const finCost = finKg.mul(_input.alFinPricePerKg);
-  const tubeCost = tubeKg.mul(_input.copperPricePerKg);
-  const headerCost = headerKg.mul(_input.giPricePerKg);
+  const finCost = d(coilLines[0]?.subtotal ?? 0);
+  const tubeCost = d(coilLines[1]?.subtotal ?? 0);
+  const headerCost = d(coilLines[2]?.subtotal ?? 0);
 
   return {
     lines: [

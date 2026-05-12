@@ -14,36 +14,33 @@ describe("calculateSkid parity baseline", () => {
     },
   ] as MaterialPrice[];
 
-  it("matches closed-form kg formulas for baseline W/D", () => {
+  it("matches workbook skid line masses (J18:J20) for baseline W/D", () => {
     const W = 1930;
     const D = 1625;
 
     const rows = calculateSkid({ W, D, materials });
     expect(rows).toHaveLength(3);
 
-    const lr = rows[0]!.qty;
-    const fb = rows[1]!.qty;
-    const center = rows[2]!.qty;
+    const I = 1.15;
+    const steelD = 7860;
 
-    const expectedLr = 0.003 * 0.1 * (D / 1000) * 7860 * 1.15 * 2;
-    const expectedFb = 0.003 * 0.1 * (W / 1000) * 7860 * 1.15 * 2;
-    const expectedCenter = 0.002 * 0.08 * (W / 1000) * 7860 * 1.15 * 2;
+    /** Workbook J = H*I where H is steel mass from section dims (no K in J). */
+    const Jqty = (c: number, dMm: number, e: number) =>
+      (c / 1000) * (dMm / 1000) * (e / 1000) * steelD * I;
 
-    expect(Math.abs(lr - expectedLr)).toBeLessThan(1e-9);
-    expect(Math.abs(fb - expectedFb)).toBeLessThan(1e-9);
-    expect(Math.abs(center - expectedCenter)).toBeLessThan(1e-9);
+    expect(Math.abs(rows[0]!.qty - Jqty(3, 300, D))).toBeLessThan(1e-9);
+    expect(Math.abs(rows[1]!.qty - Jqty(3, 300, W))).toBeLessThan(1e-9);
+    expect(Math.abs(rows[2]!.qty - Jqty(2, 260, W))).toBeLessThan(1e-9);
   });
 
   it("matches closed-form subtotal for a smaller skid scenario", () => {
     const W = 1015;
     const D = 900;
     const rows = calculateSkid({ W, D, materials });
-    const subtotal = rows.reduce((sum, row) => sum + row.qty, 0);
-    const expectedSubtotal =
-      0.003 * 0.1 * (D / 1000) * 7860 * 1.15 * 2 +
-      0.003 * 0.1 * (W / 1000) * 7860 * 1.15 * 2 +
-      0.002 * 0.08 * (W / 1000) * 7860 * 1.15 * 2;
-    expect(Math.abs(subtotal - expectedSubtotal)).toBeLessThan(1e-9);
+    const price = materials[0]!.pricePerKg;
+    const K = 2;
+    const subtotal = rows.reduce((sum, row) => sum + row.subtotal, 0);
+    const jSum = rows.reduce((sum, row) => sum + row.qty, 0);
+    expect(Math.abs(subtotal - jSum * K * price)).toBeLessThan(1e-6);
   });
 });
-

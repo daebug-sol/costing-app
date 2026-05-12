@@ -1,6 +1,7 @@
 import type { MaterialPrice } from "./types";
 import { calculateStructureWeight } from "./ahu-costing";
 import { calculateStructure } from "./structure";
+import { structureSheetOracleNutKg, structureShellNutMassKg } from "./structure-workbook";
 import fs from "fs";
 import path from "path";
 
@@ -22,7 +23,7 @@ describe("calculateStructure parity baseline", () => {
       code: "SGCC-1.5",
       name: "GI 1.5",
       category: "raw",
-      density: 8030,
+      density: 7860,
       pricePerKg: 20000,
       currency: "IDR",
       unit: "kg",
@@ -38,6 +39,8 @@ describe("calculateStructure parity baseline", () => {
     const sumKg = lines.reduce((s, it) => s + it.qty, 0);
 
     const parity = calculateStructureWeight({ H, W, D });
+    expect(structureSheetOracleNutKg(H, W, D)).toBeCloseTo(132.6352999285714, 4);
+    expect(Math.abs(structureShellNutMassKg(H, W, D) - parity.totalKg.toNumber())).toBeLessThan(1e-9);
     expect(Math.abs(sumKg - parity.totalKg.toNumber())).toBeLessThan(1e-9);
   });
 
@@ -60,10 +63,12 @@ describe("calculateStructure parity baseline", () => {
     expect(Number(stripWidth.calculatedResult ?? stripWidth.value)).toBe(100);
   });
 
-  it("uses workbook density constant in line formulas", () => {
+  it("embeds sheet density (7860 GI / 7980 stopper) in qtyFormula", () => {
     const lines = calculateStructure({ H: 1420, W: 1930, D: 1625, materials });
-    for (const item of lines) {
-      expect(item.qtyFormula).toContain("*7860*");
+    const giLines = lines.filter((it) => it.componentRef === "SGCC-1.5");
+    expect(giLines.length).toBeGreaterThan(0);
+    for (const item of giLines) {
+      expect(item.qtyFormula).toMatch(/7860|7980/);
     }
   });
 });
