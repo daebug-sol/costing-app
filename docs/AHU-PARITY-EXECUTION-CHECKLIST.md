@@ -131,14 +131,6 @@ Target realistis iterasi audit-closure:
 - [x] Pastikan urutan section tetap sinkron dengan `AHU_COSTING_SECTION_DEFS`.
 - [x] Validasi bahwa perubahan parity tidak memecahkan modular scope (full vs partial modules).
 
-## Output PDF / Excel (scope klaim "100% sesuai")
-
-- [ ] Definisikan dulu level klaim:
-  - parity angka saja, atau
-  - parity angka + layout dokumen.
-- [ ] Jika target termasuk layout, buat harness pembanding output (minimal snapshot visual/cell-map).
-- [ ] Tandai jelas di audit kapan klaim "100% sesuai PDF/Excel referensi" boleh dinyatakan.
-
 ## Definition of Done (rilis parity)
 
 - [x] 6/6 modul inti mencapai **Full** di audit.

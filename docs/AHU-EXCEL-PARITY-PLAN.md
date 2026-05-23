@@ -26,7 +26,7 @@ Semua worksheet di file referensi (urutan tidak penting):
 | `2. AHU-Frame & Panel` | Frame & panel | Tinggi |
 | `3. AHU-Structure` | Structure | Tinggi |
 | `CoilCost 20251027` | Coil | Tinggi |
-| `Quotation` | Output quotation | Medium (banyak layout) |
+| `Quotation` | Sheet quotation di workbook DS50 (bukan generator PDF/Excel aplikasi) | Medium (banyak layout di sheet) |
 | `Project Cost` | Ringkasan proyek | Medium |
 
 **Matriks input → output (template):** untuk tiap sheet yang jadi sumber HPP, dokumentasikan sel/range **input user** vs **subtotal / kg / IDR** saat iterasi berikutnya (isi bertahap).

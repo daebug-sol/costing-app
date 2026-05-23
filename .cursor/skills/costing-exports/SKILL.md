@@ -12,6 +12,7 @@ description: >-
 - **PDF**: `lib/generators/pdfGenerator.ts` (jsPDF).
 - **Excel**: `lib/generators/excelGenerator.ts` (ExcelJS).
 - **Document assembly**: `lib/merge-quotation-doc.ts`, `lib/quotation-export-mappers.ts`, `lib/generators/document-types.ts`.
+- **Bukan parity workbook**: layout/format kutipan adalah keputusan produk; **tidak** ada target sel-by-sel atau pixel-match terhadap `Costing AHU DS50.xlsx` atau PDF referensi eksternal.
 
 ## Guidelines
 

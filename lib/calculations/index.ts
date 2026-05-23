@@ -16,6 +16,11 @@ export type {
 } from "./ahu-costing";
 export { calculateCoil } from "./coil";
 export { calculateDamper } from "./damper";
+export {
+  calculateVolDamperWorkbookLines,
+  volDamperGeometryFromOpenings,
+  volDamperRowK_m3,
+} from "./vol-damper-workbook";
 export { calculateDrainPan } from "./drainPan";
 export {
   d,

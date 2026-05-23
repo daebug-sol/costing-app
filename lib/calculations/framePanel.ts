@@ -120,6 +120,7 @@ export function calculateFramePanel(params: {
       const mult = nSec;
       const qh = finite((H / 1000) * 1.05 * 2 * mult, 0);
       const qw = finite((W / 1000) * 1.05 * 2 * mult, 0);
+      const qd = finite((D / 1000) * 1.05 * 2 * mult, 0);
       items.push(
         line({
           description: `Interpost H (${interpost.code}) × nSections`,
@@ -137,6 +138,16 @@ export function calculateFramePanel(params: {
           qtyFormula: `(${W}/1000)*1.05*2*${nSec}`,
           unitPrice: r,
           componentRef: interpost.code,
+          notes: `nSections=${nSec}`,
+        }),
+        line({
+          description: `Interpost D (${interpost.code}) × nSections`,
+          uom: "m",
+          qty: qd,
+          qtyFormula: `(${D}/1000)*1.05*2*${nSec}`,
+          unitPrice: r,
+          componentRef: interpost.code,
+          notes: `nSections=${nSec}`,
         })
       );
     }
@@ -179,66 +190,243 @@ export function calculateFramePanel(params: {
   if (clip) {
     const r = ppRate(clip);
     if (r > 0) {
-      items.push(
-        line({
-          description: `Panel clip H (${clip.code})`,
-          uom: "m",
-          qty: finite((H / 1000) * 1.05 * 8, 0),
-          qtyFormula: `(${H}/1000)*1.05*8`,
-          unitPrice: r,
-          componentRef: clip.code,
-        }),
-        line({
-          description: `Panel clip W (${clip.code})`,
-          uom: "m",
-          qty: finite((W / 1000) * 1.05 * 8, 0),
-          qtyFormula: `(${W}/1000)*1.05*8`,
-          unitPrice: r,
-          componentRef: clip.code,
-        }),
-        line({
-          description: `Panel clip D (${clip.code})`,
-          uom: "m",
-          qty: finite((D / 1000) * 1.05 * 8, 0),
-          qtyFormula: `(${D}/1000)*1.05*8`,
-          unitPrice: r,
-          componentRef: clip.code,
-        })
-      );
+      const jH = finite((H / 1000) * 1.05, 0);
+      const jW = finite((W / 1000) * 1.05, 0);
+      const jD = finite((D / 1000) * 1.05, 0);
+      /** Workbook `K20*2` style multiplier for pentapost clip rows. */
+      const kClipPent = 8;
+      /** Interpost clip rows use `K23*2` per template → scale with `nSections`. */
+      const kClipInter = 4 * nSec;
+
+      if (pentapost) {
+        items.push(
+          line({
+            description: `Panel clip H — pentapost (${clip.code})`,
+            uom: "m",
+            qty: finite(jH * kClipPent, 0),
+            qtyFormula: `(${H}/1000)*1.05*${kClipPent}`,
+            unitPrice: r,
+            componentRef: clip.code,
+          }),
+          line({
+            description: `Panel clip W — pentapost (${clip.code})`,
+            uom: "m",
+            qty: finite(jW * kClipPent, 0),
+            qtyFormula: `(${W}/1000)*1.05*${kClipPent}`,
+            unitPrice: r,
+            componentRef: clip.code,
+          }),
+          line({
+            description: `Panel clip D — pentapost (${clip.code})`,
+            uom: "m",
+            qty: finite(jD * kClipPent, 0),
+            qtyFormula: `(${D}/1000)*1.05*${kClipPent}`,
+            unitPrice: r,
+            componentRef: clip.code,
+          })
+        );
+      }
+      if (interpost) {
+        items.push(
+          line({
+            description: `Panel clip H — interpost (${clip.code})`,
+            uom: "m",
+            qty: finite(jH * kClipInter, 0),
+            qtyFormula: `(${H}/1000)*1.05*${kClipInter}`,
+            unitPrice: r,
+            componentRef: clip.code,
+            notes: `nSections=${nSec}`,
+          }),
+          line({
+            description: `Panel clip W — interpost (${clip.code})`,
+            uom: "m",
+            qty: finite(jW * kClipInter, 0),
+            qtyFormula: `(${W}/1000)*1.05*${kClipInter}`,
+            unitPrice: r,
+            componentRef: clip.code,
+            notes: `nSections=${nSec}`,
+          }),
+          line({
+            description: `Panel clip D — interpost (${clip.code})`,
+            uom: "m",
+            qty: finite(jD * kClipInter, 0),
+            qtyFormula: `(${D}/1000)*1.05*${kClipInter}`,
+            unitPrice: r,
+            componentRef: clip.code,
+            notes: `nSections=${nSec}`,
+          })
+        );
+      }
     }
   }
 
   if (gasket) {
-    const qm = finite((2 * (H + W + H + D)) / 1000, 0) * 1.05;
     const up = finite(gasket.pricePerM, 0);
     if (up > 0) {
-      items.push(
-        line({
-          description: `Gasket perimeter (${gasket.code})`,
-          uom: "m",
-          qty: qm,
-          qtyFormula: `2*(${H}+${W}+${H}+${D})/1000*1.05`,
-          unitPrice: up,
-          componentRef: gasket.code,
-        })
-      );
+      const jH = finite((H / 1000) * 1.05, 0);
+      const jW = finite((W / 1000) * 1.05, 0);
+      const jD = finite((D / 1000) * 1.05, 0);
+      const kGasketPent = 8;
+      const kGasketInter = 4 * nSec;
+
+      if (pentapost) {
+        items.push(
+          line({
+            description: `Gasket — pentapost H (${gasket.code})`,
+            uom: "m",
+            qty: finite(jH * kGasketPent, 0),
+            qtyFormula: `(${H}/1000)*1.05*${kGasketPent}`,
+            unitPrice: up,
+            componentRef: gasket.code,
+          }),
+          line({
+            description: `Gasket — pentapost W (${gasket.code})`,
+            uom: "m",
+            qty: finite(jW * kGasketPent, 0),
+            qtyFormula: `(${W}/1000)*1.05*${kGasketPent}`,
+            unitPrice: up,
+            componentRef: gasket.code,
+          }),
+          line({
+            description: `Gasket — pentapost D (${gasket.code})`,
+            uom: "m",
+            qty: finite(jD * kGasketPent, 0),
+            qtyFormula: `(${D}/1000)*1.05*${kGasketPent}`,
+            unitPrice: up,
+            componentRef: gasket.code,
+          })
+        );
+      }
+      if (interpost) {
+        items.push(
+          line({
+            description: `Gasket — interpost H (${gasket.code})`,
+            uom: "m",
+            qty: finite(jH * kGasketInter, 0),
+            qtyFormula: `(${H}/1000)*1.05*${kGasketInter}`,
+            unitPrice: up,
+            componentRef: gasket.code,
+            notes: `nSections=${nSec}`,
+          }),
+          line({
+            description: `Gasket — interpost W (${gasket.code})`,
+            uom: "m",
+            qty: finite(jW * kGasketInter, 0),
+            qtyFormula: `(${W}/1000)*1.05*${kGasketInter}`,
+            unitPrice: up,
+            componentRef: gasket.code,
+            notes: `nSections=${nSec}`,
+          }),
+          line({
+            description: `Gasket — interpost D (${gasket.code})`,
+            uom: "m",
+            qty: finite(jD * kGasketInter, 0),
+            qtyFormula: `(${D}/1000)*1.05*${kGasketInter}`,
+            unitPrice: up,
+            componentRef: gasket.code,
+            notes: `nSections=${nSec}`,
+          })
+        );
+      }
+
+      if (!pentapost && !interpost) {
+        const qm = finite((2 * (H + W + H + D)) / 1000, 0) * 1.05;
+        items.push(
+          line({
+            description: `Gasket perimeter (${gasket.code})`,
+            uom: "m",
+            qty: qm,
+            qtyFormula: `2*(${H}+${W}+${H}+${D})/1000*1.05`,
+            unitPrice: up,
+            componentRef: gasket.code,
+          })
+        );
+      }
     }
   }
 
   if (rubber) {
-    const qm = finite((2 * (H + W + H + D)) / 1000, 0) * 1.05;
     const up = finite(rubber.pricePerM, 0);
     if (up > 0) {
-      items.push(
-        line({
-          description: `Rubber insert (${rubber.code})`,
-          uom: "m",
-          qty: qm,
-          qtyFormula: `2*(${H}+${W}+${H}+${D})/1000*1.05`,
-          unitPrice: up,
-          componentRef: rubber.code,
-        })
-      );
+      const jH = finite((H / 1000) * 1.05, 0);
+      const jW = finite((W / 1000) * 1.05, 0);
+      const jD = finite((D / 1000) * 1.05, 0);
+      const kRubberPent = 8;
+      const kRubberInter = 4 * nSec;
+
+      if (pentapost) {
+        items.push(
+          line({
+            description: `Rubber insert — pentapost H (${rubber.code})`,
+            uom: "m",
+            qty: finite(jH * kRubberPent, 0),
+            qtyFormula: `(${H}/1000)*1.05*${kRubberPent}`,
+            unitPrice: up,
+            componentRef: rubber.code,
+          }),
+          line({
+            description: `Rubber insert — pentapost W (${rubber.code})`,
+            uom: "m",
+            qty: finite(jW * kRubberPent, 0),
+            qtyFormula: `(${W}/1000)*1.05*${kRubberPent}`,
+            unitPrice: up,
+            componentRef: rubber.code,
+          }),
+          line({
+            description: `Rubber insert — pentapost D (${rubber.code})`,
+            uom: "m",
+            qty: finite(jD * kRubberPent, 0),
+            qtyFormula: `(${D}/1000)*1.05*${kRubberPent}`,
+            unitPrice: up,
+            componentRef: rubber.code,
+          })
+        );
+      }
+      if (interpost) {
+        items.push(
+          line({
+            description: `Rubber insert — interpost H (${rubber.code})`,
+            uom: "m",
+            qty: finite(jH * kRubberInter, 0),
+            qtyFormula: `(${H}/1000)*1.05*${kRubberInter}`,
+            unitPrice: up,
+            componentRef: rubber.code,
+            notes: `nSections=${nSec}`,
+          }),
+          line({
+            description: `Rubber insert — interpost W (${rubber.code})`,
+            uom: "m",
+            qty: finite(jW * kRubberInter, 0),
+            qtyFormula: `(${W}/1000)*1.05*${kRubberInter}`,
+            unitPrice: up,
+            componentRef: rubber.code,
+            notes: `nSections=${nSec}`,
+          }),
+          line({
+            description: `Rubber insert — interpost D (${rubber.code})`,
+            uom: "m",
+            qty: finite(jD * kRubberInter, 0),
+            qtyFormula: `(${D}/1000)*1.05*${kRubberInter}`,
+            unitPrice: up,
+            componentRef: rubber.code,
+            notes: `nSections=${nSec}`,
+          })
+        );
+      }
+
+      if (!pentapost && !interpost) {
+        const qm = finite((2 * (H + W + H + D)) / 1000, 0) * 1.05;
+        items.push(
+          line({
+            description: `Rubber insert (${rubber.code})`,
+            uom: "m",
+            qty: qm,
+            qtyFormula: `2*(${H}+${W}+${H}+${D})/1000*1.05`,
+            unitPrice: up,
+            componentRef: rubber.code,
+          })
+        );
+      }
     }
   }
 
@@ -247,48 +435,39 @@ export function calculateFramePanel(params: {
     const pk = finite(gi.pricePerKg, 0);
     const wf = linerWaste;
 
-    const frontBackArea = finite((H * W) / 1_000_000, 0);
-    const kgFB =
-      frontBackArea * 2 * dens * linerThicknessM * wf;
-    items.push(
-      line({
-        description: "Front/back panel liner (GI 1.0mm)",
-        uom: "kg",
-        qty: kgFB,
-        qtyFormula: `(${H}*${W}/1e6)*2*${dens}*${linerThicknessM}*${wf}`,
-        unitPrice: pk,
-        wasteFactor: 1,
-        componentRef: GI_CODE,
-      })
-    );
+    /** One enclosure face (m²): inner + outer GI → kg (matches one `O*` liner row on `2. AHU-Frame & Panel`). */
+    const kgOneFace = (faceAreaM2: number) =>
+      finite(faceAreaM2 * 2 * dens * linerThicknessM * wf, 0);
 
-    const topBotArea = finite((W * D) / 1_000_000, 0);
-    const kgTB = topBotArea * 2 * dens * linerThicknessM * wf;
-    items.push(
-      line({
-        description: "Top/bottom panel liner (GI 1.0mm)",
-        uom: "kg",
-        qty: kgTB,
-        qtyFormula: `(${W}*${D}/1e6)*2*${dens}*${linerThicknessM}*${wf}`,
-        unitPrice: pk,
-        wasteFactor: 1,
-        componentRef: GI_CODE,
-      })
-    );
+    const faceHW = finite((H * W) / 1_000_000, 0);
+    const faceWD = finite((W * D) / 1_000_000, 0);
+    const faceHD = finite((H * D) / 1_000_000, 0);
 
-    const sideArea = finite((H * D) / 1_000_000, 0);
-    const kgLR = sideArea * 2 * dens * linerThicknessM * wf;
-    items.push(
-      line({
-        description: "LH/RH panel liner (GI 1.0mm)",
-        uom: "kg",
-        qty: kgLR,
-        qtyFormula: `(${H}*${D}/1e6)*2*${dens}*${linerThicknessM}*${wf}`,
-        unitPrice: pk,
-        wasteFactor: 1,
-        componentRef: GI_CODE,
-      })
-    );
+    const giFace = (
+      description: string,
+      faceAreaM2: number,
+      areaFormula: string
+    ) => {
+      const kg = kgOneFace(faceAreaM2);
+      items.push(
+        line({
+          description,
+          uom: "kg",
+          qty: kg,
+          qtyFormula: `${areaFormula}*2*${dens}*${linerThicknessM}*${wf}`,
+          unitPrice: pk,
+          wasteFactor: 1,
+          componentRef: GI_CODE,
+        })
+      );
+    };
+
+    giFace("Front panel liner (GI 1.0mm)", faceHW, `(${H}*${W}/1e6)`);
+    giFace("Back panel liner (GI 1.0mm)", faceHW, `(${H}*${W}/1e6)`);
+    giFace("Top panel liner (GI 1.0mm)", faceWD, `(${W}*${D}/1e6)`);
+    giFace("Bottom panel liner (GI 1.0mm)", faceWD, `(${W}*${D}/1e6)`);
+    giFace("LH panel liner (GI 1.0mm)", faceHD, `(${H}*${D}/1e6)`);
+    giFace("RH panel liner (GI 1.0mm)", faceHD, `(${H}*${D}/1e6)`);
   }
 
   if (foam && pentapost?.panelThick != null) {

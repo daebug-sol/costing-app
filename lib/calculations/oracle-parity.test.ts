@@ -201,15 +201,7 @@ describe("oracle-parity (app vs excel-formulas-dump.json)", () => {
     expect(Math.abs(appTotal - v235)).toBeLessThan(EPS_IDR);
   });
 
-  it("frame sheet GI/PU band O44:O55 totals (dump anchor)", () => {
-    let dumpSum = 0;
-    for (let r = 44; r <= 55; r += 1) {
-      dumpSum += numericFromDump(dumpCell(dump, SHEET_FRAME, `O${r}`));
-    }
-    expect(dumpSum).toBeCloseTo(7008632.1113599995, 3);
-  });
-
-  it("frame panel GI+PU lines with dump-backed liner/foam inputs", () => {
+  it("calculateFramePanel subtotal vs frame oracle O96 (=SUM(O18:O95))", () => {
     const m44 = numericFromDump(dumpCell(dump, SHEET_FRAME, "M44"));
     const m45 = numericFromDump(dumpCell(dump, SHEET_FRAME, "M45"));
     const c44 = numericFromDump(dumpCell(dump, SHEET_FRAME, "C44"), "value");
@@ -222,19 +214,18 @@ describe("oracle-parity (app vs excel-formulas-dump.json)", () => {
       mat("PU-FOAM", "PU", m45, f45),
     ];
     const profiles: ProfileData[] = [
-      {
-        id: "5060Y-NA06",
-        code: "5060Y-NA06",
-        name: "5060Y-NA06",
-        type: "Pentapost",
-        weightPerM: 0,
-        pricePerM: 0,
-        panelThick: c45,
-        notes: null,
-        updatedAt: new Date(),
-        createdAt: new Date(),
-      },
+      prof("5060Y-NA06", "Pentapost", 1, 175_000),
+      prof("DS5040", "Interpost", 1, 132_000),
+      prof("PBP-CL", "Clip", 1, 24357.6219512195),
+      prof("COR-01", "Cornerpiece", 0, 90_500),
+      prof("OM-01", "Omega", 0, 14_500),
+      prof("GAS-01", "Gasket", 0, 24991.46341463415),
+      prof("RUB-01", "Rubber", 0, 9000),
     ];
+    profiles[0] = {
+      ...profiles[0]!,
+      panelThick: c45,
+    };
     const lines = calculateFramePanel({
       H,
       W,
@@ -248,11 +239,9 @@ describe("oracle-parity (app vs excel-formulas-dump.json)", () => {
       foamPanelThicknessMm: c45,
       foamWasteFactor: i45,
     });
-    const giPu = lines.filter(
-      (it) => it.description.includes("GI 1.0mm") || it.description.includes("PU foam insulation")
-    );
-    expect(giPu.length).toBeGreaterThanOrEqual(4);
-    expect(giPu.reduce((s, it) => s + it.subtotal, 0)).toBeGreaterThan(1e3);
+    const appTotal = lines.reduce((s, it) => s + it.subtotal, 0);
+    const o96 = numericFromDump(dumpCell(dump, SHEET_FRAME, "O96"));
+    expect(Math.abs(appTotal - o96)).toBeLessThan(EPS_IDR);
   });
 
   it("VolDamper FA/RA — S59 equals SUM(S50:S58)", () => {
@@ -266,22 +255,19 @@ describe("oracle-parity (app vs excel-formulas-dump.json)", () => {
     }
   });
 
-  it("calculateDamper uses VolDamper opening C43 × P43 with dump-implied economics", () => {
+  it("calculateDamper total vs VolDamper S59 (FA + RA, C43×P43, B44 from dump)", () => {
     const wOp = numericFromDump(dumpCell(dump, SHEET_DAMPER_FA, "C43"));
     const hOp = numericFromDump(dumpCell(dump, SHEET_DAMPER_FA, "P43"));
-    const q50 = numericFromDump(dumpCell(dump, SHEET_DAMPER_FA, "Q50"));
-    const s50 = numericFromDump(dumpCell(dump, SHEET_DAMPER_FA, "S50"));
-    const ratePerM = q50 > 1e-9 ? s50 / q50 : 0;
-    const q52 = numericFromDump(dumpCell(dump, SHEET_DAMPER_FA, "Q52"));
-    const s52 = numericFromDump(dumpCell(dump, SHEET_DAMPER_FA, "S52"));
-    const finPk = q52 > 1e-9 ? s52 / q52 : 62000;
-    const profiles: ProfileData[] = [prof("AL-BASE", "aluminium", 1, ratePerM)];
-    const materials: MaterialPrice[] = [mat("AL-FIN", "Fin", finPk, 2700)];
+    const b44 = Math.round(numericFromDump(dumpCell(dump, SHEET_DAMPER_FA, "B44"), "value"));
+    const profiles: ProfileData[] = [prof("AL-BASE", "aluminium", 1, 1)];
+    const materials: MaterialPrice[] = [mat("AL-FIN", "Fin", 1, 2700)];
     const components: ComponentCatalog[] = [comp("DAMPER-GEAR", "Damper gear", "damper", 0)];
 
-    const fa = calculateDamper({ W: wOp, H: hOp, type: "FA", profiles, materials, components });
-    const ra = calculateDamper({ W: wOp, H: hOp, type: "RA", profiles, materials, components });
-    expect(fa.reduce((s, it) => s + it.subtotal, 0)).toBeGreaterThan(1);
-    expect(ra.reduce((s, it) => s + it.subtotal, 0)).toBeGreaterThan(1);
+    const fa = calculateDamper({ W: wOp, H: hOp, type: "FA", b44, profiles, materials, components });
+    const ra = calculateDamper({ W: wOp, H: hOp, type: "RA", b44, profiles, materials, components });
+    const s59Fa = numericFromDump(dumpCell(dump, SHEET_DAMPER_FA, "S59"));
+    const s59Ra = numericFromDump(dumpCell(dump, SHEET_DAMPER_RA, "S59"));
+    expect(Math.abs(fa.reduce((s, it) => s + it.subtotal, 0) - s59Fa)).toBeLessThan(EPS_IDR);
+    expect(Math.abs(ra.reduce((s, it) => s + it.subtotal, 0) - s59Ra)).toBeLessThan(EPS_IDR);
   });
 });

@@ -58,8 +58,8 @@ Document **required env vars** in a template (e.g. `.env.example`) without real 
 ## 5. Costing-specific production notes
 
 - **Financial correctness**: Critical paths are `lib/calculations/*`, recalculate API, `rollupProjectFinancials`. Prefer tests on pure functions; manual smoke after formula changes.
-- **Exports**: PDF/Excel generators under `lib/generators/` — regression-test representative quotations after template changes.
-- **Excel parity**: If business relies on Excel workbooks, maintain a **formula dump or golden tests** so drift is detectable.
+- **Exports**: PDF/Excel di `lib/generators/` — uji regresi ringan setelah perubahan template/format **produk** (cacat generate, baris kosong); **bukan** pembandingan ke workbook atau PDF referensi eksternal.
+- **Workbook / kalkulasi**: jika bisnis mengandalkan angka dari workbook DS50-style, pertahankan **formula dump atau golden tests** untuk drift **logika biaya** (bukan layout file export kutipan).
 
 ---
 

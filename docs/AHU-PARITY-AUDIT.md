@@ -1,12 +1,13 @@
 # AHU Auto Costing Parity Audit
 
-Audit ini merangkum status kesesuaian fitur auto AHU costing terhadap referensi:
+Audit ini merangkum status kesesuaian fitur auto AHU costing terhadap referensi **perhitungan workbook**:
 
 - `Costing AHU DS50.xlsx`
-- `excel-formulas-dump.json`
-- `AHU-X4-100-H3-V.pdf`
+- `excel-formulas-dump.json` (ekstraksi formula)
 
-Dokumen ini dipakai sebagai baseline progres menuju target "100% parity".
+**Kutipan PDF/Excel** (`lib/generators/*`) adalah **output produk mandiri**; tidak menjadi sasaran parity terhadap workbook atau file PDF lain.
+
+Dokumen ini dipakai sebagai baseline progres menuju target "100% parity" **untuk jalur kalkulasi / recalculate**.
 
 Checklist eksekusi teknis per modul ada di:
 
@@ -28,7 +29,7 @@ Status modul:
 
 ## Ringkasan persentase (saat ini)
 
-- **Referensi tersedia**: `100%` (3/3 file referensi utama ada).
+- **Referensi tersedia**: `100%` (workbook + dump formula sebagai sumber oracle perhitungan).
 - **Coverage ekstraksi workbook -> JSON**: `100%` (14/14 target sheet pada `scripts/extract-formulas.mjs` masuk ke dump).
 - **Tier-2 oracle (Claude-standard)**: `Pass` — suite `oracle-parity` hijau pada commit yang direferensikan di PR; kontrak oracle terisi (`docs/AHU-PARITY-ORACLE-CONTRACT.md`).
 - **Tier-1 strict (legacy label)**: `100%` — regression dump-backed pada `ahu-costing` + modul test (`frame/coil/damper` chain, dll.).
@@ -39,17 +40,11 @@ Status modul:
 
 | Modul inti | Sheet referensi utama | Tier-2 Oracle | Tier-1 chain / partial | Bukti utama |
 | --- | --- | --- | --- | --- |
-| Frame & Panel | `2. AHU-Frame & Panel` | Pass (GI+PU block `O44:O55`) | Full | `oracle-parity` + `ahu-costing.test.ts` |
+| Frame & Panel | `2. AHU-Frame & Panel` | Pass (`O96`) | Full | `oracle-parity` + `ahu-costing.test.ts` |
 | Skid | `1. AHU-Skid` | Pass (`J18:J20`, `O25`) | Full | `oracle-parity` + `skid.test.ts` |
 | Structure + Drain | `3. AHU-Structure` | Pass (`N60/O60` split modul) | Full | `oracle-parity` + `structure-workbook.ts` / `structure.test.ts` |
 | Coil | `CoilCost 20251027` | Pass (`V235` golden row) | Full | `oracle-parity` + `ahu-costing.test.ts` |
 | Damper | `VolDamperCost2023 FA ` / `RA ` | Pass (`S59`) | Full | `oracle-parity` + `ahu-costing.test.ts` |
-
-## Catatan PDF/Excel output
-
-- Generator output aplikasi (`lib/generators/pdfGenerator.ts`, `lib/generators/excelGenerator.ts`) adalah formatter dokumen produk saat ini.
-- Belum ada bukti bahwa layout/output tersebut direplikasi 1:1 terhadap template referensi DS50 atau PDF referensi secara pixel/cell exact.
-- Karena itu, klaim "100% sesuai PDF/Excel output referensi" belum dapat dinyatakan.
 
 ## Integrasi recalculate
 
