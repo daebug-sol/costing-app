@@ -378,7 +378,7 @@ export function DocumentationModule() {
   }, []);
 
   useEffect(() => {
-    const cancelled = false;
+    let cancelled = false;
     (async () => {
       setLoading(true);
       await Promise.all([loadList(), loadSettings(), loadAvailable()]);

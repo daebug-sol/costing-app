@@ -6,6 +6,7 @@ alwaysApply: false
 
 # UI / UX
 
+- **shadcn skill**: For add/search/docs/diff of UI primitives, follow `.cursor/skills/shadcn/SKILL.md` (run `npx shadcn@latest info --json` for project context; aliases in `components.json`).
 - **Components**: Prefer `components/ui/*` (Radix/shadcn patterns already in repo). Reuse `Button`, `Card`, `Input`, `Table`, etc. Do not add a second design system.
 - **Styling**: Use Tailwind utilities and existing tokens (`bg-card`, `text-muted-foreground`, `border-border`). Avoid arbitrary one-off colors unless extending the theme intentionally.
 - **Density**: Match neighboring screens (costing, database, documentation). No random huge padding or font-size jumps on a single view.

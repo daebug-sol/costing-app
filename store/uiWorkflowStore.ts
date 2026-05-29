@@ -6,6 +6,7 @@ export type CostingSidebarFilters = {
   statusFilter: "all" | "draft" | "finalized";
   monthFilter: string;
   dateFilter: string;
+  collapsed: boolean;
 };
 
 export type DocumentationListFilters = {
@@ -84,6 +85,7 @@ const defaultCostingSidebar: CostingSidebarFilters = {
   statusFilter: "all",
   monthFilter: "",
   dateFilter: "",
+  collapsed: false,
 };
 
 const defaultDocumentation: UiWorkflowState["documentation"] = {

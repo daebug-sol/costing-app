@@ -27,6 +27,8 @@ import {
   ListFilter,
   Loader2,
   Lock,
+  PanelLeftClose,
+  PanelLeftOpen,
   Pencil,
   Plus,
   Search,
@@ -74,6 +76,11 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -1473,6 +1480,7 @@ export function CostingWorkspace() {
   const statusFilter = useUiWorkflowStore((s) => s.costing.sidebar.statusFilter);
   const monthFilter = useUiWorkflowStore((s) => s.costing.sidebar.monthFilter);
   const dateFilter = useUiWorkflowStore((s) => s.costing.sidebar.dateFilter);
+  const sidebarCollapsed = useUiWorkflowStore((s) => s.costing.sidebar.collapsed);
   const setCostingSidebar = useUiWorkflowStore((s) => s.setCostingSidebar);
   const setCostingOpenSegments = useUiWorkflowStore(
     (s) => s.setCostingOpenSegments
@@ -1921,18 +1929,40 @@ export function CostingWorkspace() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden p-3 lg:p-4">
-        <div className="grid h-full min-h-0 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,40%)_minmax(0,60%)]">
-      {/* Left */}
+        <div
+          className={cn(
+            "grid h-full min-h-0 grid-cols-1 gap-3",
+            !sidebarCollapsed && "lg:grid-cols-[minmax(0,40%)_minmax(0,60%)]"
+          )}
+        >
+      {!sidebarCollapsed ? (
       <aside className="bg-card flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border">
         <div className="border-border shrink-0 border-b p-3">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-foreground">
-              Costing Projects
-            </h2>
+            <div className="flex min-w-0 items-center gap-1">
+              <h2 className="truncate text-sm font-semibold text-foreground">
+                Costing Projects
+              </h2>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground size-7 shrink-0"
+                    aria-label="Sembunyikan daftar proyek"
+                    onClick={() => setCostingSidebar({ collapsed: true })}
+                  >
+                    <PanelLeftClose className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Sembunyikan daftar proyek</TooltipContent>
+              </Tooltip>
+            </div>
             <Button
               type="button"
               size="sm"
-              className="h-8 gap-1"
+              className="h-8 shrink-0 gap-1"
               onClick={() => setNewOpen(true)}
             >
               <Plus className="size-3.5" />
@@ -2106,22 +2136,53 @@ export function CostingWorkspace() {
           )}
         </div>
       </aside>
+      ) : null}
 
       {/* Right */}
       <main
         ref={mainScrollRef}
         onScroll={currentProject ? onMainScroll : undefined}
-        className="bg-card min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border p-4 lg:p-6"
+        className="bg-card relative min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border p-4 lg:p-6"
       >
+        {sidebarCollapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="absolute left-3 top-3 z-10 size-8"
+                aria-label="Tampilkan daftar proyek"
+                onClick={() => setCostingSidebar({ collapsed: false })}
+              >
+                <PanelLeftOpen className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Tampilkan daftar proyek</TooltipContent>
+          </Tooltip>
+        ) : null}
         {!currentProject ? (
           <EmptyState
             icon={FolderKanban}
             title="Pilih atau buat proyek"
-            description='Pilih proyek di daftar kiri, atau buat baru dengan tombol "Tambah proyek" di pojok atas daftar.'
-            className="h-[min(480px,calc(100vh-8rem))]"
+            description={
+              sidebarCollapsed
+                ? 'Buka daftar proyek dengan tombol di kiri atas, atau buat proyek baru dari halaman ini setelah daftar dibuka.'
+                : 'Pilih proyek di daftar kiri, atau buat baru dengan tombol "Tambah proyek" di pojok atas daftar.'
+            }
+            className={cn(
+              "h-[min(480px,calc(100vh-8rem))]",
+              sidebarCollapsed && "pt-10"
+            )}
           />
         ) : (
-          <div className="mx-auto max-w-6xl space-y-4">
+          <div
+            className={cn(
+              "mx-auto space-y-4",
+              sidebarCollapsed ? "max-w-none" : "max-w-6xl",
+              sidebarCollapsed && "pt-10"
+            )}
+          >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">
