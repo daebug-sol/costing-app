@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -20,7 +21,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <nav
-      className="flex flex-col gap-0.5 md:flex-row md:items-stretch md:gap-0"
+      className="flex flex-col gap-1 md:flex-row md:items-center md:gap-0.5"
       aria-label="Main"
     >
       {navItems.map(({ href, label }) => {
@@ -35,10 +36,10 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             href={href}
             onClick={onNavigate}
             className={cn(
-              "flex items-center px-3 py-2 text-sm font-medium transition-colors md:h-14 md:border-b-2",
+              "rounded-md px-3 py-2 text-sm font-medium transition-colors",
               active
-                ? "text-primary md:border-primary"
-                : "text-muted-foreground hover:text-foreground md:border-transparent"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             )}
           >
             {label}
@@ -53,15 +54,19 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="bg-card fixed top-0 z-50 w-full border-b border-border">
+    <header className="bg-card/95 supports-[backdrop-filter]:bg-card/80 fixed top-0 z-50 w-full border-b border-border backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
         <div className="flex min-w-0 flex-1 items-center md:min-w-[200px] md:flex-none">
           <Link
             href="/"
             className="text-foreground flex min-w-0 items-center gap-2"
           >
-            <Factory className="size-6 shrink-0" aria-hidden />
-            <span className="truncate font-semibold">Costing App</span>
+            <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-lg">
+              <Factory className="size-4" aria-hidden />
+            </span>
+            <span className="truncate font-semibold tracking-tight">
+              Costing App
+            </span>
           </Link>
         </div>
 
@@ -70,32 +75,34 @@ export function Navbar() {
         </div>
 
         <div className="flex shrink-0 items-center justify-end gap-2 md:min-w-[200px]">
-          <Badge
-            variant="secondary"
-            className="border-border bg-muted font-normal text-muted-foreground"
-          >
+          <Badge variant="secondary" className="hidden font-normal sm:inline-flex">
             PT Thermal True
           </Badge>
 
-          <button
+          <Button
             type="button"
-            className="text-muted-foreground hover:bg-muted hover:text-foreground inline-flex items-center justify-center rounded-md p-2 md:hidden"
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
             aria-expanded={open}
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((v) => !v)}
           >
-            {open ? <X className="size-5" /> : <Menu className="size-5" />}
-          </button>
+            {open ? <X data-icon="inline-start" /> : <Menu data-icon="inline-start" />}
+          </Button>
         </div>
       </div>
 
       <div
         className={cn(
-          "bg-card border-border border-b md:hidden",
+          "border-border border-b bg-card md:hidden",
           open ? "block" : "hidden"
         )}
       >
-        <div className="mx-auto max-w-[1600px] px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-4 py-3 sm:px-6">
+          <Badge variant="secondary" className="w-fit font-normal sm:hidden">
+            PT Thermal True
+          </Badge>
           <NavLinks onNavigate={() => setOpen(false)} />
         </div>
       </div>

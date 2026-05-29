@@ -18,6 +18,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { PageShell } from "@/components/page-shell";
 import { formatIDR } from "@/lib/utils/format";
 import { groupByMonthAndDay } from "@/lib/group-by-month-day";
 
@@ -88,17 +89,13 @@ export function DocumentationListView({
   const groups = groupByMonthAndDay(quotations, (q) => new Date(q.tanggal));
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Penawaran
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Daftar dokumen penawaran — grup per bulan & tanggal.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+    <PageShell
+      width="doc"
+      title="Penawaran"
+      description="Daftar dokumen penawaran — grup per bulan & tanggal."
+      className="py-8"
+      actions={
+        <>
           <Button
             type="button"
             variant={selectMode ? "secondary" : "outline"}
@@ -128,7 +125,7 @@ export function DocumentationListView({
           ) : null}
           <Button
             type="button"
-            className="gap-2 shrink-0"
+            className="shrink-0 gap-2"
             disabled={creating}
             onClick={onCreate}
           >
@@ -139,10 +136,10 @@ export function DocumentationListView({
             )}
             Create quotation
           </Button>
-        </div>
-      </div>
-
-      <div className="bg-card rounded-lg border border-border p-3">
+        </>
+      }
+    >
+      <div className="bg-card rounded-lg border border-border p-3 shadow-sm">
         <div className="relative">
           <Search className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
           <Input
@@ -314,6 +311,6 @@ export function DocumentationListView({
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

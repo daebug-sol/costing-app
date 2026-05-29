@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { IBM_Plex_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Toaster } from "@/components/Toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
-const plexSans = IBM_Plex_Sans({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-plex-sans",
+  variable: "--font-sans",
   display: "swap",
 });
 
@@ -32,12 +32,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`h-full ${plexSans.variable} ${plexMono.variable} font-sans antialiased`}
+      className={cn("h-full font-sans antialiased", inter.variable, plexMono.variable)}
     >
       <body className="min-h-full">
         <TooltipProvider>
           <Navbar />
-          <main className="bg-background min-h-screen pt-14">{children}</main>
+          <main className="min-h-screen bg-muted/30 pt-14">{children}</main>
           <Toaster />
         </TooltipProvider>
       </body>

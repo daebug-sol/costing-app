@@ -24,6 +24,7 @@ const COLOR = {
   level1: "#9f6a00",
   level2: "#5b6472",
   level3: "#8f98a8",
+  level4: "#6b7280",
   discount: "#d14d5a",
   final: "#2f3949",
 };

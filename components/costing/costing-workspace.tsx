@@ -1908,13 +1908,13 @@ export function CostingWorkspace() {
   const statusBadge = (s: string) => {
     const v = s.toLowerCase();
     if (v === "finalized" || v === "final")
-      return <Badge className="bg-emerald-600">Finalized</Badge>;
+      return <Badge>Finalized</Badge>;
     if (v === "draft") return <Badge variant="secondary">Draft</Badge>;
     return <Badge variant="outline">{s}</Badge>;
   };
 
   return (
-    <div className="bg-muted/40 flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden border-t border-border">
+    <div className="flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden border-t border-border bg-background">
       {toast && (
         <div className="bg-card border-border fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-lg border px-4 py-2 text-sm">
           {toast}
@@ -1936,7 +1936,7 @@ export function CostingWorkspace() {
           )}
         >
       {!sidebarCollapsed ? (
-      <aside className="bg-card flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border">
+      <aside className="bg-card flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border shadow-sm">
         <div className="border-border shrink-0 border-b p-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1">
@@ -2142,7 +2142,7 @@ export function CostingWorkspace() {
       <main
         ref={mainScrollRef}
         onScroll={currentProject ? onMainScroll : undefined}
-        className="bg-card relative min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border p-4 lg:p-6"
+        className="bg-card relative min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border p-4 shadow-sm lg:p-6"
       >
         {sidebarCollapsed ? (
           <Tooltip>

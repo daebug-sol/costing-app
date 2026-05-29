@@ -46,13 +46,17 @@ export function CostingSankeyChart({ costingData }: { costingData: DashboardCost
   const total = sankey.links.reduce((sum, link) => sum + link.value, 0);
   const minVisualPct = 0.5;
   const minVisualValue = total > 0 ? (total * minVisualPct) / 100 : 0;
+  const labelById = useMemo(
+    () => Object.fromEntries(sankey.nodes.map((node) => [node.id, node.label])),
+    [sankey.nodes]
+  );
   const visualLinks = sankey.links.map((link) => ({
     ...link,
     actualValue: link.value,
     value: Math.max(link.value, minVisualValue),
   }));
-  const actualByEdge = new Map(
-    sankey.links.map((link) => [`${link.source}|||${link.target}`, link.value] as const)
+  const actualByEdge = new Map<string, number>(
+    sankey.links.map((link) => [`${link.source}|||${link.target}`, link.value])
   );
   const topFlows = [...sankey.links]
     .sort((a, b) => b.value - a.value)
@@ -116,7 +120,9 @@ export function CostingSankeyChart({ costingData }: { costingData: DashboardCost
               linkHoverOpacity={0.8}
               linkContract={1}
               enableLinkGradient={false}
-              label={(node) => compactLabel(String(node.label))}
+              label={(node) =>
+                compactLabel(String(labelById[String(node.id)] ?? node.id))
+              }
               labelPosition="inside"
               labelOrientation="horizontal"
               labelPadding={4}

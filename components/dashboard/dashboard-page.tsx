@@ -27,6 +27,7 @@ import {
   buildRevenueScale,
 } from "@/lib/dashboard-ui-mappers";
 import { formatIDR, formatPercent } from "@/lib/utils/format";
+import { PageShell } from "@/components/page-shell";
 import { cn } from "@/lib/utils";
 
 function LoadingRows() {
@@ -455,25 +456,19 @@ export function DashboardPage() {
   ] as const;
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Ringkasan proyek dan penawaran
-        </p>
-      </div>
-
+    <PageShell
+      title="Dashboard"
+      description="Ringkasan proyek dan penawaran"
+    >
       {error ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+        <div className="rounded-lg border border-border bg-muted px-4 py-3 text-xs text-muted-foreground">
           {error}. Menampilkan data terakhir yang tersedia.
         </div>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
         {cards.map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="border-border">
+          <Card key={label} className="shadow-sm">
             <CardContent className="p-4">
               <Icon className="size-5 text-muted-foreground" aria-hidden />
               <p className="mt-3 text-xs font-medium text-muted-foreground">{label}</p>
@@ -489,7 +484,7 @@ export function DashboardPage() {
         ))}
       </div>
 
-      <Card className="border-border">
+      <Card className="shadow-sm">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Hero Sankey Profit Bridge</CardTitle>
           <p className="text-xs font-normal text-muted-foreground">
@@ -564,6 +559,6 @@ export function DashboardPage() {
           Documentation
         </Link>
       </p>
-    </div>
+    </PageShell>
   );
 }

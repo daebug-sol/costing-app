@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatPhoneDash } from "@/lib/phone-format";
 import { formatNumber } from "@/lib/utils/format";
+import { PageShell } from "@/components/page-shell";
 import { toastError, toastSuccess } from "@/store/toastStore";
 
 type Settings = {
@@ -130,15 +131,13 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[720px] space-y-6 px-4 py-6 sm:px-6 lg:py-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Pengaturan</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Profil perusahaan, default costing, forex, dan syarat penawaran
-        </p>
-      </div>
-
-      <Card className="border-border ">
+    <PageShell
+      width="narrow"
+      title="Pengaturan"
+      description="Profil perusahaan, default costing, forex, dan syarat penawaran"
+      className="flex flex-col gap-6 lg:py-8"
+    >
+      <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">Profil perusahaan</CardTitle>
         </CardHeader>
@@ -589,6 +588,6 @@ export function SettingsPage() {
           </Button>
         </CardFooter>
       </Card>
-    </div>
+    </PageShell>
   );
 }
