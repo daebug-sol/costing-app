@@ -1,16 +1,19 @@
 import type { ReactNode } from "react";
+import { PageHeader, type PageHeaderWidth } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 
 type PageShellProps = {
   title: string;
   description?: string;
+  eyebrow?: string;
   children: ReactNode;
   /** Optional toolbar beside the title (filters, primary actions). */
   actions?: ReactNode;
   /** wide = 1400px (dashboard, database, costing header); narrow = 720px (settings) */
-  width?: "wide" | "narrow" | "doc";
+  width?: PageHeaderWidth;
   className?: string;
   headerClassName?: string;
+  contentClassName?: string;
 };
 
 const widthClass = {
@@ -22,39 +25,33 @@ const widthClass = {
 export function PageShell({
   title,
   description,
+  eyebrow,
   children,
   actions,
   width = "wide",
   className,
   headerClassName,
+  contentClassName,
 }: PageShellProps) {
   return (
-    <div
-      className={cn(
-        "mx-auto flex w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8",
-        widthClass[width],
-        className
-      )}
-    >
-      <header
+    <div className={cn("flex w-full flex-col", className)}>
+      <PageHeader
+        title={title}
+        description={description}
+        eyebrow={eyebrow}
+        actions={actions}
+        width={width}
+        className={headerClassName}
+      />
+      <div
         className={cn(
-          "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
-          headerClassName
+          "mx-auto flex w-full flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8",
+          widthClass[width],
+          contentClassName
         )}
       >
-        <div className="flex flex-col gap-1">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
-            {title}
-          </h1>
-          {description ? (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          ) : null}
-        </div>
-        {actions ? (
-          <div className="flex flex-wrap items-center gap-2">{actions}</div>
-        ) : null}
-      </header>
-      {children}
+        {children}
+      </div>
     </div>
   );
 }

@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { buildDashboardAnalyticsPayload } from "@/lib/dashboard-analytics";
-import { EMPTY_DASHBOARD_RESPONSE } from "@/lib/dashboard-contract";
+import { EMPTY_DASHBOARD_RESPONSE, type DashboardRange } from "@/lib/dashboard-contract";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const projectIdParam = searchParams.get("projectId");
     const selectedProjectId = projectIdParam && projectIdParam.trim() ? projectIdParam.trim() : null;
+    const rangeParam = searchParams.get("range");
+    const range: DashboardRange =
+      rangeParam === "mtd" || rangeParam === "ytd" || rangeParam === "12m" || rangeParam === "all"
+        ? rangeParam
+        : "all";
 
     const [projects, quotations, settings] = await Promise.all([
       prisma.costingProject.findMany({
@@ -66,8 +71,16 @@ export async function GET(request: Request) {
         select: {
           id: true,
           status: true,
+          salesman: true,
           tanggal: true,
+          createdAt: true,
+          updatedAt: true,
           projectId: true,
+          clientName: true,
+          clientCompany: true,
+          validityDays: true,
+          discount: true,
+          discountEnabled: true,
           totalBeforeDisc: true,
           totalAfterDisc: true,
           totalPPN: true,
@@ -95,6 +108,7 @@ export async function GET(request: Request) {
       quotations,
       defaultPaymentTerms: settings?.paymentTerms ?? "DP 50%, balance CBD",
       selectedProjectId,
+      range,
     });
     return NextResponse.json(payload);
   } catch (e) {

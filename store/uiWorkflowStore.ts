@@ -21,6 +21,7 @@ type UiWorkflowState = {
     sidebar: CostingSidebarFilters;
     openSegmentsByProject: Record<string, Record<string, boolean>>;
     openCatsByProject: Record<string, Record<string, boolean>>;
+    projectSummaryOpenByProject: Record<string, boolean>;
     manualOpenCatsByProject: Record<
       string,
       Record<string, Record<string, boolean>>
@@ -53,6 +54,7 @@ type UiWorkflowState = {
     key: string,
     open: boolean
   ) => void;
+  patchCostingProjectSummaryOpen: (projectId: string, open: boolean) => void;
   setManualOpenCats: (
     projectId: string,
     segmentId: string,
@@ -109,6 +111,7 @@ export const useUiWorkflowStore = create<UiWorkflowState>()(
         sidebar: { ...defaultCostingSidebar },
         openSegmentsByProject: {},
         openCatsByProject: {},
+        projectSummaryOpenByProject: {},
         manualOpenCatsByProject: {},
         mainScrollByProject: {},
       },
@@ -173,6 +176,17 @@ export const useUiWorkflowStore = create<UiWorkflowState>()(
           };
         }),
 
+      patchCostingProjectSummaryOpen: (projectId, open) =>
+        set((s) => ({
+          costing: {
+            ...s.costing,
+            projectSummaryOpenByProject: {
+              ...(s.costing.projectSummaryOpenByProject ?? {}),
+              [projectId]: open,
+            },
+          },
+        })),
+
       setManualOpenCats: (projectId, segmentId, groups) =>
         set((s) => {
           const bySeg = s.costing.manualOpenCatsByProject[projectId] ?? {};
@@ -233,11 +247,47 @@ export const useUiWorkflowStore = create<UiWorkflowState>()(
     {
       name: "costing-app-ui-workflow",
       storage: createJSONStorage(() => sessionStorage),
+      merge: (persisted, current) => {
+        const p = persisted as Partial<UiWorkflowState> | undefined;
+        if (!p) return current;
+        const persistedCosting = p.costing;
+        return {
+          ...current,
+          ...p,
+          costing: {
+            ...current.costing,
+            ...persistedCosting,
+            sidebar: {
+              ...current.costing.sidebar,
+              ...persistedCosting?.sidebar,
+            },
+            openSegmentsByProject:
+              persistedCosting?.openSegmentsByProject ??
+              current.costing.openSegmentsByProject,
+            openCatsByProject:
+              persistedCosting?.openCatsByProject ??
+              current.costing.openCatsByProject,
+            projectSummaryOpenByProject:
+              persistedCosting?.projectSummaryOpenByProject ??
+              current.costing.projectSummaryOpenByProject,
+            manualOpenCatsByProject:
+              persistedCosting?.manualOpenCatsByProject ??
+              current.costing.manualOpenCatsByProject,
+            mainScrollByProject:
+              persistedCosting?.mainScrollByProject ??
+              current.costing.mainScrollByProject,
+          },
+          database: { ...current.database, ...p.database },
+          documentation: { ...current.documentation, ...p.documentation },
+        };
+      },
       partialize: (state) => ({
         costing: {
           sidebar: state.costing.sidebar,
           openSegmentsByProject: state.costing.openSegmentsByProject,
           openCatsByProject: state.costing.openCatsByProject,
+          projectSummaryOpenByProject:
+            state.costing.projectSummaryOpenByProject,
           manualOpenCatsByProject: state.costing.manualOpenCatsByProject,
           mainScrollByProject: state.costing.mainScrollByProject,
         },

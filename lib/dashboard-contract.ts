@@ -7,7 +7,14 @@ export type DashboardKpis = {
   discountLeakageValue: number;
   bookedRevenueMtd: number;
   bookedRevenueYtd: number;
+  pipelineValue: number;
+  backlogValue: number;
+  winRatePct: number;
+  taxExposurePpn: number;
+  taxExposurePph: number;
 };
+
+export type DashboardRange = "mtd" | "ytd" | "12m" | "all";
 
 export type DashboardSankeyNode = {
   id: string;
@@ -112,7 +119,95 @@ export type DashboardProjectScope = {
   options: DashboardProjectScopeOption[];
 };
 
+export type DashboardQuotationFunnel = {
+  draftCount: number;
+  finalCount: number;
+  approvedCount: number;
+  totalCount: number;
+  winRatePct: number;
+};
+
+export type DashboardStatusDistributionRow = {
+  status: string;
+  count: number;
+  value: number;
+};
+
+export type DashboardStatusDistribution = {
+  projectStatus: DashboardStatusDistributionRow[];
+  quotationStatus: DashboardStatusDistributionRow[];
+};
+
+export type DashboardQuotationAgingRow = {
+  quotationId: string;
+  status: string;
+  tanggal: string;
+  ageDays: number;
+  validityDays: number;
+  expiryDate: string;
+  isExpired: boolean;
+  clientLabel: string;
+  discountValue: number;
+  totalAfterDisc: number;
+};
+
+export type DashboardQuotationAging = {
+  rows: DashboardQuotationAgingRow[];
+  expiredCount: number;
+  generatedAt: string;
+};
+
+export type DashboardDiscountMarginTrendPoint = {
+  month: string;
+  discountLeakage: number;
+  bookedRevenue: number;
+  weightedMarginPct: number;
+};
+
+export type DashboardDiscountMarginTrend = {
+  period: "monthly";
+  series: DashboardDiscountMarginTrendPoint[];
+};
+
+export type DashboardSegmentMixRow = {
+  segmentType: "ahu" | "manual" | "other";
+  value: number;
+  pct: number;
+};
+
+export type DashboardSegmentMix = {
+  rows: DashboardSegmentMixRow[];
+};
+
+export type DashboardTopClientRow = {
+  client: string;
+  bookedRevenue: number;
+  quotationCount: number;
+  concentrationPct: number;
+};
+
+export type DashboardTopClient = {
+  rows: DashboardTopClientRow[];
+};
+
+export type DashboardSalesLeaderboardMode = "salesman" | "client";
+
+export type DashboardSalesLeaderboardRow = {
+  principal: string;
+  bookedRevenue: number;
+  quotationCount: number;
+  winRatePct: number;
+  avgMarginPct: number;
+  pipelineValue: number;
+};
+
+export type DashboardSalesLeaderboard = {
+  mode: DashboardSalesLeaderboardMode;
+  rows: DashboardSalesLeaderboardRow[];
+};
+
 export type DashboardApiResponse = {
+  range: DashboardRange;
   projectScope: DashboardProjectScope;
   kpis: DashboardKpis;
   costingData: DashboardCostingData;
@@ -120,9 +215,17 @@ export type DashboardApiResponse = {
   revenueTrend: DashboardRevenueTrendPayload;
   cashflowProjection: DashboardCashflowProjectionPayload;
   topDrivers: DashboardTopDrivers;
+  quotationFunnel: DashboardQuotationFunnel;
+  statusDistribution: DashboardStatusDistribution;
+  quotationAging: DashboardQuotationAging;
+  discountMarginTrend: DashboardDiscountMarginTrend;
+  segmentMix: DashboardSegmentMix;
+  topClient: DashboardTopClient;
+  salesLeaderboard: DashboardSalesLeaderboard;
 };
 
 export const EMPTY_DASHBOARD_RESPONSE: DashboardApiResponse = {
+  range: "all",
   projectScope: {
     selectedProjectId: null,
     options: [],
@@ -136,6 +239,11 @@ export const EMPTY_DASHBOARD_RESPONSE: DashboardApiResponse = {
     discountLeakageValue: 0,
     bookedRevenueMtd: 0,
     bookedRevenueYtd: 0,
+    pipelineValue: 0,
+    backlogValue: 0,
+    winRatePct: 0,
+    taxExposurePpn: 0,
+    taxExposurePph: 0,
   },
   costingData: {
     rawContributions: [],
@@ -172,5 +280,35 @@ export const EMPTY_DASHBOARD_RESPONSE: DashboardApiResponse = {
   topDrivers: {
     topGrossProfitProjects: [],
     topMarginErosionProjects: [],
+  },
+  quotationFunnel: {
+    draftCount: 0,
+    finalCount: 0,
+    approvedCount: 0,
+    totalCount: 0,
+    winRatePct: 0,
+  },
+  statusDistribution: {
+    projectStatus: [],
+    quotationStatus: [],
+  },
+  quotationAging: {
+    rows: [],
+    expiredCount: 0,
+    generatedAt: new Date(0).toISOString(),
+  },
+  discountMarginTrend: {
+    period: "monthly",
+    series: [],
+  },
+  segmentMix: {
+    rows: [],
+  },
+  topClient: {
+    rows: [],
+  },
+  salesLeaderboard: {
+    mode: "client",
+    rows: [],
   },
 };

@@ -1,83 +1,99 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * Sample visual / smoke spec for the Dashboard route ("/").
+ * Visual / smoke spec for the Dashboard route ("/").
  *
- * What we lock down here (intentionally narrow to keep the harness honest):
- *   1. The route mounts and the canonical <h1> + description appear.
- *   2. The KPI grid renders eight cards (matches DashboardPage cards array).
- *   3. The Hero Sankey card region exists with its title.
- *   4. A full-page screenshot baseline of the loaded shell.
- *
- * What we do NOT test here (out of scope, would be brittle):
- *   - The exact rendering of the Sankey chart (data-driven, masked).
- *   - Live KPI numbers (mask any region that depends on the dev DB).
- *
- * See docs/UI-HARNESS.md §4 and docs/UX-ACCEPTANCE-SCENARIOS.md scenario 1.
+ * Locks down compact IA: hero KPIs, tabbed insight panel, detail accordion.
+ * Chart pixels are masked; table fallbacks verified via detail sheet or tabs.
  */
 
 test.describe("Dashboard ('/')", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
-    // Wait for the canonical heading. This is more reliable than networkidle
-    // alone because the dashboard fetches /api/dashboard after mount.
     await expect(
       page.getByRole("heading", { level: 1, name: "Dashboard" })
     ).toBeVisible();
   });
 
-  test("renders heading, description, and primary regions", async ({
-    page,
-  }) => {
+  test("renders heading, tabs, and primary regions", async ({ page }) => {
     await expect(
-      page.getByText("Ringkasan proyek dan penawaran", { exact: true })
+      page.getByText(/Ringkasan finansial proyek dan quotation/)
     ).toBeVisible();
 
-    await expect(
-      page.getByRole("heading", { name: "Hero Sankey Profit Bridge" })
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
 
-    await expect(
-      page.getByRole("heading", { name: "Revenue Trend" })
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "Insight utama" })).toBeVisible();
+    await expect(page.getByTestId("dashboard-tab-finansial")).toBeVisible();
+    await expect(page.getByTestId("dashboard-tab-penjualan")).toBeVisible();
+    await expect(page.getByTestId("dashboard-tab-costing")).toBeVisible();
 
-    await expect(
-      page.getByRole("heading", { name: "Cashflow Projection" })
-    ).toBeVisible();
+    await page.waitForLoadState("networkidle");
 
-    await expect(
-      page.getByRole("heading", { name: "Top Drivers" })
-    ).toBeVisible();
+    await expect(page.getByText("Profit bridge", { exact: true })).toBeVisible();
+    await expect(page.getByText("Cashflow timeline", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("profit-bridge-chart")).toBeVisible();
+    await expect(page.getByTestId("cashflow-timeline-chart")).toBeVisible();
+
+    await page.getByTestId("dashboard-tab-penjualan").click();
+    await expect(page.getByTestId("quotation-funnel")).toBeVisible();
+    await expect(page.getByTestId("status-distribution")).toBeVisible();
+    await expect(page.getByTestId("sales-leaderboard")).toBeVisible();
+
+    await page.getByTestId("dashboard-tab-costing").click();
+    await expect(page.getByTestId("cost-breakdown-chart")).toBeVisible();
+    await expect(page.getByTestId("revenue-trend-chart")).toBeVisible();
   });
 
-  test("renders eight KPI labels", async ({ page }) => {
-    const kpiLabels = [
-      "Total Projects",
-      "Active Costing",
-      "Pending Quotation",
-      "Approved Quotation",
-      "Weighted Gross Margin",
-      "Discount Leakage",
-      "Booked Revenue MTD (net)",
-      "Booked Revenue YTD (net)",
-    ];
+  test("profit bridge table fallback in detail sheet", async ({ page }) => {
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByTestId("profit-bridge-chart")).toBeVisible({ timeout: 15_000 });
+    const detailButton = page.getByRole("button", { name: "Lihat detail" }).first();
+    await expect(detailButton).toBeVisible({ timeout: 10_000 });
+    await detailButton.click();
+    await expect(page.getByRole("columnheader", { name: "Tahap" })).toBeVisible();
+  });
 
-    for (const label of kpiLabels) {
-      await expect(page.getByText(label, { exact: true })).toBeVisible();
+  test("detail accordion exposes quotation aging", async ({ page }) => {
+    await page.waitForLoadState("networkidle");
+    await page.getByTestId("dashboard-detail-accordion").getByRole("button").click();
+    await expect(page.getByTestId("quotation-aging-table")).toBeVisible();
+  });
+
+  test("renders new KPI strips", async ({ page }) => {
+    const heroLabels = [
+      "Booked revenue YTD",
+      "Booked revenue MTD",
+      "Weighted gross margin",
+      "Pipeline value",
+      "Discount leakage",
+    ];
+    const secondaryLabels = ["Total proyek", "Quotation pending", "Win rate", "Eksposur pajak (PPN + PPh)"];
+
+    const heroGrid = page.getByTestId("dashboard-hero-kpis");
+
+    for (const label of heroLabels) {
+      await expect(heroGrid.getByText(label, { exact: true })).toBeVisible();
+    }
+
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width >= 640) {
+      const secondaryGrid = page.getByTestId("dashboard-secondary-kpis");
+      for (const label of secondaryLabels) {
+        await expect(secondaryGrid.getByText(label, { exact: true })).toBeVisible();
+      }
     }
   });
 
   test("matches visual baseline (shell only)", async ({ page }) => {
-    // Wait for the dashboard fetch to settle so skeletons are gone.
     await page.waitForLoadState("networkidle");
 
-    // Mask only known volatile regions so the baseline is stable across DB
-    // states without hiding unrelated SVG-based UI (icons, glyphs, etc).
     await expect(page).toHaveScreenshot("dashboard-shell.png", {
       fullPage: true,
       mask: [
         page.locator(".tabular-money"),
-        page.locator(".nivo-sankey"),
+        page.locator("[data-testid='profit-bridge-chart']"),
+        page.locator("[data-testid='cost-breakdown-chart']"),
+        page.locator("[data-testid='cashflow-timeline-chart']"),
         page.locator("[data-volatile]"),
       ],
       animations: "disabled",

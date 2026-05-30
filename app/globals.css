@@ -9,6 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-display: var(--font-display), ui-serif, Georgia, serif;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -135,5 +136,20 @@
   .tabular-money {
     font-family: var(--font-plex-mono), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
+  }
+
+  /** Horizontal page margins — matches docs/UI-HARNESS.md shell */
+  .app-page-gutter {
+    @apply mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8;
+  }
+
+  /** Costing workspace uses a slightly wider canvas */
+  .app-page-gutter-wide {
+    @apply mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8;
+  }
+
+  /** Consistent inset inside bordered panels */
+  .app-panel-inset {
+    @apply p-4 sm:p-5;
   }
 }

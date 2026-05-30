@@ -20,8 +20,16 @@ const baseProject = {
 const baseQuotation = {
   id: "q1",
   status: "approved",
+  salesman: null,
   tanggal: new Date("2026-05-02T00:00:00.000Z"),
+  createdAt: new Date("2026-05-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-05-02T00:00:00.000Z"),
   projectId: "p1",
+  clientName: "Budi",
+  clientCompany: "PT Alpha",
+  validityDays: 14,
+  discount: 100,
+  discountEnabled: true,
   totalBeforeDisc: 1500,
   totalAfterDisc: 1400,
   totalPPN: 154,
@@ -47,6 +55,8 @@ describe("buildDashboardAnalyticsPayload", () => {
     expect(payload.sankey.nodes).toHaveLength(0);
     expect(payload.revenueTrend.series).toHaveLength(0);
     expect(payload.topDrivers.topGrossProfitProjects).toHaveLength(0);
+    expect(payload.quotationFunnel.totalCount).toBe(0);
+    expect(payload.topClient.rows).toHaveLength(0);
   });
 
   it("builds phase-1 dashboard payload with explicit payment terms", () => {
@@ -68,6 +78,17 @@ describe("buildDashboardAnalyticsPayload", () => {
     expect(payload.cashflowProjection.series).toHaveLength(12);
     expect(payload.topDrivers.topGrossProfitProjects[0]?.projectId).toBe("p1");
     expect(payload.cashflowProjection.assumptions.confidenceNote).toContain("parsed");
+    expect(payload.kpis.backlogValue).toBe(1400);
+    expect(payload.kpis.pipelineValue).toBe(0);
+    expect(payload.kpis.taxExposurePpn).toBe(154);
+    expect(payload.quotationFunnel.approvedCount).toBe(1);
+    expect(payload.statusDistribution.quotationStatus[0]?.status).toBe("approved");
+    expect(payload.quotationAging.rows).toHaveLength(1);
+    expect(payload.discountMarginTrend.series).toHaveLength(12);
+    expect(payload.segmentMix.rows).toHaveLength(0);
+    expect(payload.topClient.rows[0]?.client).toBe("PT Alpha");
+    expect(payload.salesLeaderboard.mode).toBe("client");
+    expect(payload.salesLeaderboard.rows[0]?.principal).toBe("PT Alpha");
   });
 
   it("filters analytics by selected project", () => {
@@ -107,6 +128,7 @@ describe("buildDashboardAnalyticsPayload", () => {
     expect(payload.projectScope.selectedProjectId).toBe("p1");
     expect(payload.kpis.totalProjects).toBe(1);
     expect(payload.topDrivers.topGrossProfitProjects[0]?.projectId).toBe("p1");
+    expect(payload.topClient.rows).toHaveLength(1);
   });
 
   it("uses deterministic fallback when payment terms unknown", () => {
@@ -124,5 +146,45 @@ describe("buildDashboardAnalyticsPayload", () => {
     const junBucket = payload.cashflowProjection.series.find((row) => row.month === "2026-06");
     expect(mayBucket?.projectedIn).toBeGreaterThan(0);
     expect(junBucket?.projectedIn).toBeGreaterThan(0);
+  });
+
+  it("applies range filter for pipeline and funnel", () => {
+    const payload = buildDashboardAnalyticsPayload(
+      {
+        projects: [baseProject],
+        quotations: [
+          { ...baseQuotation, id: "q-old", status: "draft", tanggal: new Date("2025-02-02T00:00:00.000Z") },
+          { ...baseQuotation, id: "q-new", status: "draft", tanggal: new Date("2026-05-02T00:00:00.000Z") },
+        ],
+        defaultPaymentTerms: "DP 50%, balance CBD",
+        range: "mtd",
+      },
+      new Date("2026-05-09T00:00:00.000Z")
+    );
+
+    expect(payload.range).toBe("mtd");
+    expect(payload.kpis.pipelineValue).toBe(1400);
+    expect(payload.quotationFunnel.draftCount).toBe(1);
+    expect(payload.topClient.rows).toHaveLength(0);
+  });
+
+  it("uses salesman leaderboard when attribution is available", () => {
+    const payload = buildDashboardAnalyticsPayload(
+      {
+        projects: [baseProject],
+        quotations: [
+          { ...baseQuotation, id: "q1", status: "approved", salesman: "Rina" },
+          { ...baseQuotation, id: "q2", status: "draft", salesman: "Rina" },
+          { ...baseQuotation, id: "q3", status: "approved", salesman: "Dimas" },
+        ],
+        defaultPaymentTerms: "DP 50%, balance CBD",
+      },
+      new Date("2026-05-09T00:00:00.000Z")
+    );
+
+    expect(payload.salesLeaderboard.mode).toBe("salesman");
+    expect(payload.salesLeaderboard.rows[0]?.principal).toBe("Rina");
+    expect(payload.salesLeaderboard.rows[0]?.quotationCount).toBe(2);
+    expect(payload.salesLeaderboard.rows[0]?.pipelineValue).toBe(1400);
   });
 });

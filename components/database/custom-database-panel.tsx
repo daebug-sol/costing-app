@@ -866,7 +866,7 @@ export function CustomDatabasePanel({
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" onClick={() => setNewFileDialogOpen(true)}>
               <Plus className="size-4" />
-              + Add New
+              Add New
             </Button>
             <input
               ref={importRef}
@@ -897,11 +897,11 @@ export function CustomDatabasePanel({
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/60">
-                  <th className="px-3 py-2 text-left">File Name</th>
-                  <th className="px-3 py-2 text-left">Rows</th>
-                  <th className="px-3 py-2 text-left">Columns</th>
-                  <th className="px-3 py-2 text-left">Updated</th>
-                  <th className="px-3 py-2 text-right">Actions</th>
+                  <th className="px-4 py-2.5 text-left">File Name</th>
+                  <th className="px-4 py-2.5 text-left">Rows</th>
+                  <th className="px-4 py-2.5 text-left">Columns</th>
+                  <th className="px-4 py-2.5 text-left">Updated</th>
+                  <th className="px-4 py-2.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -912,12 +912,12 @@ export function CustomDatabasePanel({
                     title="Double-click untuk membuka file"
                     onDoubleClick={() => void openFile(f.id)}
                   >
-                    <td className="px-3 py-2">{f.name}</td>
-                    <td className="px-3 py-2">{f.rowsCount}</td>
-                    <td className="px-3 py-2">{f.columnsCount}</td>
-                    <td className="px-3 py-2">{new Date(f.updatedAt).toLocaleString("id-ID")}</td>
+                    <td className="px-4 py-2.5">{f.name}</td>
+                    <td className="px-4 py-2.5">{f.rowsCount}</td>
+                    <td className="px-4 py-2.5">{f.columnsCount}</td>
+                    <td className="px-4 py-2.5">{new Date(f.updatedAt).toLocaleString("id-ID")}</td>
                     <td
-                      className="px-3 py-2 text-right"
+                      className="px-4 py-2.5 text-right"
                       onClick={(e) => e.stopPropagation()}
                       onDoubleClick={(e) => e.stopPropagation()}
                     >
@@ -1084,7 +1084,7 @@ export function CustomDatabasePanel({
                     insertVarKeyAtCursor(key);
                   }}
                   onContextMenu={(e) => openContextMenu(e, { columnId: col.id })}
-                  className={`sticky top-0 z-30 px-3 py-2 text-left font-medium ${
+                  className={`sticky top-0 z-30 px-4 py-2.5 text-left font-medium ${
                     isLocked(col.id)
                       ? "bg-[#203351] text-white border-2 border-[#15233a]"
                       : "border-b border-r bg-muted"
@@ -1470,7 +1470,7 @@ export function CustomDatabasePanel({
       </div>
 
       {rows.length > PAGE_SIZE ? (
-        <div className="flex flex-col gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 rounded-md border border-border bg-muted/30 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm text-muted-foreground">
             Baris {gridPage * PAGE_SIZE + 1}–{Math.min((gridPage + 1) * PAGE_SIZE, rows.length)} dari{" "}
             {rows.length}

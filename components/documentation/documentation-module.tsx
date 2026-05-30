@@ -11,6 +11,7 @@ import {
   Loader2,
   PenLine,
   Plus,
+  RefreshCw,
   X,
 } from "lucide-react";
 import { DocumentationListView } from "@/components/documentation/documentation-list-view";
@@ -54,6 +55,16 @@ import { toastError, toastSuccess } from "@/store/toastStore";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
 
 const SPEC_MAX_CHARS = 4000;
+
+async function readErr(res: Response): Promise<string> {
+  try {
+    const j = (await res.json()) as { error?: string };
+    if (j?.error) return j.error;
+  } catch {
+    /* ignore */
+  }
+  return res.statusText || "Request failed";
+}
 
 type CostingBreakdown = { project: ProjectDoc; sections: SectionDoc[] };
 
@@ -226,6 +237,7 @@ export function DocumentationModule() {
   );
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   const [quotations, setQuotations] = useState<QuotationApi[]>([]);
@@ -329,7 +341,12 @@ export function DocumentationModule() {
 
   const loadSettings = useCallback(async () => {
     const r = await fetch("/api/settings");
-    if (r.ok) setSettings(await r.json());
+    if (r.ok) {
+      setSettings(await r.json());
+      setLoadError(null);
+    } else {
+      setLoadError(await readErr(r));
+    }
   }, []);
 
   const loadAvailable = useCallback(async () => {
@@ -952,10 +969,32 @@ export function DocumentationModule() {
     });
   }, [settings, quotation]);
 
-  if (loading || !settings) {
+  if (loading) {
     return (
       <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center bg-muted/40">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (loadError || !settings) {
+    return (
+      <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center gap-4 bg-muted/40 px-4">
+        <p className="max-w-md text-center text-sm text-muted-foreground">
+          {loadError ?? "Gagal memuat pengaturan aplikasi."}
+        </p>
+        <Button
+          type="button"
+          className="gap-2"
+          onClick={() => {
+            setLoading(true);
+            setLoadError(null);
+            void loadSettings().finally(() => setLoading(false));
+          }}
+        >
+          <RefreshCw className="size-4" />
+          Coba lagi
+        </Button>
       </div>
     );
   }
@@ -1014,7 +1053,7 @@ export function DocumentationModule() {
 
   return (
     <div className="bg-muted relative flex h-[calc(100vh-3.5rem)] min-h-0 flex-col overflow-hidden">
-      <div className="bg-card/95 border-border z-30 flex shrink-0 flex-col gap-2 border-b px-4 py-2.5 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <div className="bg-card/95 border-border z-30 flex shrink-0 flex-col gap-2 border-b px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           <Button
             type="button"
@@ -1077,14 +1116,14 @@ export function DocumentationModule() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden p-4 lg:grid-cols-[minmax(0,34%)_minmax(0,66%)]">
+      <div className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-1 gap-4 overflow-hidden px-4 py-4 sm:gap-5 sm:px-6 sm:py-5 lg:grid-cols-[minmax(0,34%)_minmax(0,66%)] lg:px-8 lg:py-6">
         <Card className="border-border flex min-h-0 flex-col overflow-hidden">
           <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
             <Tabs
               defaultValue="identitas"
               className="flex min-h-0 w-full flex-1 flex-col"
             >
-              <TabsList className="grid w-full shrink-0 grid-cols-5 rounded-none border-b bg-muted/40 px-1">
+              <TabsList className="grid w-full shrink-0 grid-cols-5 rounded-none border-b bg-muted/40 px-3 py-1.5">
                 <TabsTrigger value="identitas" className="text-xs">
                   Identitas
                 </TabsTrigger>
@@ -1104,7 +1143,7 @@ export function DocumentationModule() {
 
               <TabsContent
                 value="identitas"
-                className="mt-0 min-h-0 flex-1 space-y-3 overflow-y-auto p-4"
+                className="mt-0 min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5"
               >
                 <div className="grid gap-2">
                   <Label>No. Surat</Label>
@@ -1159,7 +1198,7 @@ export function DocumentationModule() {
 
               <TabsContent
                 value="klien"
-                className="mt-0 min-h-0 flex-1 space-y-3 overflow-y-auto p-4"
+                className="mt-0 min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5"
               >
                 <div className="grid gap-2">
                   <Label>Nama Klien</Label>
@@ -1208,7 +1247,7 @@ export function DocumentationModule() {
 
               <TabsContent
                 value="items"
-                className="mt-0 min-h-0 flex-1 space-y-4 overflow-y-auto p-4"
+                className="mt-0 min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5"
               >
                 <div className="relative">
                   <Label className="mb-1 block">Tambah item dari Costing...</Label>
@@ -1472,7 +1511,7 @@ export function DocumentationModule() {
 
               <TabsContent
                 value="syarat"
-                className="mt-0 min-h-0 flex-1 space-y-3 overflow-y-auto p-4"
+                className="mt-0 min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5"
               >
                 <div className="grid gap-2">
                   <Label>Pembayaran</Label>
@@ -1533,7 +1572,7 @@ export function DocumentationModule() {
 
               <TabsContent
                 value="ttd"
-                className="mt-0 min-h-0 flex-1 space-y-4 overflow-y-auto p-4"
+                className="mt-0 min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5"
               >
                 <p className="text-muted-foreground text-xs leading-relaxed">
                   Nama PJ diisi di{" "}
@@ -1673,7 +1712,7 @@ export function DocumentationModule() {
               Internal costing
             </Button>
           </div>
-          <div className="relative min-h-0 flex-1 overflow-y-auto rounded-lg border border-border bg-muted/30 p-2 sm:p-3">
+          <div className="relative min-h-0 flex-1 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3 sm:p-4 lg:p-5">
             <div
               className={`relative z-0 mx-auto box-border w-full max-w-[min(100%,56rem)] rounded-md bg-white p-6 shadow-md sm:p-8 ${
                 form.status === "draft"

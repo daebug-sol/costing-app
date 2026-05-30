@@ -77,6 +77,13 @@ Reuse these exact strings instead of inventing variants:
 | Invalid number | "Angka tidak valid" | "Invalid number" |
 | Open Costing | "Buka Costing" | "Open Costing" |
 | Open Database | "Buka Database" | "Open Database" |
+| Expired validity badge | "Masa berlaku habis" | "Validity expired" |
+| Sales fallback note | "Salesman belum tersedia; performa memakai konsentrasi klien sebagai fallback." | "Salesman unavailable; using client concentration fallback." |
+| Dashboard insight section | "Insight utama" | "Main insights" |
+| Dashboard detail accordion | "Detail & tindak lanjut" | "Detail & follow-up" |
+| Chart detail CTA | "Lihat detail" | "View detail" |
+| Secondary KPI collapsible (mobile) | "KPI pendukung" | "Supporting KPIs" |
+| Dashboard insight tabs | "Finansial" / "Penjualan" / "Costing" | Financial / Sales / Costing |
 
 When introducing a new pattern (e.g. import errors), add the canonical
 string here in the same PR.

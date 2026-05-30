@@ -29,11 +29,12 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import { AssemblyTypeBadge } from "@/components/costing/assembly-type-badge";
+import { CostingShell } from "@/components/costing/costing-shell";
 import {
   ItemPickerModal,
   type PickerSelection,
 } from "@/components/costing/ItemPickerModal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -664,9 +665,7 @@ export function ManualWorkspace({
             <h2 className="text-lg font-semibold text-foreground">
               Project: {currentProject.name}
             </h2>
-            <Badge className="mt-1 bg-violet-600 hover:bg-violet-600">
-              Mode: Manual
-            </Badge>
+            <AssemblyTypeBadge variant="manual" className="mt-1" />
           </div>
         )}
         <div className="flex flex-wrap gap-2">
@@ -701,54 +700,53 @@ export function ManualWorkspace({
           items={groupIds}
           strategy={verticalListSortingStrategy}
         >
-            <div className="border-border/60 overflow-hidden rounded-md border">
+            <div className="flex flex-col gap-2">
               {groups.map((g) => {
                 const open = openCats[g.id] ?? true;
                 const itemIds = g.items.map((i) => `i-${i.id}`);
                 return (
                   <SortableGroupWrap key={g.id} id={`g-${g.id}`}>
-                    {({ setNodeRef, style, dragProps }) => (
-                    <div
-                      ref={setNodeRef}
-                      style={style}
-                      className="border-border/60 overflow-hidden border-t first:border-t-0"
-                    >
-                      <div className="bg-muted/20 flex min-w-0 items-center gap-2 border-b border-border px-2 py-1.5">
+                    {({ setNodeRef, style, dragProps }) => {
+                    const groupShell = (
+                      <>
+                      <div className="flex min-w-0 items-center gap-2 border-b border-border px-3 py-2.5 sm:px-4">
+                        <div
+                          {...dragProps}
+                          className={cn(
+                            "text-muted-foreground hover:text-foreground hover:bg-muted/60 flex size-8 shrink-0 cursor-grab items-center justify-center rounded-md border border-border bg-muted/40 active:cursor-grabbing",
+                            dragProps.className
+                          )}
+                        >
+                          <GripVertical className="size-4" aria-hidden />
+                        </div>
                         <button
                           type="button"
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={() =>
                             setOpenCats((o) => ({ ...o, [g.id]: !open }))
                           }
-                          className="text-muted-foreground hover:text-foreground flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 transition-colors"
+                          className="hover:bg-muted/60 flex min-w-0 shrink-0 items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-left shadow-sm transition-colors"
                           aria-expanded={open}
                           aria-label={
-                            open ? "Ciutkan sub-assembly" : "Buka sub-assembly"
+                            open
+                              ? `Ciutkan sub-assembly ${g.name}`
+                              : `Buka sub-assembly ${g.name}`
                           }
                         >
                           {open ? (
-                            <ChevronDown className="size-4" />
+                            <ChevronDown className="text-muted-foreground size-4 shrink-0" />
                           ) : (
-                            <ChevronRight className="size-4" />
+                            <ChevronRight className="text-muted-foreground size-4 shrink-0" />
                           )}
+                          <AssemblyTypeBadge variant="sub-assembly" />
                         </button>
-                        <div
-                          {...dragProps}
-                          className={cn(
-                            "flex shrink-0 items-center gap-2",
-                            dragProps.className
-                          )}
-                        >
-                          <Badge className="bg-violet-600 text-[10px] hover:bg-violet-600">
-                            Sub-assembly
-                          </Badge>
-                        </div>
-                        <div className="w-[6rem] shrink-0 sm:w-28 md:w-36">
+                        <div className="min-w-0 flex-1 sm:max-w-[12rem]">
                           <Input
-                            className="h-7 w-full min-w-0 truncate text-xs font-medium sm:text-sm"
+                            className="h-8 w-full min-w-0 bg-background text-sm font-medium"
                             defaultValue={g.name}
                             key={`gname-${g.id}-${g.name}`}
                             title={g.name}
+                            aria-label={`Nama sub-assembly ${g.name}`}
                             onPointerDown={(e) => e.stopPropagation()}
                             onBlur={(e) => void renameGroup(g.id, e.target.value)}
                           />
@@ -949,8 +947,24 @@ export function ManualWorkspace({
                           </SortableContext>
                         </>
                       )}
-                    </div>
-                    )}
+                      </>
+                    );
+                    return embedded ? (
+                      <div ref={setNodeRef} style={style} className="overflow-hidden">
+                        <CostingShell level="module">
+                          {groupShell}
+                        </CostingShell>
+                      </div>
+                    ) : (
+                      <div
+                        ref={setNodeRef}
+                        style={style}
+                        className="border-border/60 overflow-hidden rounded-md border"
+                      >
+                        {groupShell}
+                      </div>
+                    );
+                    }}
                   </SortableGroupWrap>
                 );
               })}

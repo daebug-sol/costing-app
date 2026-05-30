@@ -24,6 +24,7 @@ import {
   ChevronDown,
   ChevronRight,
   FolderKanban,
+  GripVertical,
   ListFilter,
   Loader2,
   Lock,
@@ -46,11 +47,28 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import {
+  CostingBreadcrumb,
+  CostingLevelHeading,
+  CostingShell,
+} from "@/components/costing/costing-shell";
 import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -74,8 +92,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -99,6 +125,7 @@ import { DEFAULT_COSTING_SCOPE, normalizeCostingScope } from "@/lib/costing-scop
 import { groupByMonthAndDay } from "@/lib/group-by-month-day";
 import { formatIDR, formatNumber } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
+import { AssemblyTypeBadge } from "@/components/costing/assembly-type-badge";
 import { ManualWorkspace } from "@/components/costing/ManualWorkspace";
 import {
   useCostingStore,
@@ -361,6 +388,7 @@ function AhuSegmentEditor({
   };
 
   const scope = normalizeCostingScope(ahu.costingScope);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
 
   const setFullAhuSwitch = (full: boolean) => {
     setAhu((p) => ({
@@ -419,11 +447,18 @@ function AhuSegmentEditor({
 
   return (
     <>
-      <Card className="border-border">
-        <CardContent className="space-y-4 p-4">
-          <h3 className="text-sm font-semibold text-foreground">
-            Parameter AHU
-          </h3>
+      <CostingShell level="segment" className="space-y-4">
+        <Tabs defaultValue="unit" className="flex flex-col gap-4">
+          <TabsList className="h-auto w-full flex-wrap">
+            <TabsTrigger value="unit">Unit &amp; hitung</TabsTrigger>
+            <TabsTrigger value="modules">Parameter modul</TabsTrigger>
+            <TabsTrigger value="summary">Ringkasan</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="unit" className="flex flex-col gap-4">
+          <CostingLevelHeading level="segment" as="h4">
+            Parameter unit AHU
+          </CostingLevelHeading>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <div className="space-y-1">
               <Label className="text-xs">AHU model</Label>
@@ -565,10 +600,8 @@ function AhuSegmentEditor({
                 }
               >
                 {isCalculating ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <span aria-hidden>🔄</span>
-                )}
+                  <Loader2 className="size-4 animate-spin" data-icon="inline-start" />
+                ) : null}
                 Hitung ulang
               </Button>
             </div>
@@ -626,28 +659,22 @@ function AhuSegmentEditor({
               </div>
             )}
           </div>
+          </TabsContent>
 
-          <div className="border-border space-y-3 border-t pt-4">
-            <h4 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-              Parameter kalkulasi (table mode)
-            </h4>
-            <div className="overflow-x-auto rounded-md border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[180px]">Modul</TableHead>
-                    <TableHead className="w-24 text-center">Aktif</TableHead>
-                    <TableHead>Parameter utama</TableHead>
-                    <TableHead>Opsi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">General AHU</TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground">
-                      always
-                    </TableCell>
-                    <TableCell>
+          <TabsContent value="modules" className="flex flex-col gap-3">
+            <CostingLevelHeading level="module" as="h4">
+              Parameter modul
+            </CostingLevelHeading>
+            <Accordion type="multiple" className="w-full rounded-md border border-border px-4 sm:px-5">
+                  <AccordionItem value="general-ahu">
+                    <AccordionTrigger className="hover:no-underline">
+                      <span className="font-medium">General AHU</span>
+                      <span className="text-muted-foreground text-xs font-normal normal-case tracking-normal">
+                        Selalu aktif
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="flex flex-col gap-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <Label className="text-xs">Jumlah section</Label>
                         <Input
@@ -667,15 +694,19 @@ function AhuSegmentEditor({
                           }}
                         />
                       </div>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      Dimensi default mengambil dari H/W/D segmen.
-                    </TableCell>
-                  </TableRow>
+                      <p className="text-muted-foreground text-xs">
+                        Dimensi default mengambil dari H/W/D segmen.
+                      </p>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                  <TableRow>
-                    <TableCell className="font-medium">Access Door</TableCell>
-                    <TableCell className="text-center">
+                  <AccordionItem value="access-door">
+                    <AccordionTrigger className="hover:no-underline">
+                      <span className="font-medium">Access Door</span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="mb-3 flex items-center gap-2">
                       <Checkbox
                         checked={scope.includeAccessDoor}
                         disabled={scope.isFullAhu}
@@ -684,8 +715,8 @@ function AhuSegmentEditor({
                           setScopeModule("includeAccessDoor", c);
                         }}
                       />
-                    </TableCell>
-                    <TableCell>
+                      <Label className="text-xs">Sertakan modul</Label>
+                      </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Label className="text-xs">Qty</Label>
                         <Input
@@ -728,8 +759,6 @@ function AhuSegmentEditor({
                           }
                         />
                       </div>
-                    </TableCell>
-                    <TableCell>
                       <label className="flex items-center gap-2 text-xs">
                         <Checkbox
                           checked={ahu.accessDoor?.withWindow === true}
@@ -739,12 +768,15 @@ function AhuSegmentEditor({
                         />
                         With window kit
                       </label>
-                    </TableCell>
-                  </TableRow>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                  <TableRow>
-                    <TableCell className="font-medium">Mixing Box</TableCell>
-                    <TableCell className="text-center">
+                  <AccordionItem value="mixing-box">
+                    <AccordionTrigger className="hover:no-underline">
+                      <span className="font-medium">Mixing Box</span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="mb-3 flex items-center gap-2">
                       <Checkbox
                         checked={scope.includeMixingBox}
                         disabled={scope.isFullAhu}
@@ -753,8 +785,8 @@ function AhuSegmentEditor({
                           setScopeModule("includeMixingBox", c);
                         }}
                       />
-                    </TableCell>
-                    <TableCell>
+                      <Label className="text-xs">Sertakan modul</Label>
+                      </div>
                       <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
                         <Input
                           type="number"
@@ -829,15 +861,18 @@ function AhuSegmentEditor({
                           }
                         />
                       </div>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      Minimal isi 1 pasang damper (FA atau RA).
-                    </TableCell>
-                  </TableRow>
+                      <p className="text-muted-foreground text-xs">
+                        Minimal isi 1 pasang damper (FA atau RA).
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                  <TableRow>
-                    <TableCell className="font-medium">Filters</TableCell>
-                    <TableCell className="text-center">
+                  <AccordionItem value="filters">
+                    <AccordionTrigger className="hover:no-underline">
+                      <span className="font-medium">Filters</span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="mb-3 flex items-center gap-2">
                       <Checkbox
                         checked={scope.includeFilters}
                         disabled={scope.isFullAhu}
@@ -846,8 +881,8 @@ function AhuSegmentEditor({
                           setScopeModule("includeFilters", c);
                         }}
                       />
-                    </TableCell>
-                    <TableCell>
+                      <Label className="text-xs">Sertakan modul</Label>
+                      </div>
                       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                         <Input
                           type="number"
@@ -894,15 +929,18 @@ function AhuSegmentEditor({
                           onChange={(e) => setFilters({ bagClass: e.target.value || undefined })}
                         />
                       </div>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      Isi qty sesuai full/half size ekuivalen.
-                    </TableCell>
-                  </TableRow>
+                      <p className="text-muted-foreground text-xs">
+                        Isi qty sesuai full/half size ekuivalen.
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                  <TableRow>
-                    <TableCell className="font-medium">Coil</TableCell>
-                    <TableCell className="text-center">
+                  <AccordionItem value="coil">
+                    <AccordionTrigger className="hover:no-underline">
+                      <span className="font-medium">Coil</span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="mb-3 flex items-center gap-2">
                       <Checkbox
                         checked={scope.includeCoil}
                         disabled={scope.isFullAhu}
@@ -911,8 +949,8 @@ function AhuSegmentEditor({
                           setScopeModule("includeCoil", c);
                         }}
                       />
-                    </TableCell>
-                    <TableCell>
+                      <Label className="text-xs">Sertakan modul</Label>
+                      </div>
                       <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
                         <Input
                           type="number"
@@ -969,15 +1007,18 @@ function AhuSegmentEditor({
                           }
                         />
                       </div>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      Model coil dari dimensi + rows/FPI/circuits.
-                    </TableCell>
-                  </TableRow>
+                      <p className="text-muted-foreground text-xs">
+                        Model coil dari dimensi + rows/FPI/circuits.
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                  <TableRow>
-                    <TableCell className="font-medium">Electric Heater</TableCell>
-                    <TableCell className="text-center">
+                  <AccordionItem value="electric-heater">
+                    <AccordionTrigger className="hover:no-underline">
+                      <span className="font-medium">Electric Heater</span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="mb-3 flex items-center gap-2">
                       <Checkbox
                         checked={scope.includeElectricHeater}
                         disabled={scope.isFullAhu}
@@ -986,8 +1027,8 @@ function AhuSegmentEditor({
                           setScopeModule("includeElectricHeater", c);
                         }}
                       />
-                    </TableCell>
-                    <TableCell>
+                      <Label className="text-xs">Sertakan modul</Label>
+                      </div>
                       <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
                         <Input
                           type="number"
@@ -1050,15 +1091,18 @@ function AhuSegmentEditor({
                           }
                         />
                       </div>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      Estimasi fallback: load kW saat catalog heater belum tersedia.
-                    </TableCell>
-                  </TableRow>
+                      <p className="text-muted-foreground text-xs">
+                        Estimasi fallback: load kW saat catalog heater belum tersedia.
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                  <TableRow>
-                    <TableCell className="font-medium">Damper</TableCell>
-                    <TableCell className="text-center">
+                  <AccordionItem value="damper">
+                    <AccordionTrigger className="hover:no-underline">
+                      <span className="font-medium">Damper</span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="mb-3 flex items-center gap-2">
                       <Checkbox
                         checked={scope.includeDamper}
                         disabled={scope.isFullAhu}
@@ -1067,8 +1111,8 @@ function AhuSegmentEditor({
                           setScopeModule("includeDamper", c);
                         }}
                       />
-                    </TableCell>
-                    <TableCell>
+                      <Label className="text-xs">Sertakan modul</Label>
+                      </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Input
                           type="number"
@@ -1093,8 +1137,6 @@ function AhuSegmentEditor({
                           }
                         />
                       </div>
-                    </TableCell>
-                    <TableCell>
                       <div className="flex flex-wrap gap-3">
                         <label className="flex items-center gap-2 text-xs">
                           <Checkbox
@@ -1117,12 +1159,15 @@ function AhuSegmentEditor({
                           Return air (RA)
                         </label>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                  <TableRow>
-                    <TableCell className="font-medium">Inlet/Outlet Opening</TableCell>
-                    <TableCell className="text-center">
+                  <AccordionItem value="opening">
+                    <AccordionTrigger className="hover:no-underline">
+                      <span className="font-medium">Inlet/Outlet Opening</span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="mb-3 flex items-center gap-2">
                       <Checkbox
                         checked={scope.includeOpening}
                         disabled={scope.isFullAhu}
@@ -1131,8 +1176,8 @@ function AhuSegmentEditor({
                           setScopeModule("includeOpening", c);
                         }}
                       />
-                    </TableCell>
-                    <TableCell>
+                      <Label className="text-xs">Sertakan modul</Label>
+                      </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Input
                           type="number"
@@ -1172,8 +1217,6 @@ function AhuSegmentEditor({
                           }
                         />
                       </div>
-                    </TableCell>
-                    <TableCell>
                       <div className="grid gap-1">
                         <label className="flex items-center gap-2 text-xs">
                           <Checkbox
@@ -1204,12 +1247,15 @@ function AhuSegmentEditor({
                           Actuator
                         </label>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                  <TableRow>
-                    <TableCell className="font-medium">Fan &amp; motor</TableCell>
-                    <TableCell className="text-center">
+                  <AccordionItem value="fan-motor">
+                    <AccordionTrigger className="hover:no-underline">
+                      <span className="font-medium">Fan &amp; motor</span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="mb-3 flex items-center gap-2">
                       <Checkbox
                         checked={scope.includeFanMotor}
                         disabled={scope.isFullAhu}
@@ -1218,8 +1264,8 @@ function AhuSegmentEditor({
                           setScopeModule("includeFanMotor", c);
                         }}
                       />
-                    </TableCell>
-                    <TableCell>
+                      <Label className="text-xs">Sertakan modul</Label>
+                      </div>
                       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                         <Input
                           className="h-8 lg:col-span-2"
@@ -1257,12 +1303,12 @@ function AhuSegmentEditor({
                           }
                         />
                       </div>
-                    </TableCell>
-                    <TableCell>
+                      <div className="mt-2">
+                        <Label className="text-xs">Qty</Label>
                       <Input
                         type="number"
                         min={1}
-                        className="h-8 w-28"
+                        className="mt-1 h-8 w-28"
                         placeholder={`Qty default ${seg.qty}`}
                         value={ahu.fanMotor?.qty ?? ""}
                         onChange={(e) =>
@@ -1274,19 +1320,54 @@ function AhuSegmentEditor({
                           })
                         }
                       />
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+            </Accordion>
+          </TabsContent>
 
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-foreground">Cost breakdown</h3>
+          <TabsContent value="summary" className="flex flex-col gap-3">
+            <CostingLevelHeading level="segment" as="h4">
+              Ringkasan kategori
+            </CostingLevelHeading>
+            <div className="flex flex-col gap-2">
+              {sortedSections.map((sec) => (
+                <div
+                  key={sec.id}
+                  className="bg-muted/30 flex items-center justify-between gap-3 rounded-md border border-border px-4 py-2.5"
+                >
+                  <span className="text-sm font-medium text-foreground">
+                    {categoryTitle(sec.category)}
+                  </span>
+                  <span className="tabular-money text-sm font-semibold text-foreground">
+                    {formatIDR(sec.subtotal)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-fit"
+              onClick={() => setBreakdownOpen(true)}
+            >
+              Buka rincian lengkap
+            </Button>
+          </TabsContent>
+        </Tabs>
+      </CostingShell>
+
+      <Sheet open={breakdownOpen} onOpenChange={setBreakdownOpen}>
+        <SheetContent side="right" className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-2xl">
+          <SheetHeader>
+            <SheetTitle>Rincian biaya</SheetTitle>
+            <SheetDescription>
+              Line item per kategori modul — {seg.title}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex flex-col gap-3 pb-2">
         {sortedSections.map((sec) => {
-          const open = openCats[catKey(seg.id, sec.category)] ?? true;
+          const open = openCats[catKey(seg.id, sec.category)] ?? false;
           return (
             <Card
               key={sec.id}
@@ -1312,7 +1393,7 @@ function AhuSegmentEditor({
                 </span>
               </button>
               {open && (
-                <CardContent className="p-0">
+                <CardContent className="px-4 pb-4 pt-0">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
@@ -1448,7 +1529,9 @@ function AhuSegmentEditor({
             </Card>
           );
         })}
-      </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
@@ -1490,6 +1573,12 @@ export function CostingWorkspace() {
   );
   const patchCostingOpenCat = useUiWorkflowStore((s) => s.patchCostingOpenCat);
   const setCostingOpenCats = useUiWorkflowStore((s) => s.setCostingOpenCats);
+  const projectSummaryOpenByProject = useUiWorkflowStore(
+    (s) => s.costing.projectSummaryOpenByProject ?? EMPTY_BOOL_MAP
+  );
+  const patchCostingProjectSummaryOpen = useUiWorkflowStore(
+    (s) => s.patchCostingProjectSummaryOpen
+  );
   const setCostingMainScroll = useUiWorkflowStore((s) => s.setCostingMainScroll);
 
   const [newOpen, setNewOpen] = useState(false);
@@ -1549,14 +1638,24 @@ export function CostingWorkspace() {
 
   const onMainScroll = useCallback(
     (e: React.UIEvent<HTMLElement>) => {
-      if (!currentProject?.id) return;
+      const projectId = currentProject?.id;
+      const el = e.currentTarget;
+      if (!projectId || !el) return;
+      const scrollTop = el.scrollTop;
       if (scrollSaveTimer.current) clearTimeout(scrollSaveTimer.current);
       scrollSaveTimer.current = setTimeout(() => {
-        setCostingMainScroll(currentProject.id, e.currentTarget.scrollTop);
+        const top = mainScrollRef.current?.scrollTop ?? scrollTop;
+        setCostingMainScroll(projectId, top);
       }, 120);
     },
     [currentProject?.id, setCostingMainScroll]
   );
+
+  useEffect(() => {
+    return () => {
+      if (scrollSaveTimer.current) clearTimeout(scrollSaveTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     loadProjects().catch((e) => showToast(String(e)));
@@ -1793,7 +1892,7 @@ export function CostingWorkspace() {
   const toggleCat = (segmentId: string, cat: string) => {
     const k = catKey(segmentId, cat);
     if (!currentProject?.id) return;
-    const cur = openCats[k] ?? true;
+    const cur = openCats[k] ?? false;
     patchCostingOpenCat(currentProject.id, k, !cur);
   };
 
@@ -1921,23 +2020,25 @@ export function CostingWorkspace() {
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-[1400px] px-4 pt-5 sm:px-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Costing</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Kelola proyek, assembly, dan rincian biaya tanpa mengubah logika perhitungan.
-        </p>
-      </div>
+      <PageHeader
+        variant="band"
+        width="wide"
+        eyebrow="Workspace"
+        title="Costing"
+        description="Kelola proyek, assembly, dan rincian biaya tanpa mengubah logika perhitungan."
+        className="shrink-0"
+      />
 
-      <div className="min-h-0 flex-1 overflow-hidden p-3 lg:p-4">
+      <div className="app-page-gutter-wide min-h-0 flex-1 overflow-hidden py-4 sm:py-5 lg:py-6">
         <div
           className={cn(
-            "grid h-full min-h-0 grid-cols-1 gap-3",
+            "grid h-full min-h-0 grid-cols-1 gap-4 sm:gap-5",
             !sidebarCollapsed && "lg:grid-cols-[minmax(0,40%)_minmax(0,60%)]"
           )}
         >
       {!sidebarCollapsed ? (
       <aside className="bg-card flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border shadow-sm">
-        <div className="border-border shrink-0 border-b p-3">
+        <div className="border-border shrink-0 border-b p-4 sm:p-5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1">
               <h2 className="truncate text-sm font-semibold text-foreground">
@@ -2052,13 +2153,13 @@ export function CostingWorkspace() {
             </DropdownMenu>
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
           {isLoading && projects.length === 0 ? (
             <div className="space-y-2">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="bg-card rounded-lg border border-border p-3"
+                  className="bg-card rounded-lg border border-border p-4 sm:p-5"
                 >
                   <Skeleton className="mb-2 h-4 w-[85%]" />
                   <Skeleton className="h-3 w-[55%]" />
@@ -2142,7 +2243,7 @@ export function CostingWorkspace() {
       <main
         ref={mainScrollRef}
         onScroll={currentProject ? onMainScroll : undefined}
-        className="bg-card relative min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border p-4 shadow-sm lg:p-6"
+        className="bg-card relative min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border p-5 shadow-sm lg:p-6"
       >
         {sidebarCollapsed ? (
           <Tooltip>
@@ -2260,7 +2361,15 @@ export function CostingWorkspace() {
                 description="Tambahkan assembly AHU atau manual. Satu penawaran bisa berisi banyak item (banyak assembly)."
                 className="bg-card border border-dashed border-border py-12"
               />
-            ) : null}
+            ) : (
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                <span className="text-foreground font-medium">Buka detail:</span> tombol
+                panah + label jenis ·{" "}
+                <span className="text-foreground font-medium">Urutkan:</span> seret ikon grip
+                di kiri · <span className="text-foreground font-medium">Nama:</span> kolom judul
+                assembly
+              </p>
+            )}
 
             <DndContext
               sensors={segmentSensors}
@@ -2292,7 +2401,16 @@ export function CostingWorkspace() {
                                 colSpan={4}
                                 className="max-w-0 p-0 align-middle"
                               >
-                                <div className="flex min-w-0 items-center gap-2 px-3 py-2">
+                                <div className="flex min-w-0 items-center gap-2 px-4 py-3 sm:px-5">
+                                  <div
+                                    {...dragProps}
+                                    className={cn(
+                                      "text-muted-foreground hover:text-foreground hover:bg-muted/60 flex size-8 shrink-0 cursor-grab items-center justify-center rounded-md border border-border bg-muted/40 active:cursor-grabbing",
+                                      dragProps.className
+                                    )}
+                                  >
+                                    <GripVertical className="size-4" aria-hidden />
+                                  </div>
                                   <button
                                     type="button"
                                     onPointerDown={(e) => e.stopPropagation()}
@@ -2304,41 +2422,30 @@ export function CostingWorkspace() {
                                         !(openSegments[seg.id] ?? true)
                                       );
                                     }}
-                                    className="text-muted-foreground hover:text-foreground flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 transition-colors"
+                                    className="hover:bg-muted/60 flex min-w-0 shrink-0 items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-left shadow-sm transition-colors"
                                     aria-expanded={segOpen}
                                     aria-label={
-                                      segOpen ? "Ciutkan assembly" : "Buka assembly"
+                                      segOpen
+                                        ? `Ciutkan detail assembly ${seg.title}`
+                                        : `Buka detail assembly ${seg.title}`
                                     }
                                   >
                                     {segOpen ? (
-                                      <ChevronDown className="size-4" />
+                                      <ChevronDown className="text-muted-foreground size-4 shrink-0" />
                                     ) : (
-                                      <ChevronRight className="size-4" />
+                                      <ChevronRight className="text-muted-foreground size-4 shrink-0" />
                                     )}
+                                    <AssemblyTypeBadge
+                                      variant={seg.type === "manual" ? "manual" : "ahu"}
+                                    />
                                   </button>
-                                  <div
-                                    {...dragProps}
-                                    className={cn(
-                                      "flex shrink-0 items-center gap-2",
-                                      dragProps.className
-                                    )}
-                                  >
-                                    <Badge
-                                      className={
-                                        seg.type === "manual"
-                                          ? "bg-violet-600 text-[10px] hover:bg-violet-600"
-                                          : "bg-primary text-primary-foreground text-[10px] hover:bg-primary/90"
-                                      }
-                                    >
-                                      {seg.type === "manual" ? "Manual" : "AHU"}
-                                    </Badge>
-                                  </div>
-                                  <div className="w-[5.5rem] shrink-0 sm:w-28 md:w-32">
+                                  <div className="min-w-0 flex-1 sm:max-w-[14rem]">
                                     <Input
-                                      className="h-8 w-full min-w-0 truncate text-xs font-medium sm:text-sm"
+                                      className="h-9 w-full min-w-0 bg-background text-sm font-medium"
                                       defaultValue={seg.title}
                                       key={`t-${seg.id}-${seg.title}`}
                                       title={seg.title}
+                                      aria-label={`Nama assembly ${seg.title}`}
                                       onPointerDown={(e) => e.stopPropagation()}
                                       onBlur={(e) =>
                                         patchSegment(seg.id, {
@@ -2381,9 +2488,19 @@ export function CostingWorkspace() {
                               <TableRow className="border-0 hover:bg-transparent">
                                 <TableCell
                                   colSpan={4}
-                                  className="border-border/80 bg-card p-0"
+                                  className="border-border/80 bg-card p-4 sm:p-5"
                                 >
-                                  <div className="border-border/60 border-t px-3 pb-3 pt-1">
+                                  <CostingShell
+                                    level="assembly"
+                                    className="mt-1 border-t-0"
+                                  >
+                                    <CostingBreadcrumb
+                                      projectName={currentProject.name}
+                                      segmentTitle={seg.title}
+                                      segmentKind={
+                                        seg.type === "manual" ? "Manual" : "AHU"
+                                      }
+                                    />
                                     {seg.type === "manual" ? (
                                       <ManualWorkspace
                                         segmentId={seg.id}
@@ -2419,7 +2536,7 @@ export function CostingWorkspace() {
                                         showToast={showToast}
                                       />
                                     )}
-                                  </div>
+                                  </CostingShell>
                                 </TableCell>
                               </TableRow>
                             ) : null}
@@ -2440,15 +2557,9 @@ export function CostingWorkspace() {
                       if (!s) return null;
                       return (
                         <>
-                          <Badge
-                            className={
-                              s.type === "manual"
-                                ? "bg-violet-600 text-[10px]"
-                                : "bg-primary text-primary-foreground text-[10px]"
-                            }
-                          >
-                            {s.type === "manual" ? "Manual" : "AHU"}
-                          </Badge>
+                          <AssemblyTypeBadge
+                            variant={s.type === "manual" ? "manual" : "ahu"}
+                          />
                           <span className="min-w-0 flex-1 truncate font-medium">
                             {s.title}
                           </span>
@@ -2464,11 +2575,53 @@ export function CostingWorkspace() {
             </DndContext>
 
             {/* C — Summary */}
-            <Card className="border-border">
-              <CardContent className="space-y-4 p-4">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Cost summary
-                </h3>
+            <CostingShell
+              level="summary"
+              className="overflow-hidden border-primary/25 shadow-sm"
+            >
+              <Collapsible
+                open={projectSummaryOpenByProject[currentProject.id] === true}
+                onOpenChange={(open) =>
+                  patchCostingProjectSummaryOpen(currentProject.id, open)
+                }
+              >
+                <CollapsibleTrigger className="hover:bg-muted/20 flex w-full items-center gap-3 px-4 py-4 text-left transition-colors sm:gap-4 sm:px-5">
+                  <div className="border-primary/30 from-primary/15 via-primary/8 relative shrink-0 rounded-lg border bg-gradient-to-br to-transparent px-3 py-2 shadow-sm">
+                    <span
+                      className="bg-primary absolute top-1.5 bottom-1.5 left-0 w-1 rounded-full"
+                      aria-hidden
+                    />
+                    <CostingLevelHeading
+                      level="summary"
+                      as="h3"
+                      className="text-primary pl-2 text-sm font-bold tracking-tight"
+                    >
+                      Ringkasan biaya proyek
+                    </CostingLevelHeading>
+                  </div>
+                  <div className="min-w-0 flex-1 text-right">
+                    <div className="text-muted-foreground flex flex-col items-end gap-0.5 text-[11px] sm:flex-row sm:justify-end sm:gap-x-6 sm:text-xs">
+                      <span className="whitespace-nowrap">
+                        HPP:{" "}
+                        <span className="tabular-money font-medium text-foreground">
+                          {formatIDR(totals.hpp)}
+                        </span>
+                      </span>
+                      <span className="whitespace-nowrap">
+                        Total selling:{" "}
+                        <span className="tabular-money text-sm font-semibold text-foreground sm:text-base">
+                          {formatIDR(totals.selling)}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                  {projectSummaryOpenByProject[currentProject.id] === true ? (
+                    <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                  )}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="border-t border-border px-5 pb-5 pt-3">
                 <Table>
                   <TableBody>
                     <TableRow>
@@ -2694,8 +2847,9 @@ export function CostingWorkspace() {
                     </Link>
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+                </CollapsibleContent>
+              </Collapsible>
+            </CostingShell>
           </div>
         )}
       </main>

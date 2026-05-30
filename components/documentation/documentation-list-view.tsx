@@ -91,9 +91,10 @@ export function DocumentationListView({
   return (
     <PageShell
       width="doc"
+      eyebrow="Dokumentasi"
       title="Penawaran"
       description="Daftar dokumen penawaran — grup per bulan & tanggal."
-      className="py-8"
+      contentClassName="py-8"
       actions={
         <>
           <Button
@@ -139,7 +140,7 @@ export function DocumentationListView({
         </>
       }
     >
-      <div className="bg-card rounded-lg border border-border p-3 shadow-sm">
+      <div className="bg-card rounded-lg border border-border p-4 shadow-sm sm:p-5">
         <div className="relative">
           <Search className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
           <Input
@@ -280,7 +281,7 @@ export function DocumentationListView({
                                   onOpen(q.id);
                                 }
                               }}
-                              className="bg-card border-border hover:bg-muted/50 flex min-w-0 flex-1 items-center gap-4 rounded-lg border px-4 py-3 text-left transition"
+                              className="bg-card border-border hover:bg-muted/50 flex min-w-0 flex-1 items-center gap-4 rounded-lg border px-4 py-3.5 text-left transition sm:px-5 sm:py-4"
                             >
                               <div className="bg-primary/8 flex size-10 shrink-0 items-center justify-center rounded-md">
                                 <FileText className="text-primary size-5" />

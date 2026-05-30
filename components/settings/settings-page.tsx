@@ -133,11 +133,12 @@ export function SettingsPage() {
   return (
     <PageShell
       width="narrow"
+      eyebrow="Konfigurasi"
       title="Pengaturan"
       description="Profil perusahaan, default costing, forex, dan syarat penawaran"
-      className="flex flex-col gap-6 lg:py-8"
+      contentClassName="flex flex-col gap-6 lg:py-8"
     >
-      <Card className="shadow-sm">
+      <Card size="sm" className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">Profil perusahaan</CardTitle>
         </CardHeader>
@@ -236,7 +237,7 @@ export function SettingsPage() {
         </CardFooter>
       </Card>
 
-      <Card className="border-border ">
+      <Card size="sm" className="border-border ">
         <CardHeader>
           <CardTitle className="text-lg">Penanggung jawab &amp; TTD preset</CardTitle>
           <p className="text-xs font-normal text-muted-foreground">
@@ -369,7 +370,7 @@ export function SettingsPage() {
         </CardFooter>
       </Card>
 
-      <Card className="border-border ">
+      <Card size="sm" className="border-border ">
         <CardHeader>
           <CardTitle className="text-lg">Rate default costing</CardTitle>
         </CardHeader>
@@ -433,7 +434,7 @@ export function SettingsPage() {
         </CardFooter>
       </Card>
 
-      <Card className="border-border ">
+      <Card size="sm" className="border-border ">
         <CardHeader>
           <CardTitle className="text-lg">Kurs forex</CardTitle>
           <p className="text-xs font-normal text-muted-foreground">
@@ -503,7 +504,7 @@ export function SettingsPage() {
         </CardFooter>
       </Card>
 
-      <Card className="border-border ">
+      <Card size="sm" className="border-border ">
         <CardHeader>
           <CardTitle className="text-lg">Syarat default penawaran</CardTitle>
         </CardHeader>

@@ -389,7 +389,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" onClick={openAdd}>
             <Plus className="size-4" />
-            + Add New
+            Add New
           </Button>
           <input
             ref={fileRef}
@@ -423,7 +423,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
             icon={Package}
             title="Belum ada material"
             description="Tambahkan material atau impor dari Excel (.xlsx)."
-            actionLabel="+ Add New"
+            actionLabel="Add New"
             onAction={openAdd}
           />
         ) : filtered.length === 0 ? (
@@ -861,7 +861,7 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" onClick={openAdd}>
             <Plus className="size-4" />
-            + Add New
+            Add New
           </Button>
           <input
             ref={fileRef}
@@ -895,7 +895,7 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
             icon={Package}
             title="Belum ada data profil"
             description="Tambahkan profil panel atau impor Excel (.xlsx)."
-            actionLabel="+ Add New"
+            actionLabel="Add New"
             onAction={openAdd}
           />
         ) : filtered.length === 0 ? (
@@ -1393,7 +1393,7 @@ function ComponentsPanel({
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" onClick={openAdd}>
             <Plus className="size-4" />
-            + Add New
+            Add New
           </Button>
           <input
             ref={fileRef}
@@ -1427,7 +1427,7 @@ function ComponentsPanel({
             icon={Package}
             title="Belum ada komponen"
             description="Tambahkan katalog komponen atau impor Excel (.xlsx)."
-            actionLabel="+ Add New"
+            actionLabel="Add New"
             onAction={openAdd}
           />
         ) : filtered.length === 0 ? (

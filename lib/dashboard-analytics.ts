@@ -1,7 +1,17 @@
-import type { DashboardApiResponse, DashboardCashflowAssumptions } from "@/lib/dashboard-contract";
+import type {
+  DashboardApiResponse,
+  DashboardCashflowAssumptions,
+  DashboardRange,
+} from "@/lib/dashboard-contract";
 import { EMPTY_DASHBOARD_RESPONSE } from "@/lib/dashboard-contract";
 import { finite } from "@/lib/calculations";
 import { computeCostSummary, marginTogglesFromProject } from "@/lib/cost-summary";
+import {
+  isBookedQuotationStatus,
+  isPotentialQuotationStatus,
+  normalizeStatus,
+  statusLabel,
+} from "@/lib/dashboard-status";
 
 type DashboardProjectInput = {
   id: string;
@@ -45,8 +55,16 @@ type DashboardProjectInput = {
 type DashboardQuotationInput = {
   id: string;
   status: string;
+  salesman: string | null;
   tanggal: Date;
+  createdAt: Date;
+  updatedAt: Date;
   projectId: string | null;
+  clientName: string | null;
+  clientCompany: string | null;
+  validityDays: number;
+  discount: number;
+  discountEnabled: boolean;
   totalBeforeDisc: number;
   totalAfterDisc: number;
   totalPPN: number;
@@ -66,6 +84,7 @@ export type DashboardAnalyticsInput = {
   quotations: DashboardQuotationInput[];
   defaultPaymentTerms: string;
   selectedProjectId?: string | null;
+  range?: DashboardRange;
 };
 
 type PaymentInstallment = {
@@ -74,8 +93,6 @@ type PaymentInstallment = {
   basis: "explicit" | "fallback" | "default-fallback";
 };
 
-const BOOKED_QUOTATION_STATUSES = new Set(["approved", "final", "finalized"]);
-const POTENTIAL_QUOTATION_STATUSES = new Set(["draft"]);
 const EPSILON = 1e-6;
 
 function roundMoney(value: number): number {
@@ -97,6 +114,40 @@ function addUtcMonths(date: Date, months: number): Date {
 
 function diffUtcMonths(from: Date, to: Date): number {
   return (to.getUTCFullYear() - from.getUTCFullYear()) * 12 + (to.getUTCMonth() - from.getUTCMonth());
+}
+
+function startOfUtcDay(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function diffUtcDays(from: Date, to: Date): number {
+  const msInDay = 24 * 60 * 60 * 1000;
+  const fromDay = startOfUtcDay(from).getTime();
+  const toDay = startOfUtcDay(to).getTime();
+  return Math.max(0, Math.floor((toDay - fromDay) / msInDay));
+}
+
+function getRangeStart(range: DashboardRange, now: Date): Date | null {
+  if (range === "mtd") {
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  }
+  if (range === "ytd") {
+    return new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+  }
+  if (range === "12m") {
+    return addUtcMonths(startOfUtcMonth(now), -11);
+  }
+  return null;
+}
+
+function isDateInRange(date: Date, range: DashboardRange, now: Date): boolean {
+  const start = getRangeStart(range, now);
+  if (!start) return true;
+  return date >= start && date <= now;
 }
 
 function normalizePercent(value: number): number {
@@ -191,18 +242,15 @@ function resolveInstallments(paymentTerms: string | null, defaultTerms: string):
   return deterministicFallbackInstallments("fallback");
 }
 
-function kpiFromData(input: DashboardAnalyticsInput, now: Date) {
+function kpiFromData(input: DashboardAnalyticsInput, now: Date, range: DashboardRange) {
   const quotations = input.quotations;
   const projects = input.projects;
 
   const totalProjects = projects.length;
-  const activeCosting = projects.filter((project) => project.status.toLowerCase() === "draft").length;
-  const pendingQuotation = quotations.filter((quotation) =>
-    POTENTIAL_QUOTATION_STATUSES.has(quotation.status.toLowerCase())
-  ).length;
-  const approvedQuotation = quotations.filter((quotation) =>
-    BOOKED_QUOTATION_STATUSES.has(quotation.status.toLowerCase())
-  ).length;
+  const activeCosting = projects.filter((project) => normalizeStatus(project.status) === "draft").length;
+  const rangeQuotations = quotations.filter((quotation) => isDateInRange(quotation.tanggal, range, now));
+  const pendingQuotation = rangeQuotations.filter((quotation) => isPotentialQuotationStatus(quotation.status)).length;
+  const approvedQuotation = rangeQuotations.filter((quotation) => isBookedQuotationStatus(quotation.status)).length;
 
   const totalSelling = projects.reduce((sum, project) => sum + normalizePercent(project.totalSelling), 0);
   const totalGrossProfit = projects.reduce(
@@ -211,13 +259,24 @@ function kpiFromData(input: DashboardAnalyticsInput, now: Date) {
   );
   const weightedGrossMarginPct = totalSelling > EPSILON ? (totalGrossProfit / totalSelling) * 100 : 0;
 
-  const discountLeakageValue = quotations
-    .filter((quotation) => BOOKED_QUOTATION_STATUSES.has(quotation.status.toLowerCase()))
+  const discountLeakageValue = rangeQuotations
+    .filter((quotation) => isBookedQuotationStatus(quotation.status))
     .reduce(
       (sum, quotation) =>
         sum + Math.max(0, normalizePercent(quotation.totalBeforeDisc) - normalizePercent(quotation.totalAfterDisc)),
       0
     );
+
+  const pipelineValue = rangeQuotations
+    .filter((quotation) => isPotentialQuotationStatus(quotation.status))
+    .reduce((sum, quotation) => sum + asBookedRevenueAmount(quotation), 0);
+  const backlogValue = rangeQuotations
+    .filter((quotation) => isBookedQuotationStatus(quotation.status))
+    .reduce((sum, quotation) => sum + asBookedRevenueAmount(quotation), 0);
+  const totalCount = rangeQuotations.length;
+  const winRatePct = totalCount > 0 ? (approvedQuotation / totalCount) * 100 : 0;
+  const taxExposurePpn = rangeQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPN), 0);
+  const taxExposurePph = rangeQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPH), 0);
 
   const utcNow = now;
   const ytdStart = new Date(Date.UTC(utcNow.getUTCFullYear(), 0, 1));
@@ -227,8 +286,7 @@ function kpiFromData(input: DashboardAnalyticsInput, now: Date) {
   let bookedRevenueYtd = 0;
 
   for (const quotation of quotations) {
-    const status = quotation.status.toLowerCase();
-    if (!BOOKED_QUOTATION_STATUSES.has(status)) continue;
+    if (!isBookedQuotationStatus(quotation.status)) continue;
     const amount = asBookedRevenueAmount(quotation);
     if (quotation.tanggal >= ytdStart && quotation.tanggal <= utcNow) {
       bookedRevenueYtd += amount;
@@ -247,6 +305,11 @@ function kpiFromData(input: DashboardAnalyticsInput, now: Date) {
     discountLeakageValue: roundMoney(discountLeakageValue),
     bookedRevenueMtd: roundMoney(bookedRevenueMtd),
     bookedRevenueYtd: roundMoney(bookedRevenueYtd),
+    pipelineValue: roundMoney(pipelineValue),
+    backlogValue: roundMoney(backlogValue),
+    winRatePct: roundMoney(winRatePct),
+    taxExposurePpn: roundMoney(taxExposurePpn),
+    taxExposurePph: roundMoney(taxExposurePph),
   };
 }
 
@@ -474,13 +537,12 @@ function revenueTrendFromData(input: DashboardAnalyticsInput, now: Date): Dashbo
     const key = monthKey(quotation.tanggal);
     const bucket = byMonth.get(key);
     if (!bucket) continue;
-    const status = quotation.status.toLowerCase();
     const amount = asBookedRevenueAmount(quotation);
-    if (BOOKED_QUOTATION_STATUSES.has(status)) {
+    if (isBookedQuotationStatus(quotation.status)) {
       bucket.bookedRevenue += amount;
       continue;
     }
-    if (POTENTIAL_QUOTATION_STATUSES.has(status)) {
+    if (isPotentialQuotationStatus(quotation.status)) {
       bucket.potentialRevenue += amount;
     }
   }
@@ -524,7 +586,7 @@ function cashflowProjectionFromData(
   let deterministicFallbackCount = 0;
 
   const bookedQuotations = input.quotations.filter((quotation) =>
-    BOOKED_QUOTATION_STATUSES.has(quotation.status.toLowerCase())
+    isBookedQuotationStatus(quotation.status)
   );
 
   for (const quotation of bookedQuotations) {
@@ -612,8 +674,7 @@ function topDriversFromData(input: DashboardAnalyticsInput): DashboardApiRespons
 
   const bookedRevenueByProject = new Map<string, number>();
   for (const quotation of input.quotations) {
-    const status = quotation.status.toLowerCase();
-    if (!BOOKED_QUOTATION_STATUSES.has(status)) continue;
+    if (!isBookedQuotationStatus(quotation.status)) continue;
     if (!quotation.projectId) continue;
     const current = bookedRevenueByProject.get(quotation.projectId) ?? 0;
     bookedRevenueByProject.set(quotation.projectId, current + asBookedRevenueAmount(quotation));
@@ -644,10 +705,308 @@ function topDriversFromData(input: DashboardAnalyticsInput): DashboardApiRespons
   };
 }
 
+function quotationFunnelFromData(
+  input: DashboardAnalyticsInput,
+  now: Date,
+  range: DashboardRange
+): DashboardApiResponse["quotationFunnel"] {
+  const scoped = input.quotations.filter((quotation) => isDateInRange(quotation.tanggal, range, now));
+  let draftCount = 0;
+  let finalCount = 0;
+  let approvedCount = 0;
+
+  for (const quotation of scoped) {
+    const normalized = normalizeStatus(quotation.status);
+    if (normalized === "draft") draftCount += 1;
+    if (normalized === "finalized") finalCount += 1;
+    if (normalized === "approved") approvedCount += 1;
+  }
+
+  const totalCount = scoped.length;
+  const winRatePct = totalCount > 0 ? (approvedCount / totalCount) * 100 : 0;
+  return {
+    draftCount,
+    finalCount,
+    approvedCount,
+    totalCount,
+    winRatePct: roundMoney(winRatePct),
+  };
+}
+
+function statusDistributionFromData(
+  input: DashboardAnalyticsInput,
+  now: Date,
+  range: DashboardRange
+): DashboardApiResponse["statusDistribution"] {
+  const projectStatusMap = new Map<string, { count: number; value: number }>();
+  for (const project of input.projects) {
+    const key = statusLabel(normalizeStatus(project.status));
+    const current = projectStatusMap.get(key) ?? { count: 0, value: 0 };
+    current.count += 1;
+    current.value += normalizePercent(project.totalSelling);
+    projectStatusMap.set(key, current);
+  }
+
+  const quotationStatusMap = new Map<string, { count: number; value: number }>();
+  for (const quotation of input.quotations) {
+    if (!isDateInRange(quotation.tanggal, range, now)) continue;
+    const key = statusLabel(normalizeStatus(quotation.status));
+    const current = quotationStatusMap.get(key) ?? { count: 0, value: 0 };
+    current.count += 1;
+    current.value += asBookedRevenueAmount(quotation);
+    quotationStatusMap.set(key, current);
+  }
+
+  const toRows = (map: Map<string, { count: number; value: number }>) =>
+    Array.from(map.entries())
+      .map(([status, metrics]) => ({
+        status,
+        count: metrics.count,
+        value: roundMoney(metrics.value),
+      }))
+      .sort((a, b) => b.count - a.count || b.value - a.value);
+
+  return {
+    projectStatus: toRows(projectStatusMap),
+    quotationStatus: toRows(quotationStatusMap),
+  };
+}
+
+function quotationAgingFromData(
+  input: DashboardAnalyticsInput,
+  now: Date,
+  range: DashboardRange
+): DashboardApiResponse["quotationAging"] {
+  const rows = input.quotations
+    .filter((quotation) => isDateInRange(quotation.tanggal, range, now))
+    .map((quotation) => {
+      const validityDays = Math.max(0, Math.round(normalizePercent(quotation.validityDays)));
+      const ageDays = diffUtcDays(quotation.tanggal, now);
+      const expiryDate = addUtcDays(startOfUtcDay(quotation.tanggal), validityDays);
+      const isExpired = now > expiryDate;
+      const clientLabel =
+        quotation.clientCompany?.trim() || quotation.clientName?.trim() || "Unknown client";
+      const discountValue =
+        quotation.discountEnabled
+          ? Math.max(0, normalizePercent(quotation.totalBeforeDisc) - normalizePercent(quotation.totalAfterDisc))
+          : 0;
+      return {
+        quotationId: quotation.id,
+        status: statusLabel(normalizeStatus(quotation.status)),
+        tanggal: quotation.tanggal.toISOString(),
+        ageDays,
+        validityDays,
+        expiryDate: expiryDate.toISOString(),
+        isExpired,
+        clientLabel,
+        discountValue: roundMoney(discountValue),
+        totalAfterDisc: roundMoney(normalizePercent(quotation.totalAfterDisc)),
+      };
+    })
+    .sort((a, b) => b.ageDays - a.ageDays)
+    .slice(0, 12);
+
+  return {
+    rows,
+    expiredCount: rows.filter((row) => row.isExpired).length,
+    generatedAt: now.toISOString(),
+  };
+}
+
+function discountMarginTrendFromData(
+  input: DashboardAnalyticsInput,
+  now: Date,
+  range: DashboardRange
+): DashboardApiResponse["discountMarginTrend"] {
+  const start = addUtcMonths(startOfUtcMonth(now), -11);
+  const keys = Array.from({ length: 12 }, (_, idx) => monthKey(addUtcMonths(start, idx)));
+  const buckets = new Map<
+    string,
+    { discountLeakage: number; bookedRevenue: number; grossProfit: number; selling: number }
+  >();
+
+  for (const key of keys) {
+    buckets.set(key, { discountLeakage: 0, bookedRevenue: 0, grossProfit: 0, selling: 0 });
+  }
+
+  for (const quotation of input.quotations) {
+    if (!isDateInRange(quotation.tanggal, range, now)) continue;
+    const key = monthKey(quotation.tanggal);
+    const bucket = buckets.get(key);
+    if (!bucket) continue;
+    const discountValue = Math.max(
+      0,
+      normalizePercent(quotation.totalBeforeDisc) - normalizePercent(quotation.totalAfterDisc)
+    );
+    bucket.discountLeakage += discountValue;
+    if (isBookedQuotationStatus(quotation.status)) {
+      bucket.bookedRevenue += asBookedRevenueAmount(quotation);
+    }
+  }
+
+  for (const project of input.projects) {
+    const key = monthKey(project.updatedAt);
+    const bucket = buckets.get(key);
+    if (!bucket) continue;
+    const selling = normalizePercent(project.totalSelling);
+    const grossProfit = Math.max(0, selling - normalizePercent(project.totalHPP));
+    bucket.selling += selling;
+    bucket.grossProfit += grossProfit;
+  }
+
+  return {
+    period: "monthly",
+    series: keys.map((key) => {
+      const bucket = buckets.get(key) ?? { discountLeakage: 0, bookedRevenue: 0, grossProfit: 0, selling: 0 };
+      const weightedMarginPct = bucket.selling > EPSILON ? (bucket.grossProfit / bucket.selling) * 100 : 0;
+      return {
+        month: key,
+        discountLeakage: roundMoney(bucket.discountLeakage),
+        bookedRevenue: roundMoney(bucket.bookedRevenue),
+        weightedMarginPct: roundMoney(weightedMarginPct),
+      };
+    }),
+  };
+}
+
+function segmentMixFromData(input: DashboardAnalyticsInput): DashboardApiResponse["segmentMix"] {
+  const byType = new Map<"ahu" | "manual" | "other", number>([
+    ["ahu", 0],
+    ["manual", 0],
+    ["other", 0],
+  ]);
+
+  for (const project of input.projects) {
+    for (const segment of project.segments) {
+      const normalized: "ahu" | "manual" | "other" =
+        segment.type === "ahu" ? "ahu" : segment.type === "manual" ? "manual" : "other";
+      byType.set(normalized, (byType.get(normalized) ?? 0) + normalizePercent(segment.subtotal));
+    }
+  }
+
+  const total = Array.from(byType.values()).reduce((sum, value) => sum + value, 0);
+  const rows = Array.from(byType.entries())
+    .map(([segmentType, value]) => ({
+      segmentType,
+      value: roundMoney(value),
+      pct: total > EPSILON ? roundMoney((value / total) * 100) : 0,
+    }))
+    .filter((row) => row.value > EPSILON)
+    .sort((a, b) => b.value - a.value);
+
+  return { rows };
+}
+
+function topClientFromData(
+  input: DashboardAnalyticsInput,
+  now: Date,
+  range: DashboardRange
+): DashboardApiResponse["topClient"] {
+  const byClient = new Map<string, { bookedRevenue: number; quotationCount: number }>();
+  for (const quotation of input.quotations) {
+    if (!isDateInRange(quotation.tanggal, range, now)) continue;
+    if (!isBookedQuotationStatus(quotation.status)) continue;
+    const client = quotation.clientCompany?.trim() || quotation.clientName?.trim() || "Unknown client";
+    const current = byClient.get(client) ?? { bookedRevenue: 0, quotationCount: 0 };
+    current.bookedRevenue += asBookedRevenueAmount(quotation);
+    current.quotationCount += 1;
+    byClient.set(client, current);
+  }
+
+  const totalBookedRevenue = Array.from(byClient.values()).reduce((sum, row) => sum + row.bookedRevenue, 0);
+  const rows = Array.from(byClient.entries())
+    .map(([client, value]) => ({
+      client,
+      bookedRevenue: roundMoney(value.bookedRevenue),
+      quotationCount: value.quotationCount,
+      concentrationPct: totalBookedRevenue > EPSILON ? roundMoney((value.bookedRevenue / totalBookedRevenue) * 100) : 0,
+    }))
+    .sort((a, b) => b.bookedRevenue - a.bookedRevenue)
+    .slice(0, 5);
+
+  return { rows };
+}
+
+function salesLeaderboardFromData(
+  input: DashboardAnalyticsInput,
+  now: Date,
+  range: DashboardRange
+): DashboardApiResponse["salesLeaderboard"] {
+  const scoped = input.quotations.filter((quotation) => isDateInRange(quotation.tanggal, range, now));
+  const hasSalesman = scoped.some((quotation) => (quotation.salesman ?? "").trim().length > 0);
+
+  const byPrincipal = new Map<
+    string,
+    {
+      bookedRevenue: number;
+      quotationCount: number;
+      approvedCount: number;
+      draftCount: number;
+      marginSum: number;
+      marginCount: number;
+      pipelineValue: number;
+    }
+  >();
+
+  for (const quotation of scoped) {
+    const principal = hasSalesman
+      ? (quotation.salesman?.trim() || "Tanpa salesman")
+      : (quotation.clientCompany?.trim() || quotation.clientName?.trim() || "Klien tidak diketahui");
+    const current = byPrincipal.get(principal) ?? {
+      bookedRevenue: 0,
+      quotationCount: 0,
+      approvedCount: 0,
+      draftCount: 0,
+      marginSum: 0,
+      marginCount: 0,
+      pipelineValue: 0,
+    };
+
+    const status = normalizeStatus(quotation.status);
+    const revenue = asBookedRevenueAmount(quotation);
+    const hpp = normalizePercent(quotation.project?.totalHPP ?? 0);
+    const marginPct = revenue > EPSILON ? ((revenue - hpp) / revenue) * 100 : 0;
+
+    current.quotationCount += 1;
+    if (isBookedQuotationStatus(status)) {
+      current.bookedRevenue += revenue;
+      current.approvedCount += 1;
+      current.marginSum += marginPct;
+      current.marginCount += 1;
+    } else if (isPotentialQuotationStatus(status)) {
+      current.draftCount += 1;
+      current.pipelineValue += revenue;
+    }
+    byPrincipal.set(principal, current);
+  }
+
+  const rows = Array.from(byPrincipal.entries())
+    .map(([principal, metrics]) => ({
+      principal,
+      bookedRevenue: roundMoney(metrics.bookedRevenue),
+      quotationCount: metrics.quotationCount,
+      winRatePct:
+        metrics.quotationCount > 0
+          ? roundMoney((metrics.approvedCount / metrics.quotationCount) * 100)
+          : 0,
+      avgMarginPct:
+        metrics.marginCount > 0 ? roundMoney(metrics.marginSum / metrics.marginCount) : 0,
+      pipelineValue: roundMoney(metrics.pipelineValue),
+    }))
+    .sort((a, b) => b.bookedRevenue - a.bookedRevenue || b.pipelineValue - a.pipelineValue)
+    .slice(0, 7);
+
+  return {
+    mode: hasSalesman ? "salesman" : "client",
+    rows,
+  };
+}
+
 export function buildDashboardAnalyticsPayload(
   input: DashboardAnalyticsInput,
   now = new Date()
 ): DashboardApiResponse {
+  const range = input.range ?? "all";
   const options = input.projects.map((project) => ({
     id: project.id,
     name: project.name,
@@ -669,6 +1028,7 @@ export function buildDashboardAnalyticsPayload(
   if (scopedInput.projects.length === 0 && scopedInput.quotations.length === 0) {
     return {
       ...EMPTY_DASHBOARD_RESPONSE,
+      range,
       projectScope: {
         selectedProjectId,
         options,
@@ -679,15 +1039,23 @@ export function buildDashboardAnalyticsPayload(
   const costingData = costingDataFromData(scopedInput);
 
   return {
+    range,
     projectScope: {
       selectedProjectId,
       options,
     },
-    kpis: kpiFromData(scopedInput, now),
+    kpis: kpiFromData(scopedInput, now, range),
     costingData,
     sankey: sankeyFromData(scopedInput, now),
     revenueTrend: revenueTrendFromData(scopedInput, now),
     cashflowProjection: cashflowProjectionFromData(scopedInput, now),
     topDrivers: topDriversFromData(scopedInput),
+    quotationFunnel: quotationFunnelFromData(scopedInput, now, range),
+    statusDistribution: statusDistributionFromData(scopedInput, now, range),
+    quotationAging: quotationAgingFromData(scopedInput, now, range),
+    discountMarginTrend: discountMarginTrendFromData(scopedInput, now, range),
+    segmentMix: segmentMixFromData(scopedInput),
+    topClient: topClientFromData(scopedInput, now, range),
+    salesLeaderboard: salesLeaderboardFromData(scopedInput, now, range),
   };
 }

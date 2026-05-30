@@ -21,18 +21,26 @@ the *user intent* the unit/visual tests cannot.
 
 1. A renders `<Navbar>` with active state on "Dashboard".
 2. A renders the Dashboard `<h1>Dashboard</h1>` and the description
-   "Ringkasan proyek dan penawaran".
-3. A renders eight KPI cards. While loading, each value cell shows a
-   skeleton (`animate-pulse`); none collapse to zero height.
-4. A renders the Hero Sankey card. While loading it shows the
-   `<LoadingRows>` skeleton; on success the metric badges appear above the
-   chart.
-5. If the API fails, A renders the centered "Coba lagi" button **and** an
+   "Ringkasan finansial proyek dan quotation untuk estimasi, sales, dan manajemen.".
+3. A renders hero KPI strip (5 cards) then secondary KPI strip (4 tiles). On viewport
+   &lt; 640px, secondary KPIs sit behind a collapsible "KPI pendukung" control (collapsed
+   by default). While loading, each region keeps stable height with skeleton placeholders.
+4. A renders **Insight utama** with three tabs — **Finansial**, **Penjualan**, **Costing**:
+   - Finansial (default): Profit bridge + Cashflow timeline (chart ringkas; tombol
+     "Lihat detail" membuka Sheet berisi chart + tabel fallback).
+   - Penjualan: Quotation funnel, Status distribution, Sales leaderboard (ringkas top 5;
+     "Lihat detail" untuk tabel lengkap).
+   - Costing: Cost breakdown + Revenue trend (pola chart + Sheet sama).
+5. A renders accordion **Detail & tindak lanjut** (collapsed by default) berisi
+   Quotation aging table.
+6. If the API fails, A renders the centered "Coba lagi" button **and** an
    amber strip if stale data is shown.
 
-**Done when:** keyboard `Tab` walks through Navbar → KPI cards → Sankey
-scope select → "Buka Costing" CTA → footer links, in that order, with a
-visible focus ring on every stop.
+**Done when:** keyboard `Tab` walks through Navbar → toolbar (scope/range/refresh)
+→ hero KPI strip → secondary KPI strip (atau trigger collapsible di mobile)
+→ tab list (Finansial / Penjualan / Costing) → konten tab aktif + tombol "Lihat detail"
+→ accordion detail → footer links,
+in that order, with a visible focus ring on every stop.
 
 ---
 
@@ -40,13 +48,14 @@ visible focus ring on every stop.
 
 **Trigger.** U has at least one costing project. From `/`:
 
-1. U opens the "Scope" select inside the Hero Sankey card.
+1. U opens the "Scope" select inside dashboard toolbar.
 2. A lists projects (newest first); selecting one re-fetches
-   `/api/dashboard?projectId=<id>` and updates the metric badges + Sankey.
-3. While re-fetching, the Sankey region shows a skeleton (not the previous
-   chart frozen).
-4. U presses "Buka Costing".
-5. A navigates to `/costing` and the workspace is preselected to the same
+   `/api/dashboard?projectId=<id>&range=<activeRange>` and updates seluruh KPI + section.
+3. U mengganti range (MTD/YTD/12M/All time). A me-refetch payload dan setiap section
+   berpindah periode secara konsisten tanpa full reload.
+4. While re-fetching, setiap section menampilkan skeleton/placeholder stabil (bukan chart lama membeku).
+5. U presses "Buka Costing".
+6. A navigates to `/costing` and the workspace is preselected to the same
    project (or shows the empty state if no project context exists yet).
 
 **Done when:** the round-trip Dashboard → Costing preserves the user's
@@ -152,8 +161,10 @@ forward.
 1. The `<Navbar>` collapses to the menu button (`Menu` / `X`).
 2. Tapping the menu button toggles `aria-expanded`; nav links wrap one per
    row.
-3. KPI grid on the dashboard collapses to two columns (`sm:grid-cols-2`).
-4. Tables become horizontally scrollable inside their card; no horizontal
+3. KPI grid on the dashboard collapses to two columns (`sm:grid-cols-2`); secondary KPIs
+   use collapsible on narrow viewports.
+4. Insight tabs remain usable (three triggers, one panel visible); tables inside Sheet
+   or accordion scroll horizontally inside their container; no horizontal
    page scroll.
 5. Tap targets are ≥ 40 × 40 CSS pixels.
 

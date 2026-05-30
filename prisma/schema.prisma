@@ -271,6 +271,7 @@ model Quotation {
   perihal         String?
   clientName      String?
   clientCompany   String?
+  salesman        String?
   clientAddress   String?
   clientAttn      String?
   clientPhone     String?
