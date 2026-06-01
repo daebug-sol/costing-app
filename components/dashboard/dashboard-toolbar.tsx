@@ -8,10 +8,10 @@ import type { DashboardProjectScopeOption, DashboardRange } from "@/lib/dashboar
 import { cn } from "@/lib/utils";
 
 const RANGE_OPTIONS: Array<{ value: DashboardRange; label: string }> = [
-  { value: "mtd", label: "MTD" },
-  { value: "ytd", label: "YTD" },
-  { value: "12m", label: "12M" },
-  { value: "all", label: "All time" },
+  { value: "mtd", label: "Bulan ini" },
+  { value: "ytd", label: "Tahun berjalan" },
+  { value: "12m", label: "12 bulan" },
+  { value: "all", label: "Semua waktu" },
 ];
 
 function asDashboardRange(value: string): DashboardRange {
@@ -26,8 +26,10 @@ export type DashboardToolbarProps = {
   onProjectChange: (projectId: string | null) => void;
   onRangeChange: (range: DashboardRange) => void;
   onRefresh: () => void;
-  /** center = under page title; end = sticky bar (right-aligned). */
-  align?: "center" | "end";
+  /** center = under page title; start = sticky bar (left-aligned); end = right-aligned. */
+  align?: "center" | "start" | "end";
+  /** panel = brown header strip with white control chips; bar = sticky strip below navbar. */
+  surface?: "panel" | "bar";
 };
 
 export function DashboardToolbar({
@@ -39,16 +41,23 @@ export function DashboardToolbar({
   onRangeChange,
   onRefresh,
   align = "center",
+  surface = "bar",
 }: DashboardToolbarProps) {
   const shouldReduceMotion = useReducedMotion();
+  const onPanel = surface === "panel";
+
   return (
     <motion.div
       initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
       animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
       transition={shouldReduceMotion ? undefined : { duration: 0.2, ease: "easeOut" }}
       className={cn(
-        "flex min-w-0 flex-wrap items-center gap-2",
-        align === "center" ? "justify-center" : "justify-end"
+        "flex min-w-0 flex-wrap items-center gap-3 sm:gap-4",
+        align === "center"
+          ? "justify-center"
+          : align === "start"
+            ? "justify-start"
+            : "justify-end"
       )}
     >
       <Select
@@ -72,7 +81,7 @@ export function DashboardToolbar({
 
       <Select value={range} onValueChange={(value) => onRangeChange(asDashboardRange(value))}>
         <SelectTrigger size="sm" className="min-w-28">
-          <SelectValue placeholder="Range" />
+          <SelectValue placeholder="Periode" />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
@@ -85,9 +94,16 @@ export function DashboardToolbar({
         </SelectContent>
       </Select>
 
-      <Button type="button" variant="outline" size="sm" onClick={onRefresh} disabled={loading}>
+      <Button
+        type="button"
+        variant={onPanel ? "outline" : "default"}
+        size="sm"
+        className={cn(onPanel && "tracking-normal normal-case")}
+        onClick={onRefresh}
+        disabled={loading}
+      >
         <RefreshCw data-icon="inline-start" className={loading ? "animate-spin" : undefined} />
-        Refresh
+        Refresh data
       </Button>
     </motion.div>
   );

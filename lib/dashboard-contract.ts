@@ -63,29 +63,6 @@ export type DashboardCashflowProjectionPayload = {
   assumptions: DashboardCashflowAssumptions;
 };
 
-export type DashboardGrossProfitDriver = {
-  projectId: string;
-  projectName: string;
-  grossProfit: number;
-  grossMarginPct: number;
-  sellingValue: number;
-  hppValue: number;
-};
-
-export type DashboardMarginErosionDriver = {
-  projectId: string;
-  projectName: string;
-  expectedSelling: number;
-  quotedNetRevenue: number;
-  erosionValue: number;
-  erosionPct: number;
-};
-
-export type DashboardTopDrivers = {
-  topGrossProfitProjects: DashboardGrossProfitDriver[];
-  topMarginErosionProjects: DashboardMarginErosionDriver[];
-};
-
 export type DashboardRawCostContribution = {
   rawCategory: string;
   subAssembly: string;
@@ -123,6 +100,7 @@ export type DashboardQuotationFunnel = {
   draftCount: number;
   finalCount: number;
   approvedCount: number;
+  bookedCount: number;
   totalCount: number;
   winRatePct: number;
 };
@@ -169,27 +147,6 @@ export type DashboardDiscountMarginTrend = {
   series: DashboardDiscountMarginTrendPoint[];
 };
 
-export type DashboardSegmentMixRow = {
-  segmentType: "ahu" | "manual" | "other";
-  value: number;
-  pct: number;
-};
-
-export type DashboardSegmentMix = {
-  rows: DashboardSegmentMixRow[];
-};
-
-export type DashboardTopClientRow = {
-  client: string;
-  bookedRevenue: number;
-  quotationCount: number;
-  concentrationPct: number;
-};
-
-export type DashboardTopClient = {
-  rows: DashboardTopClientRow[];
-};
-
 export type DashboardSalesLeaderboardMode = "salesman" | "client";
 
 export type DashboardSalesLeaderboardRow = {
@@ -214,13 +171,10 @@ export type DashboardApiResponse = {
   sankey: DashboardSankeyPayload;
   revenueTrend: DashboardRevenueTrendPayload;
   cashflowProjection: DashboardCashflowProjectionPayload;
-  topDrivers: DashboardTopDrivers;
   quotationFunnel: DashboardQuotationFunnel;
   statusDistribution: DashboardStatusDistribution;
   quotationAging: DashboardQuotationAging;
   discountMarginTrend: DashboardDiscountMarginTrend;
-  segmentMix: DashboardSegmentMix;
-  topClient: DashboardTopClient;
   salesLeaderboard: DashboardSalesLeaderboard;
 };
 
@@ -277,14 +231,11 @@ export const EMPTY_DASHBOARD_RESPONSE: DashboardApiResponse = {
       confidenceNote: "No quotation data available.",
     },
   },
-  topDrivers: {
-    topGrossProfitProjects: [],
-    topMarginErosionProjects: [],
-  },
   quotationFunnel: {
     draftCount: 0,
     finalCount: 0,
     approvedCount: 0,
+    bookedCount: 0,
     totalCount: 0,
     winRatePct: 0,
   },
@@ -300,12 +251,6 @@ export const EMPTY_DASHBOARD_RESPONSE: DashboardApiResponse = {
   discountMarginTrend: {
     period: "monthly",
     series: [],
-  },
-  segmentMix: {
-    rows: [],
-  },
-  topClient: {
-    rows: [],
   },
   salesLeaderboard: {
     mode: "client",

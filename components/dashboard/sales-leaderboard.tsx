@@ -34,7 +34,7 @@ export function SalesLeaderboard({
           ? "Performa disusun berdasarkan atribusi salesman pada quotation."
           : "Salesman belum tersedia; performa memakai konsentrasi klien sebagai fallback."}
       </p>
-      <div className="rounded-lg border border-border/70">
+      <div className="rounded-none border border-border/70">
         <Table>
           <TableHeader>
             <TableRow>

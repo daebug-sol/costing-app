@@ -54,9 +54,7 @@ describe("buildDashboardAnalyticsPayload", () => {
     expect(payload.kpis.totalProjects).toBe(0);
     expect(payload.sankey.nodes).toHaveLength(0);
     expect(payload.revenueTrend.series).toHaveLength(0);
-    expect(payload.topDrivers.topGrossProfitProjects).toHaveLength(0);
     expect(payload.quotationFunnel.totalCount).toBe(0);
-    expect(payload.topClient.rows).toHaveLength(0);
   });
 
   it("builds phase-1 dashboard payload with explicit payment terms", () => {
@@ -76,17 +74,16 @@ describe("buildDashboardAnalyticsPayload", () => {
     expect(payload.sankey.links.length).toBeGreaterThan(0);
     expect(payload.revenueTrend.period).toBe("monthly");
     expect(payload.cashflowProjection.series).toHaveLength(12);
-    expect(payload.topDrivers.topGrossProfitProjects[0]?.projectId).toBe("p1");
     expect(payload.cashflowProjection.assumptions.confidenceNote).toContain("parsed");
     expect(payload.kpis.backlogValue).toBe(1400);
     expect(payload.kpis.pipelineValue).toBe(0);
     expect(payload.kpis.taxExposurePpn).toBe(154);
     expect(payload.quotationFunnel.approvedCount).toBe(1);
+    expect(payload.quotationFunnel.bookedCount).toBe(1);
+    expect(payload.quotationFunnel.winRatePct).toBe(100);
     expect(payload.statusDistribution.quotationStatus[0]?.status).toBe("approved");
     expect(payload.quotationAging.rows).toHaveLength(1);
     expect(payload.discountMarginTrend.series).toHaveLength(12);
-    expect(payload.segmentMix.rows).toHaveLength(0);
-    expect(payload.topClient.rows[0]?.client).toBe("PT Alpha");
     expect(payload.salesLeaderboard.mode).toBe("client");
     expect(payload.salesLeaderboard.rows[0]?.principal).toBe("PT Alpha");
   });
@@ -126,9 +123,25 @@ describe("buildDashboardAnalyticsPayload", () => {
     );
 
     expect(payload.projectScope.selectedProjectId).toBe("p1");
+    expect(payload.projectScope.options).toHaveLength(1);
+    expect(payload.projectScope.options[0]?.id).toBe("p1");
     expect(payload.kpis.totalProjects).toBe(1);
-    expect(payload.topDrivers.topGrossProfitProjects[0]?.projectId).toBe("p1");
-    expect(payload.topClient.rows).toHaveLength(1);
+  });
+
+  it("returns empty scoped payload for unknown project id", () => {
+    const payload = buildDashboardAnalyticsPayload(
+      {
+        projects: [baseProject],
+        quotations: [baseQuotation],
+        defaultPaymentTerms: "DP 50%, balance CBD",
+        selectedProjectId: "missing",
+      },
+      new Date("2026-05-09T00:00:00.000Z")
+    );
+
+    expect(payload.projectScope.selectedProjectId).toBe("missing");
+    expect(payload.projectScope.options).toHaveLength(0);
+    expect(payload.kpis.totalProjects).toBe(0);
   });
 
   it("uses deterministic fallback when payment terms unknown", () => {
@@ -165,7 +178,42 @@ describe("buildDashboardAnalyticsPayload", () => {
     expect(payload.range).toBe("mtd");
     expect(payload.kpis.pipelineValue).toBe(1400);
     expect(payload.quotationFunnel.draftCount).toBe(1);
-    expect(payload.topClient.rows).toHaveLength(0);
+  });
+
+  it("counts expired quotations before row limit", () => {
+    const payload = buildDashboardAnalyticsPayload(
+      {
+        projects: [baseProject],
+        quotations: Array.from({ length: 15 }, (_, index) => ({
+          ...baseQuotation,
+          id: `q-${index}`,
+          tanggal: new Date(`2026-01-${String(index + 1).padStart(2, "0")}T00:00:00.000Z`),
+          validityDays: 1,
+        })),
+        defaultPaymentTerms: "DP 50%, balance CBD",
+      },
+      new Date("2026-05-09T00:00:00.000Z")
+    );
+
+    expect(payload.quotationAging.rows).toHaveLength(12);
+    expect(payload.quotationAging.expiredCount).toBe(15);
+  });
+
+  it("aligns funnel win rate with booked statuses", () => {
+    const payload = buildDashboardAnalyticsPayload(
+      {
+        projects: [baseProject],
+        quotations: [
+          { ...baseQuotation, id: "q1", status: "final" },
+          { ...baseQuotation, id: "q2", status: "draft" },
+        ],
+        defaultPaymentTerms: "DP 50%, balance CBD",
+      },
+      new Date("2026-05-09T00:00:00.000Z")
+    );
+
+    expect(payload.quotationFunnel.bookedCount).toBe(1);
+    expect(payload.quotationFunnel.winRatePct).toBe(50);
   });
 
   it("uses salesman leaderboard when attribution is available", () => {

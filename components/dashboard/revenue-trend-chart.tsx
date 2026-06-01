@@ -58,7 +58,7 @@ export function RevenueTrendChart({
     <div className="space-y-4" data-testid="revenue-trend-chart">
       <div
         ref={ref}
-        className="min-w-0 rounded-xl border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
+        className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
       >
         <ChartContainer config={chartConfig} className={CHART_FRAME_CLASS} aria-label="Tren revenue booked dan potential">
           <AreaChart
@@ -119,7 +119,7 @@ export function RevenueTrendChart({
         </ChartContainer>
       </div>
 
-      <div className={compact ? "sr-only" : "rounded-lg border border-border/70"}>
+      <div className={compact ? "sr-only" : "rounded-none border border-border/70"}>
         <Table>
           <TableHeader>
             <TableRow>

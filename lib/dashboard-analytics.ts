@@ -4,6 +4,7 @@ import type {
   DashboardRange,
 } from "@/lib/dashboard-contract";
 import { EMPTY_DASHBOARD_RESPONSE } from "@/lib/dashboard-contract";
+import { getDashboardRangeStart } from "@/lib/dashboard-range";
 import { finite } from "@/lib/calculations";
 import { computeCostSummary, marginTogglesFromProject } from "@/lib/cost-summary";
 import {
@@ -132,22 +133,16 @@ function diffUtcDays(from: Date, to: Date): number {
 }
 
 function getRangeStart(range: DashboardRange, now: Date): Date | null {
-  if (range === "mtd") {
-    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  }
-  if (range === "ytd") {
-    return new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
-  }
-  if (range === "12m") {
-    return addUtcMonths(startOfUtcMonth(now), -11);
-  }
-  return null;
+  return getDashboardRangeStart(range, now);
 }
 
 function isDateInRange(date: Date, range: DashboardRange, now: Date): boolean {
   const start = getRangeStart(range, now);
   if (!start) return true;
-  return date >= start && date <= now;
+  const day = startOfUtcDay(date).getTime();
+  const startDay = startOfUtcDay(start).getTime();
+  const nowDay = startOfUtcDay(now).getTime();
+  return day >= startDay && day <= nowDay;
 }
 
 function normalizePercent(value: number): number {
@@ -274,7 +269,8 @@ function kpiFromData(input: DashboardAnalyticsInput, now: Date, range: Dashboard
     .filter((quotation) => isBookedQuotationStatus(quotation.status))
     .reduce((sum, quotation) => sum + asBookedRevenueAmount(quotation), 0);
   const totalCount = rangeQuotations.length;
-  const winRatePct = totalCount > 0 ? (approvedQuotation / totalCount) * 100 : 0;
+  const bookedQuotation = approvedQuotation;
+  const winRatePct = totalCount > 0 ? (bookedQuotation / totalCount) * 100 : 0;
   const taxExposurePpn = rangeQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPN), 0);
   const taxExposurePph = rangeQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPH), 0);
 
@@ -361,14 +357,17 @@ function sankeyFromData(input: DashboardAnalyticsInput, now: Date): DashboardApi
     if (quotation.projectId === null) return true;
     return scopedProjectIds.has(quotation.projectId);
   });
+  const bookedQuotations = scopedQuotations.filter((quotation) =>
+    isBookedQuotationStatus(quotation.status)
+  );
 
-  const discountAmount = scopedQuotations.reduce(
+  const discountAmount = bookedQuotations.reduce(
     (sum, quotation) =>
       sum + Math.max(0, normalizePercent(quotation.totalBeforeDisc) - normalizePercent(quotation.totalAfterDisc)),
     0
   );
-  const ppnAmount = scopedQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPN), 0);
-  const pphAmount = scopedQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPH), 0);
+  const ppnAmount = bookedQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPN), 0);
+  const pphAmount = bookedQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPH), 0);
   const commercialNet = Math.max(0, sellingBeforeCommercial - discountAmount);
 
   return {
@@ -496,14 +495,17 @@ function costingDataFromData(input: DashboardAnalyticsInput): DashboardApiRespon
     });
   }
 
-  const discount = input.quotations.reduce(
+  const bookedQuotations = input.quotations.filter((quotation) =>
+    isBookedQuotationStatus(quotation.status)
+  );
+  const discount = bookedQuotations.reduce(
     (sum, quotation) =>
       sum + Math.max(0, normalizePercent(quotation.totalBeforeDisc) - normalizePercent(quotation.totalAfterDisc)),
     0
   );
   const netSelling = Math.max(0, grossTotal - discount);
-  const ppn = input.quotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPN), 0);
-  const pph = input.quotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPH), 0);
+  const ppn = bookedQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPN), 0);
+  const pph = bookedQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPH), 0);
   const grandTotal = netSelling + ppn + pph;
 
   return {
@@ -524,7 +526,11 @@ function costingDataFromData(input: DashboardAnalyticsInput): DashboardApiRespon
   };
 }
 
-function revenueTrendFromData(input: DashboardAnalyticsInput, now: Date): DashboardApiResponse["revenueTrend"] {
+function revenueTrendFromData(
+  input: DashboardAnalyticsInput,
+  now: Date,
+  range: DashboardRange
+): DashboardApiResponse["revenueTrend"] {
   const start = addUtcMonths(startOfUtcMonth(now), -11);
   const keys = Array.from({ length: 12 }, (_, idx) => monthKey(addUtcMonths(start, idx)));
   const byMonth = new Map<string, { bookedRevenue: number; potentialRevenue: number }>();
@@ -534,6 +540,7 @@ function revenueTrendFromData(input: DashboardAnalyticsInput, now: Date): Dashbo
   }
 
   for (const quotation of input.quotations) {
+    if (!isDateInRange(quotation.tanggal, range, now)) continue;
     const key = monthKey(quotation.tanggal);
     const bucket = byMonth.get(key);
     if (!bucket) continue;
@@ -652,59 +659,6 @@ function cashflowProjectionFromData(
   };
 }
 
-function topDriversFromData(input: DashboardAnalyticsInput): DashboardApiResponse["topDrivers"] {
-  const topGrossProfitProjects = input.projects
-    .map((project) => {
-      const sellingValue = normalizePercent(project.totalSelling);
-      const hppValue = normalizePercent(project.totalHPP);
-      const grossProfit = Math.max(0, sellingValue - hppValue);
-      const grossMarginPct = sellingValue > EPSILON ? (grossProfit / sellingValue) * 100 : 0;
-      return {
-        projectId: project.id,
-        projectName: project.name,
-        grossProfit: roundMoney(grossProfit),
-        grossMarginPct: roundMoney(grossMarginPct),
-        sellingValue: roundMoney(sellingValue),
-        hppValue: roundMoney(hppValue),
-      };
-    })
-    .filter((project) => project.grossProfit > EPSILON)
-    .sort((a, b) => b.grossProfit - a.grossProfit)
-    .slice(0, 5);
-
-  const bookedRevenueByProject = new Map<string, number>();
-  for (const quotation of input.quotations) {
-    if (!isBookedQuotationStatus(quotation.status)) continue;
-    if (!quotation.projectId) continue;
-    const current = bookedRevenueByProject.get(quotation.projectId) ?? 0;
-    bookedRevenueByProject.set(quotation.projectId, current + asBookedRevenueAmount(quotation));
-  }
-
-  const topMarginErosionProjects = input.projects
-    .map((project) => {
-      const expectedSelling = normalizePercent(project.totalSelling);
-      const quotedNetRevenue = normalizePercent(bookedRevenueByProject.get(project.id) ?? 0);
-      const erosionValue = Math.max(0, expectedSelling - quotedNetRevenue);
-      const erosionPct = expectedSelling > EPSILON ? (erosionValue / expectedSelling) * 100 : 0;
-      return {
-        projectId: project.id,
-        projectName: project.name,
-        expectedSelling: roundMoney(expectedSelling),
-        quotedNetRevenue: roundMoney(quotedNetRevenue),
-        erosionValue: roundMoney(erosionValue),
-        erosionPct: roundMoney(erosionPct),
-      };
-    })
-    .filter((project) => project.erosionValue > EPSILON)
-    .sort((a, b) => b.erosionValue - a.erosionValue)
-    .slice(0, 5);
-
-  return {
-    topGrossProfitProjects,
-    topMarginErosionProjects,
-  };
-}
-
 function quotationFunnelFromData(
   input: DashboardAnalyticsInput,
   now: Date,
@@ -714,20 +668,23 @@ function quotationFunnelFromData(
   let draftCount = 0;
   let finalCount = 0;
   let approvedCount = 0;
+  let bookedCount = 0;
 
   for (const quotation of scoped) {
     const normalized = normalizeStatus(quotation.status);
     if (normalized === "draft") draftCount += 1;
     if (normalized === "finalized") finalCount += 1;
     if (normalized === "approved") approvedCount += 1;
+    if (isBookedQuotationStatus(quotation.status)) bookedCount += 1;
   }
 
   const totalCount = scoped.length;
-  const winRatePct = totalCount > 0 ? (approvedCount / totalCount) * 100 : 0;
+  const winRatePct = totalCount > 0 ? (bookedCount / totalCount) * 100 : 0;
   return {
     draftCount,
     finalCount,
     approvedCount,
+    bookedCount,
     totalCount,
     winRatePct: roundMoney(winRatePct),
   };
@@ -777,7 +734,7 @@ function quotationAgingFromData(
   now: Date,
   range: DashboardRange
 ): DashboardApiResponse["quotationAging"] {
-  const rows = input.quotations
+  const allRows = input.quotations
     .filter((quotation) => isDateInRange(quotation.tanggal, range, now))
     .map((quotation) => {
       const validityDays = Math.max(0, Math.round(normalizePercent(quotation.validityDays)));
@@ -803,12 +760,13 @@ function quotationAgingFromData(
         totalAfterDisc: roundMoney(normalizePercent(quotation.totalAfterDisc)),
       };
     })
-    .sort((a, b) => b.ageDays - a.ageDays)
-    .slice(0, 12);
+    .sort((a, b) => b.ageDays - a.ageDays);
+
+  const expiredCount = allRows.filter((row) => row.isExpired).length;
 
   return {
-    rows,
-    expiredCount: rows.filter((row) => row.isExpired).length,
+    rows: allRows.slice(0, 12),
+    expiredCount,
     generatedAt: now.toISOString(),
   };
 }
@@ -867,64 +825,6 @@ function discountMarginTrendFromData(
       };
     }),
   };
-}
-
-function segmentMixFromData(input: DashboardAnalyticsInput): DashboardApiResponse["segmentMix"] {
-  const byType = new Map<"ahu" | "manual" | "other", number>([
-    ["ahu", 0],
-    ["manual", 0],
-    ["other", 0],
-  ]);
-
-  for (const project of input.projects) {
-    for (const segment of project.segments) {
-      const normalized: "ahu" | "manual" | "other" =
-        segment.type === "ahu" ? "ahu" : segment.type === "manual" ? "manual" : "other";
-      byType.set(normalized, (byType.get(normalized) ?? 0) + normalizePercent(segment.subtotal));
-    }
-  }
-
-  const total = Array.from(byType.values()).reduce((sum, value) => sum + value, 0);
-  const rows = Array.from(byType.entries())
-    .map(([segmentType, value]) => ({
-      segmentType,
-      value: roundMoney(value),
-      pct: total > EPSILON ? roundMoney((value / total) * 100) : 0,
-    }))
-    .filter((row) => row.value > EPSILON)
-    .sort((a, b) => b.value - a.value);
-
-  return { rows };
-}
-
-function topClientFromData(
-  input: DashboardAnalyticsInput,
-  now: Date,
-  range: DashboardRange
-): DashboardApiResponse["topClient"] {
-  const byClient = new Map<string, { bookedRevenue: number; quotationCount: number }>();
-  for (const quotation of input.quotations) {
-    if (!isDateInRange(quotation.tanggal, range, now)) continue;
-    if (!isBookedQuotationStatus(quotation.status)) continue;
-    const client = quotation.clientCompany?.trim() || quotation.clientName?.trim() || "Unknown client";
-    const current = byClient.get(client) ?? { bookedRevenue: 0, quotationCount: 0 };
-    current.bookedRevenue += asBookedRevenueAmount(quotation);
-    current.quotationCount += 1;
-    byClient.set(client, current);
-  }
-
-  const totalBookedRevenue = Array.from(byClient.values()).reduce((sum, row) => sum + row.bookedRevenue, 0);
-  const rows = Array.from(byClient.entries())
-    .map(([client, value]) => ({
-      client,
-      bookedRevenue: roundMoney(value.bookedRevenue),
-      quotationCount: value.quotationCount,
-      concentrationPct: totalBookedRevenue > EPSILON ? roundMoney((value.bookedRevenue / totalBookedRevenue) * 100) : 0,
-    }))
-    .sort((a, b) => b.bookedRevenue - a.bookedRevenue)
-    .slice(0, 5);
-
-  return { rows };
 }
 
 function salesLeaderboardFromData(
@@ -1007,7 +907,7 @@ export function buildDashboardAnalyticsPayload(
   now = new Date()
 ): DashboardApiResponse {
   const range = input.range ?? "all";
-  const options = input.projects.map((project) => ({
+  const allOptions = input.projects.map((project) => ({
     id: project.id,
     name: project.name,
   }));
@@ -1015,7 +915,22 @@ export function buildDashboardAnalyticsPayload(
   const hasSelected = selectedCandidate
     ? input.projects.some((project) => project.id === selectedCandidate)
     : false;
+
+  if (selectedCandidate && !hasSelected) {
+    return {
+      ...EMPTY_DASHBOARD_RESPONSE,
+      range,
+      projectScope: {
+        selectedProjectId: selectedCandidate,
+        options: [],
+      },
+    };
+  }
+
   const selectedProjectId = hasSelected ? selectedCandidate : null;
+  const scopeOptions = selectedProjectId
+    ? allOptions.filter((option) => option.id === selectedProjectId)
+    : allOptions;
 
   const scopedInput: DashboardAnalyticsInput = selectedProjectId
     ? {
@@ -1031,31 +946,26 @@ export function buildDashboardAnalyticsPayload(
       range,
       projectScope: {
         selectedProjectId,
-        options,
+        options: scopeOptions,
       },
     };
   }
-
-  const costingData = costingDataFromData(scopedInput);
 
   return {
     range,
     projectScope: {
       selectedProjectId,
-      options,
+      options: scopeOptions,
     },
     kpis: kpiFromData(scopedInput, now, range),
-    costingData,
+    costingData: costingDataFromData(scopedInput),
     sankey: sankeyFromData(scopedInput, now),
-    revenueTrend: revenueTrendFromData(scopedInput, now),
+    revenueTrend: revenueTrendFromData(scopedInput, now, range),
     cashflowProjection: cashflowProjectionFromData(scopedInput, now),
-    topDrivers: topDriversFromData(scopedInput),
     quotationFunnel: quotationFunnelFromData(scopedInput, now, range),
     statusDistribution: statusDistributionFromData(scopedInput, now, range),
     quotationAging: quotationAgingFromData(scopedInput, now, range),
     discountMarginTrend: discountMarginTrendFromData(scopedInput, now, range),
-    segmentMix: segmentMixFromData(scopedInput),
-    topClient: topClientFromData(scopedInput, now, range),
     salesLeaderboard: salesLeaderboardFromData(scopedInput, now, range),
   };
 }

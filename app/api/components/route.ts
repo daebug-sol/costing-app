@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { resolveAhuDatasetFileId } from "@/lib/database-folders";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const fileId = new URL(request.url).searchParams.get("fileId");
+    const datasetFileId = await resolveAhuDatasetFileId(fileId, "components");
     const components = await prisma.componentCatalog.findMany({
+      where: datasetFileId ? { datasetFileId } : undefined,
       orderBy: { code: "asc" },
     });
     return NextResponse.json(components);
@@ -34,7 +38,20 @@ export async function POST(request: Request) {
       leadTimeDays,
       supplier,
       notes,
-    } = body;
+      datasetFileId: bodyFileId,
+      fileId,
+    } = body as Record<string, unknown>;
+
+    const datasetFileId = await resolveAhuDatasetFileId(
+      String(fileId ?? bodyFileId ?? ""),
+      "components"
+    );
+    if (!datasetFileId) {
+      return NextResponse.json(
+        { error: "fileId dataset wajib untuk komponen baru" },
+        { status: 400 }
+      );
+    }
 
     if (
       typeof code !== "string" ||
@@ -67,6 +84,7 @@ export async function POST(request: Request) {
 
     const component = await prisma.componentCatalog.create({
       data: {
+        datasetFileId,
         code: code.trim(),
         name: name.trim(),
         category: category.trim(),

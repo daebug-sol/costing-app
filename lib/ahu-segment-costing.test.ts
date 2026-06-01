@@ -23,6 +23,7 @@ function material(code: string, name: string, pricePerKg: number): MaterialPrice
     currency: "IDR",
     unit: "kg",
     notes: null,
+    datasetFileId: null,
     updatedAt: new Date(),
     createdAt: new Date(),
   };
@@ -38,6 +39,7 @@ function profile(code: string, type: string, weightPerM: number, pricePerM: numb
     pricePerM,
     panelThick: null,
     notes: null,
+    datasetFileId: null,
     updatedAt: new Date(),
     createdAt: new Date(),
   };
@@ -66,6 +68,7 @@ function component(
     leadTimeDays: null,
     supplier: null,
     notes: null,
+    datasetFileId: null,
     updatedAt: new Date(),
     createdAt: new Date(),
   };

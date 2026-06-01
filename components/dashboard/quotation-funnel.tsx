@@ -24,7 +24,7 @@ export function QuotationFunnel({ data }: { data: DashboardQuotationFunnel }) {
 
   return (
     <div className="space-y-3" data-testid="quotation-funnel">
-      <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/70 p-3 text-xs">
+      <div className="grid grid-cols-2 gap-3 rounded-none border border-border/70 p-3 text-xs">
         <div className="min-w-0">
           <p className="text-muted-foreground">Total quotation</p>
           <p className="tabular-money mt-1 text-base font-semibold text-foreground">{data.totalCount}</p>
@@ -38,7 +38,7 @@ export function QuotationFunnel({ data }: { data: DashboardQuotationFunnel }) {
       </div>
       <div
         ref={ref}
-        className="min-w-0 rounded-xl border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
+        className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
       >
         <ChartContainer config={chartConfig} className="aspect-auto h-64 w-full min-w-0">
           <BarChart

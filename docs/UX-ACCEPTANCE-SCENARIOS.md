@@ -126,14 +126,23 @@ output for unchanged data (export determinism — see
 **Trigger.** U opens `/database`.
 
 1. A renders the dual-mode database (AHU structured + custom dynamic grid).
-2. While loading rows, A renders `<TableLoadingSkeleton columns={N}
+2. In each mode, A shows a **folder → file → isi tabel** flow:
+   - Panel kiri: daftar folder (buat / ubah nama / hapus kosong via `Dialog`).
+   - Panel kanan: daftar file dalam folder terpilih (buka dengan Enter atau double-click).
+   - Setelah file dibuka: editor tabel/grid seperti sebelumnya, dengan tombol
+     "Kembali ke file".
+3. Navigasi terakhir (tab aktif, folder, file) dipulihkan dari session storage
+   saat U kembali ke `/database` dalam sesi yang sama.
+4. While loading rows, A renders `<TableLoadingSkeleton columns={N}
    rows={5}>` matching the destination column count.
-3. U types in the search input. Results filter without a full-page reload.
-4. Empty filter result shows `<EmptyState>` with title "Tidak ada hasil"
+5. U types in the search input (file list atau isi tabel). Results filter without
+   a full-page reload.
+6. Empty filter result shows `<EmptyState>` with title "Tidak ada hasil"
    and a "Hapus filter" action that clears the query.
 
-**Done when:** keyboard `/` (if implemented) or `Tab` lands on the search
-input within ≤ 3 stops from page load.
+**Done when:** keyboard `Tab` walks folder list → file list → search (file or
+table) within ≤ 5 stops from page load, and U can complete create folder →
+create file → open file → edit one row without full page reload.
 
 ---
 

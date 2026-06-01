@@ -30,6 +30,7 @@ function comp(
     leadTimeDays: null,
     supplier: null,
     notes: null,
+    datasetFileId: null,
     updatedAt: new Date(),
     createdAt: new Date(),
   };

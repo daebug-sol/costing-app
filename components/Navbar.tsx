@@ -54,7 +54,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="bg-card/95 supports-[backdrop-filter]:bg-card/80 fixed top-0 z-50 w-full border-b border-border backdrop-blur-md">
+    <header className="fixed top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/80">
       <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
         <div className="flex min-w-0 flex-1 items-center md:min-w-[200px] md:flex-none">
           <Link
@@ -95,7 +95,7 @@ export function Navbar() {
 
       <div
         className={cn(
-          "border-border border-b bg-card md:hidden",
+          "border-b border-border bg-card md:hidden",
           open ? "block" : "hidden"
         )}
       >

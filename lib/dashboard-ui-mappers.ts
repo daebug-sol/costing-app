@@ -2,9 +2,7 @@ import type {
   DashboardCashflowPoint,
   DashboardCashflowProjectionPayload,
   DashboardDiscountMarginTrendPoint,
-  DashboardQuotationAging,
   DashboardRawCostContribution,
-  DashboardRevenueTrendPoint,
   DashboardSankeyPayload,
 } from "@/lib/dashboard-contract";
 
@@ -44,24 +42,6 @@ export function buildSankeyBridgeSummary(payload: DashboardSankeyPayload): Sanke
     taxIncludedRevenue: sumSankeyLinkValue(payload, "commercialNet", "taxIncludedRevenue")
       + sumSankeyLinkValue(payload, "ppn", "taxIncludedRevenue")
       + sumSankeyLinkValue(payload, "pph", "taxIncludedRevenue"),
-  };
-}
-
-export function buildRevenueScale(series: DashboardRevenueTrendPoint[]): {
-  maxValue: number;
-  rows: Array<DashboardRevenueTrendPoint & { bookedPct: number; potentialPct: number }>;
-} {
-  const maxValue = Math.max(
-    1,
-    ...series.map((point) => Math.max(point.bookedRevenue, point.potentialRevenue))
-  );
-  return {
-    maxValue,
-    rows: series.map((point) => ({
-      ...point,
-      bookedPct: (point.bookedRevenue / maxValue) * 100,
-      potentialPct: (point.potentialRevenue / maxValue) * 100,
-    })),
   };
 }
 
@@ -299,17 +279,19 @@ export function buildTrendDelta(
   return ((latest - previous) / Math.abs(previous)) * 100;
 }
 
-export function buildAgingSummary(aging: DashboardQuotationAging): {
-  expiredCount: number;
-  avgAgeDays: number;
-} {
-  if (aging.rows.length === 0) {
-    return { expiredCount: 0, avgAgeDays: 0 };
+export function buildMtdBookedDelta(series: DashboardDiscountMarginTrendPoint[]): number {
+  return buildTrendDelta(series, "bookedRevenue");
+}
+
+export function buildYtdBookedDelta(
+  series: DashboardDiscountMarginTrendPoint[],
+  bookedRevenueYtd: number
+): number {
+  const latestMonthBooked = series.at(-1)?.bookedRevenue ?? 0;
+  const ytdBeforeLatestMonth = bookedRevenueYtd - latestMonthBooked;
+  if (Math.abs(ytdBeforeLatestMonth) < 1e-6) {
+    return latestMonthBooked > 0 ? 100 : 0;
   }
-  const avgAgeDays = aging.rows.reduce((sum, row) => sum + row.ageDays, 0) / aging.rows.length;
-  return {
-    expiredCount: aging.expiredCount,
-    avgAgeDays,
-  };
+  return (latestMonthBooked / ytdBeforeLatestMonth) * 100;
 }
 

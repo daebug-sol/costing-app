@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { dashboardToolbarPanelClass } from "@/components/dashboard/dashboard-surface-styles";
 import { cn } from "@/lib/utils";
 
 export type PageHeaderWidth = "wide" | "narrow" | "doc";
@@ -40,7 +41,7 @@ export function PageHeader({
       className={cn(
         "mx-auto flex w-full flex-col items-center px-4 text-center sm:px-6 lg:px-8",
         widthClass[width],
-        variant === "band" ? "gap-6 py-7 sm:py-9" : "gap-5 pt-5 pb-4",
+        variant === "band" ? "gap-6 py-7 pb-8 sm:py-9 sm:pb-10" : "gap-5 pt-5 pb-4",
         innerClassName
       )}
     >
@@ -69,7 +70,12 @@ export function PageHeader({
         ) : null}
       </div>
       {actions ? (
-        <div className="flex w-full max-w-3xl flex-wrap items-center justify-center gap-2">
+        <div
+          className={cn(
+            dashboardToolbarPanelClass,
+            "flex min-h-[4.75rem] w-full max-w-3xl flex-wrap items-center justify-center gap-3 rounded-lg px-4 py-3.5 sm:gap-4 sm:px-5 sm:py-4"
+          )}
+        >
           {actions}
         </div>
       ) : null}

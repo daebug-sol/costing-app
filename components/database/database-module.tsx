@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -36,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PillTabsList, PillTabsTrigger } from "@/components/ui/pill-tabs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/empty-state";
 import { TableLoadingSkeleton } from "@/components/table-loading-skeleton";
@@ -47,6 +49,7 @@ import {
 import { formatIDR, formatNumber } from "@/lib/utils/format";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
 import { CustomDatabasePanel } from "./custom-database-panel";
+import { DatabaseExplorer } from "./database-explorer";
 
 type ToastState = { type: "success" | "error"; message: string } | null;
 
@@ -71,6 +74,42 @@ function useToast() {
     setToast({ type, message });
   }, []);
   return { toast, show };
+}
+
+function DatabaseRowDeleteDialog({
+  open,
+  entityLabel,
+  code,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  entityLabel: string;
+  code: string;
+  onClose: () => void;
+  onConfirm: () => void | Promise<void>;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Hapus {entityLabel}?</DialogTitle>
+          <DialogDescription>
+            {entityLabel} &quot;{code}&quot; akan dihapus permanen. Tindakan ini tidak dapat
+            dibatalkan.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Batal
+          </Button>
+          <Button type="button" variant="destructive" onClick={() => void onConfirm()}>
+            Hapus
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 /* ——— Types ——— */
@@ -118,15 +157,26 @@ type ComponentRow = {
 
 const ALL = "__all__";
 
+/** Stable table area height — avoids layout jump when switching AHU sub-tabs. */
+const AHU_TABLE_SHELL_CLASS =
+  "overflow-hidden rounded-lg border border-border bg-card min-h-[28rem]";
+
+const AHU_TAB_CONTENT_CLASS =
+  "mt-0 outline-none transition-opacity duration-200 ease-out motion-reduce:transition-none data-[state=inactive]:hidden data-[state=active]:opacity-100";
+
 /* ——— Materials ——— */
 
 function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) => void }) {
+  const ahuFolderId = useUiWorkflowStore((s) => s.database.ahuFolderId);
+  const ahuFileId = useUiWorkflowStore((s) => s.database.ahuFileId);
+  const setDatabaseAhuNav = useUiWorkflowStore((s) => s.setDatabaseAhuNav);
   const [rows, setRows] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState(ALL);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Material | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Material | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [fCode, setFCode] = useState("");
@@ -139,9 +189,10 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
   const [fNotes, setFNotes] = useState("");
 
   const load = useCallback(async () => {
+    if (!ahuFileId) return;
     setLoading(true);
     try {
-      const r = await fetch("/api/materials");
+      const r = await fetch(`/api/materials?fileId=${encodeURIComponent(ahuFileId)}`);
       if (!r.ok) throw new Error(await readErr(r));
       setRows(await r.json());
     } catch (e) {
@@ -149,10 +200,10 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
     } finally {
       setLoading(false);
     }
-  }, [show]);
+  }, [ahuFileId, show]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const categories = useMemo(() => {
@@ -234,7 +285,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
         const r = await fetch("/api/materials", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ ...body, fileId: ahuFileId }),
         });
         if (!r.ok) throw new Error(await readErr(r));
         show("success", "Material ditambahkan");
@@ -246,11 +297,13 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
     }
   };
 
-  const remove = async (m: Material) => {
-    if (!window.confirm(`Hapus material ${m.code}?`)) return;
+  const confirmRemove = async () => {
+    if (!deleteTarget) return;
+    const m = deleteTarget;
     try {
       const r = await fetch(`/api/materials/${m.id}`, { method: "DELETE" });
       if (!r.ok && r.status !== 204) throw new Error(await readErr(r));
+      setDeleteTarget(null);
       show("success", "Material dihapus");
       await load();
     } catch (e) {
@@ -340,7 +393,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
             {
               method: existingId ? "PUT" : "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(body),
+              body: JSON.stringify({ ...body, fileId: ahuFileId }),
             }
           );
           if (r.ok) {
@@ -362,10 +415,33 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
     }
   };
 
+  if (!ahuFileId) {
+    return (
+      <DatabaseExplorer
+        scope="ahu"
+        ahuKind="materials"
+        activeFolderId={ahuFolderId}
+        activeFileId={ahuFileId}
+        onFolderSelect={(id) => setDatabaseAhuNav({ ahuFolderId: id || null, ahuFileId: null })}
+        onFileOpen={(id) => setDatabaseAhuNav({ ahuFileId: id })}
+        show={show}
+        emptyFileTitle="Belum ada file material"
+        emptyFileDescription="Buat file dataset material di folder ini."
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setDatabaseAhuNav({ ahuFileId: null })}
+          >
+            Kembali ke file
+          </Button>
           <Input
             placeholder="Cari kode, nama, kategori…"
             value={search}
@@ -389,7 +465,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" onClick={openAdd}>
             <Plus className="size-4" />
-            Add New
+            Tambah
           </Button>
           <input
             ref={fileRef}
@@ -413,10 +489,10 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className={AHU_TABLE_SHELL_CLASS}>
         {loading ? (
           <div className="p-4">
-            <TableLoadingSkeleton columns={7} rows={6} />
+            <TableLoadingSkeleton columns={7} rows={8} />
           </div>
         ) : rows.length === 0 ? (
           <EmptyState
@@ -480,7 +556,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
                         variant="ghost"
                         className="text-destructive"
                         aria-label="Hapus"
-                        onClick={() => remove(m)}
+                        onClick={() => setDeleteTarget(m)}
                       >
                         <Trash2 className="size-4" />
                       </Button>
@@ -492,6 +568,14 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
           </Table>
         )}
       </div>
+
+      <DatabaseRowDeleteDialog
+        open={deleteTarget != null}
+        entityLabel="material"
+        code={deleteTarget?.code ?? ""}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmRemove}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -589,12 +673,16 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
 /* ——— Profiles ——— */
 
 function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => void }) {
+  const ahuFolderId = useUiWorkflowStore((s) => s.database.ahuFolderId);
+  const ahuFileId = useUiWorkflowStore((s) => s.database.ahuFileId);
+  const setDatabaseAhuNav = useUiWorkflowStore((s) => s.setDatabaseAhuNav);
   const [rows, setRows] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState(ALL);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Profile | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [fCode, setFCode] = useState("");
@@ -606,9 +694,10 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
   const [fNotes, setFNotes] = useState("");
 
   const load = useCallback(async () => {
+    if (!ahuFileId) return;
     setLoading(true);
     try {
-      const r = await fetch("/api/profiles");
+      const r = await fetch(`/api/profiles?fileId=${encodeURIComponent(ahuFileId)}`);
       if (!r.ok) throw new Error(await readErr(r));
       setRows(await r.json());
     } catch (e) {
@@ -616,10 +705,10 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
     } finally {
       setLoading(false);
     }
-  }, [show]);
+  }, [ahuFileId, show]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const types = useMemo(() => {
@@ -706,7 +795,7 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
         const r = await fetch("/api/profiles", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ ...body, fileId: ahuFileId }),
         });
         if (!r.ok) throw new Error(await readErr(r));
         show("success", "Profil ditambahkan");
@@ -718,11 +807,13 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
     }
   };
 
-  const remove = async (p: Profile) => {
-    if (!window.confirm(`Hapus profil ${p.code}?`)) return;
+  const confirmRemove = async () => {
+    if (!deleteTarget) return;
+    const p = deleteTarget;
     try {
       const r = await fetch(`/api/profiles/${p.id}`, { method: "DELETE" });
       if (!r.ok && r.status !== 204) throw new Error(await readErr(r));
+      setDeleteTarget(null);
       show("success", "Profil dihapus");
       await load();
     } catch (e) {
@@ -812,7 +903,7 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
             {
               method: existingId ? "PUT" : "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(body),
+              body: JSON.stringify({ ...body, fileId: ahuFileId }),
             }
           );
           if (r.ok) {
@@ -834,10 +925,33 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
     }
   };
 
+  if (!ahuFileId) {
+    return (
+      <DatabaseExplorer
+        scope="ahu"
+        ahuKind="profiles"
+        activeFolderId={ahuFolderId}
+        activeFileId={ahuFileId}
+        onFolderSelect={(id) => setDatabaseAhuNav({ ahuFolderId: id || null, ahuFileId: null })}
+        onFileOpen={(id) => setDatabaseAhuNav({ ahuFileId: id })}
+        show={show}
+        emptyFileTitle="Belum ada file profil"
+        emptyFileDescription="Buat file dataset profil di folder ini."
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setDatabaseAhuNav({ ahuFileId: null })}
+          >
+            Kembali ke file
+          </Button>
           <Input
             placeholder="Cari kode, nama, tipe…"
             value={search}
@@ -885,10 +999,10 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className={AHU_TABLE_SHELL_CLASS}>
         {loading ? (
           <div className="p-4">
-            <TableLoadingSkeleton columns={7} rows={6} />
+            <TableLoadingSkeleton columns={7} rows={8} />
           </div>
         ) : rows.length === 0 ? (
           <EmptyState
@@ -952,7 +1066,7 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
                         size="icon-sm"
                         variant="ghost"
                         className="text-destructive"
-                        onClick={() => remove(p)}
+                        onClick={() => setDeleteTarget(p)}
                         aria-label="Hapus"
                       >
                         <Trash2 className="size-4" />
@@ -965,6 +1079,14 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
           </Table>
         )}
       </div>
+
+      <DatabaseRowDeleteDialog
+        open={deleteTarget != null}
+        entityLabel="profil"
+        code={deleteTarget?.code ?? ""}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmRemove}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -1057,12 +1179,16 @@ function ComponentsPanel({
 }: {
   show: (t: "success" | "error", m: string) => void;
 }) {
+  const ahuFolderId = useUiWorkflowStore((s) => s.database.ahuFolderId);
+  const ahuFileId = useUiWorkflowStore((s) => s.database.ahuFileId);
+  const setDatabaseAhuNav = useUiWorkflowStore((s) => s.setDatabaseAhuNav);
   const [rows, setRows] = useState<ComponentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState(ALL);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ComponentRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ComponentRow | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [fCode, setFCode] = useState("");
@@ -1081,9 +1207,10 @@ function ComponentsPanel({
   const [fNotes, setFNotes] = useState("");
 
   const load = useCallback(async () => {
+    if (!ahuFileId) return;
     setLoading(true);
     try {
-      const r = await fetch("/api/components");
+      const r = await fetch(`/api/components?fileId=${encodeURIComponent(ahuFileId)}`);
       if (!r.ok) throw new Error(await readErr(r));
       setRows(await r.json());
     } catch (e) {
@@ -1091,10 +1218,10 @@ function ComponentsPanel({
     } finally {
       setLoading(false);
     }
-  }, [show]);
+  }, [ahuFileId, show]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const categories = useMemo(() => {
@@ -1205,7 +1332,7 @@ function ComponentsPanel({
         const r = await fetch("/api/components", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ ...body, fileId: ahuFileId }),
         });
         if (!r.ok) throw new Error(await readErr(r));
         show("success", "Komponen ditambahkan");
@@ -1217,11 +1344,13 @@ function ComponentsPanel({
     }
   };
 
-  const remove = async (c: ComponentRow) => {
-    if (!window.confirm(`Hapus komponen ${c.code}?`)) return;
+  const confirmRemove = async () => {
+    if (!deleteTarget) return;
+    const c = deleteTarget;
     try {
       const r = await fetch(`/api/components/${c.id}`, { method: "DELETE" });
       if (!r.ok && r.status !== 204) throw new Error(await readErr(r));
+      setDeleteTarget(null);
       show("success", "Komponen dihapus");
       await load();
     } catch (e) {
@@ -1344,7 +1473,7 @@ function ComponentsPanel({
             {
               method: existingId ? "PUT" : "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(body),
+              body: JSON.stringify({ ...body, fileId: ahuFileId }),
             }
           );
           if (r.ok) {
@@ -1366,10 +1495,33 @@ function ComponentsPanel({
     }
   };
 
+  if (!ahuFileId) {
+    return (
+      <DatabaseExplorer
+        scope="ahu"
+        ahuKind="components"
+        activeFolderId={ahuFolderId}
+        activeFileId={ahuFileId}
+        onFolderSelect={(id) => setDatabaseAhuNav({ ahuFolderId: id || null, ahuFileId: null })}
+        onFileOpen={(id) => setDatabaseAhuNav({ ahuFileId: id })}
+        show={show}
+        emptyFileTitle="Belum ada file komponen"
+        emptyFileDescription="Buat file dataset komponen di folder ini."
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setDatabaseAhuNav({ ahuFileId: null })}
+          >
+            Kembali ke file
+          </Button>
           <Input
             placeholder="Cari kode, nama, merek, spesifikasi…"
             value={search}
@@ -1417,10 +1569,10 @@ function ComponentsPanel({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className={AHU_TABLE_SHELL_CLASS}>
         {loading ? (
           <div className="p-4">
-            <TableLoadingSkeleton columns={8} rows={6} />
+            <TableLoadingSkeleton columns={8} rows={8} />
           </div>
         ) : rows.length === 0 ? (
           <EmptyState
@@ -1486,7 +1638,7 @@ function ComponentsPanel({
                         size="icon-sm"
                         variant="ghost"
                         className="text-destructive"
-                        onClick={() => remove(c)}
+                        onClick={() => setDeleteTarget(c)}
                         aria-label="Hapus"
                       >
                         <Trash2 className="size-4" />
@@ -1499,6 +1651,14 @@ function ComponentsPanel({
           </Table>
         )}
       </div>
+
+      <DatabaseRowDeleteDialog
+        open={deleteTarget != null}
+        entityLabel="komponen"
+        code={deleteTarget?.code ?? ""}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmRemove}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -1677,28 +1837,40 @@ export function DatabaseModule() {
       )}
 
       <Tabs value={activeTab} onValueChange={setDatabaseActiveTab} className="w-full">
-        <TabsList className="mb-6 inline-flex h-auto rounded-full bg-muted p-1">
-          <TabsTrigger value="ahu" className="rounded-full">
+        <TabsList className="mb-6 inline-flex h-auto rounded-full border border-primary/20 bg-muted/70 p-1">
+          <TabsTrigger
+            value="ahu"
+            className="rounded-full px-5 py-2 data-[state=active]:text-primary-foreground data-[state=active]:hover:text-primary-foreground"
+          >
             AHU Database
           </TabsTrigger>
-          <TabsTrigger value="custom" className="rounded-full">
+          <TabsTrigger
+            value="custom"
+            className="rounded-full px-5 py-2 data-[state=active]:text-primary-foreground data-[state=active]:hover:text-primary-foreground"
+          >
             Custom Database
           </TabsTrigger>
         </TabsList>
         <TabsContent value="ahu" className="mt-0">
           <Tabs value={ahuSection} onValueChange={setDatabaseAhuSection} className="w-full">
-            <TabsList className="mb-6 h-auto w-full flex-wrap justify-start gap-1 bg-muted/80 p-1">
-              <TabsTrigger value="materials">Material Prices</TabsTrigger>
-              <TabsTrigger value="profiles">Profile Data</TabsTrigger>
-              <TabsTrigger value="components">Component Catalog</TabsTrigger>
-            </TabsList>
-            <TabsContent value="materials" className="mt-0">
+            <PillTabsList className="mb-6">
+              <PillTabsTrigger value="materials" layoutId="database-ahu-section-pill">
+                Material Prices
+              </PillTabsTrigger>
+              <PillTabsTrigger value="profiles" layoutId="database-ahu-section-pill">
+                Profile Data
+              </PillTabsTrigger>
+              <PillTabsTrigger value="components" layoutId="database-ahu-section-pill">
+                Component Catalog
+              </PillTabsTrigger>
+            </PillTabsList>
+            <TabsContent value="materials" forceMount className={AHU_TAB_CONTENT_CLASS}>
               <MaterialsPanel show={show} />
             </TabsContent>
-            <TabsContent value="profiles" className="mt-0">
+            <TabsContent value="profiles" forceMount className={AHU_TAB_CONTENT_CLASS}>
               <ProfilesPanel show={show} />
             </TabsContent>
-            <TabsContent value="components" className="mt-0">
+            <TabsContent value="components" forceMount className={AHU_TAB_CONTENT_CLASS}>
               <ComponentsPanel show={show} />
             </TabsContent>
           </Tabs>

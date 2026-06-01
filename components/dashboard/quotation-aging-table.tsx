@@ -27,13 +27,13 @@ export function QuotationAgingTable({ data }: { data: DashboardQuotationAging })
         <span>Total dianalisis: {data.rows.length}</span>
         <span>Expired: {data.expiredCount}</span>
       </div>
-      <div className="rounded-lg border border-border/70">
+      <div className="rounded-none border border-border/70">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Klien</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Umur</TableHead>
+              <TableHead className="text-right">Expired</TableHead>
               <TableHead className="text-right">Validitas</TableHead>
               <TableHead className="text-right">Net</TableHead>
             </TableRow>

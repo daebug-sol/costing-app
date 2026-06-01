@@ -31,6 +31,10 @@ type UiWorkflowState = {
   database: {
     activeTab: string;
     ahuSection: string;
+    customFolderId: string | null;
+    customFileId: string | null;
+    ahuFolderId: string | null;
+    ahuFileId: string | null;
   };
   documentation: DocumentationListFilters & {
     screen: "list" | "editor";
@@ -70,6 +74,14 @@ type UiWorkflowState = {
 
   setDatabaseActiveTab: (tab: string) => void;
   setDatabaseAhuSection: (tab: string) => void;
+  setDatabaseCustomNav: (patch: {
+    customFolderId?: string | null;
+    customFileId?: string | null;
+  }) => void;
+  setDatabaseAhuNav: (patch: {
+    ahuFolderId?: string | null;
+    ahuFileId?: string | null;
+  }) => void;
 
   setDocumentationUi: (
     patch: Partial<
@@ -115,7 +127,14 @@ export const useUiWorkflowStore = create<UiWorkflowState>()(
         manualOpenCatsByProject: {},
         mainScrollByProject: {},
       },
-      database: { activeTab: "ahu", ahuSection: "materials" },
+      database: {
+        activeTab: "ahu",
+        ahuSection: "materials",
+        customFolderId: null,
+        customFileId: null,
+        ahuFolderId: null,
+        ahuFileId: null,
+      },
       documentation: { ...defaultDocumentation },
 
       setCostingSidebar: (patch) =>
@@ -236,7 +255,33 @@ export const useUiWorkflowStore = create<UiWorkflowState>()(
         })),
       setDatabaseAhuSection: (tab) =>
         set((s) => ({
-          database: { ...s.database, ahuSection: tab },
+          database: {
+            ...s.database,
+            ahuSection: tab,
+            ahuFileId: null,
+          },
+        })),
+
+      setDatabaseCustomNav: (patch) =>
+        set((s) => ({
+          database: {
+            ...s.database,
+            ...(patch.customFolderId !== undefined
+              ? { customFolderId: patch.customFolderId }
+              : {}),
+            ...(patch.customFileId !== undefined
+              ? { customFileId: patch.customFileId }
+              : {}),
+          },
+        })),
+
+      setDatabaseAhuNav: (patch) =>
+        set((s) => ({
+          database: {
+            ...s.database,
+            ...(patch.ahuFolderId !== undefined ? { ahuFolderId: patch.ahuFolderId } : {}),
+            ...(patch.ahuFileId !== undefined ? { ahuFileId: patch.ahuFileId } : {}),
+          },
         })),
 
       setDocumentationUi: (patch) =>

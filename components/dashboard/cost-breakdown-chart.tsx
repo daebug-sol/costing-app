@@ -83,7 +83,7 @@ export function CostBreakdownChart({
 
       <div
         ref={ref}
-        className="min-w-0 rounded-xl border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
+        className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
         aria-label="Cost breakdown donut"
       >
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -139,7 +139,7 @@ export function CostBreakdownChart({
         </ul>
       </div>
 
-      <div className={compact ? "sr-only" : "rounded-lg border border-border/70"}>
+      <div className={compact ? "sr-only" : "rounded-none border border-border/70"}>
         <Table>
           <TableHeader>
             <TableRow>

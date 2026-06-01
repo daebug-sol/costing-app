@@ -1,12 +1,12 @@
 import {
-  buildAgingSummary,
   buildCashflowAssumptionNote,
   buildCashflowTimelineScale,
   buildCostBreakdownRows,
+  buildMtdBookedDelta,
   buildProfitBridgeStages,
-  buildRevenueScale,
   buildSankeyBridgeSummary,
   buildTrendDelta,
+  buildYtdBookedDelta,
 } from "@/lib/dashboard-ui-mappers";
 
 describe("dashboard-ui-mappers", () => {
@@ -30,18 +30,6 @@ describe("dashboard-ui-mappers", () => {
     expect(summary.netCommercialRevenue).toBe(920);
     expect(summary.ppnTax).toBe(101.2);
     expect(summary.taxIncludedRevenue).toBe(1021.2);
-  });
-
-  it("builds chart scale percentages safely", () => {
-    const scale = buildRevenueScale([
-      { month: "2026-01", bookedRevenue: 0, potentialRevenue: 500 },
-      { month: "2026-02", bookedRevenue: 1000, potentialRevenue: 200 },
-    ]);
-
-    expect(scale.maxValue).toBe(1000);
-    expect(scale.rows[0]?.bookedPct).toBe(0);
-    expect(scale.rows[0]?.potentialPct).toBe(50);
-    expect(scale.rows[1]?.bookedPct).toBe(100);
   });
 
   it("renders clear assumption note text", () => {
@@ -119,40 +107,14 @@ describe("dashboard-ui-mappers", () => {
     expect(delta).toBeCloseTo(10, 5);
   });
 
-  it("builds aging summary from quotation rows", () => {
-    const summary = buildAgingSummary({
-      expiredCount: 1,
-      generatedAt: new Date("2026-05-09T00:00:00.000Z").toISOString(),
-      rows: [
-        {
-          quotationId: "q1",
-          status: "draft",
-          tanggal: new Date("2026-05-01T00:00:00.000Z").toISOString(),
-          ageDays: 10,
-          validityDays: 14,
-          expiryDate: new Date("2026-05-15T00:00:00.000Z").toISOString(),
-          isExpired: false,
-          clientLabel: "A",
-          discountValue: 20,
-          totalAfterDisc: 1000,
-        },
-        {
-          quotationId: "q2",
-          status: "approved",
-          tanggal: new Date("2026-04-01T00:00:00.000Z").toISOString(),
-          ageDays: 20,
-          validityDays: 14,
-          expiryDate: new Date("2026-04-15T00:00:00.000Z").toISOString(),
-          isExpired: true,
-          clientLabel: "B",
-          discountValue: 0,
-          totalAfterDisc: 2000,
-        },
-      ],
-    });
+  it("derives separate MTD and YTD booked deltas", () => {
+    const series = [
+      { month: "2026-01", discountLeakage: 0, bookedRevenue: 300, weightedMarginPct: 20 },
+      { month: "2026-02", discountLeakage: 0, bookedRevenue: 330, weightedMarginPct: 22 },
+      { month: "2026-03", discountLeakage: 0, bookedRevenue: 400, weightedMarginPct: 24 },
+    ];
 
-    expect(summary.expiredCount).toBe(1);
-    expect(summary.avgAgeDays).toBe(15);
+    expect(buildMtdBookedDelta(series)).toBeCloseTo(21.2121, 3);
+    expect(buildYtdBookedDelta(series, 1030)).toBeCloseTo(63.492, 2);
   });
 });
-

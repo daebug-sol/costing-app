@@ -3,12 +3,19 @@
 import { ChevronDown, RefreshCw, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CashflowTimelineChart } from "@/components/dashboard/cashflow-timeline-chart";
 import { ChartInsightBlock } from "@/components/dashboard/chart-insight-block";
 import { CostBreakdownChart } from "@/components/dashboard/cost-breakdown-chart";
 import { DashboardStickyToolbar } from "@/components/dashboard/dashboard-sticky-toolbar";
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
+import {
+  dashboardDetailInnerClass,
+  dashboardSegmentClass,
+  dashboardSubsegmentClass,
+  dashboardTabPaneClass,
+  secondaryKpiTintClass,
+} from "@/components/dashboard/dashboard-surface-styles";
 import { useDashboardToolbarStuck } from "@/hooks/use-dashboard-toolbar-stuck";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import { ProfitBridgeChart } from "@/components/dashboard/profit-bridge-chart";
@@ -33,17 +40,26 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PillTabsList, PillTabsTrigger } from "@/components/ui/pill-tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import type { DashboardApiResponse, DashboardRange } from "@/lib/dashboard-contract";
-import { buildTrendDelta } from "@/lib/dashboard-ui-mappers";
+import { buildMtdBookedDelta, buildTrendDelta, buildYtdBookedDelta } from "@/lib/dashboard-ui-mappers";
 import { cn } from "@/lib/utils";
 import { formatIDR, formatPercent } from "@/lib/utils/format";
 
-function SecondaryKpiTile({ label, value }: { label: string; value: string | number }) {
+function SecondaryKpiTile({
+  label,
+  value,
+  tintIndex,
+}: {
+  label: string;
+  value: string | number;
+  tintIndex: number;
+}) {
   return (
-    <Card size="sm" className="border-border/70">
+    <Card size="sm" className={cn("border", secondaryKpiTintClass(tintIndex))}>
       <CardContent className="p-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
         <p className="tabular-money mt-1 text-lg font-semibold text-foreground">{value}</p>
       </CardContent>
     </Card>
@@ -70,7 +86,7 @@ function SecondaryKpiGrid({
 }) {
   return (
     <div className={cn("grid gap-3 sm:grid-cols-2 lg:grid-cols-4", className)}>
-      {SECONDARY_KPI_LABELS.map((item) => {
+      {SECONDARY_KPI_LABELS.map((item, index) => {
         let value: string | number = 0;
         if (item.key === "winRatePct") {
           value = formatPercent(kpis?.winRatePct ?? 0);
@@ -79,7 +95,9 @@ function SecondaryKpiGrid({
         } else {
           value = kpis?.[item.key] ?? 0;
         }
-        return <SecondaryKpiTile key={item.label} label={item.label} value={value} />;
+        return (
+          <SecondaryKpiTile key={item.label} label={item.label} value={value} tintIndex={index} />
+        );
       })}
     </div>
   );
@@ -88,50 +106,114 @@ function SecondaryKpiGrid({
 export function DashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<DashboardApiResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [range, setRange] = useState<DashboardRange>("all");
+  const [activeTab, setActiveTab] = useState("finansial");
+  const hasLoadedOnceRef = useRef(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (selectedProjectId) params.set("projectId", selectedProjectId);
-      params.set("range", range);
-      const query = params.toString();
-      const response = await fetch(`/api/dashboard${query ? `?${query}` : ""}`);
-      if (!response.ok) throw new Error("Gagal memuat dashboard");
-      const payload = (await response.json()) as DashboardApiResponse;
-      setData(payload);
-      if (payload.projectScope.selectedProjectId !== selectedProjectId) {
-        setSelectedProjectId(payload.projectScope.selectedProjectId);
-      }
-    } catch (loadError) {
-      const message = loadError instanceof Error ? loadError.message : "Gagal memuat dashboard";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [range, selectedProjectId]);
+  const goToCosting = useCallback(() => {
+    const href = selectedProjectId ? `/costing?project=${encodeURIComponent(selectedProjectId)}` : "/costing";
+    router.push(href);
+  }, [router, selectedProjectId]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    const controller = new AbortController();
+    const isInitialLoad = !hasLoadedOnceRef.current;
+
+    async function loadDashboard() {
+      if (isInitialLoad) {
+        setInitialLoading(true);
+      } else {
+        setRefreshing(true);
+      }
+      setError(null);
+
+      try {
+        const params = new URLSearchParams();
+        if (selectedProjectId) params.set("projectId", selectedProjectId);
+        params.set("range", range);
+        const query = params.toString();
+        const response = await fetch(`/api/dashboard${query ? `?${query}` : ""}`, {
+          signal: controller.signal,
+        });
+
+        if (response.status === 404) {
+          setSelectedProjectId(null);
+          throw new Error("Proyek tidak ditemukan");
+        }
+        if (!response.ok) throw new Error("Gagal memuat dashboard");
+
+        const payload = (await response.json()) as DashboardApiResponse;
+        setData(payload);
+        hasLoadedOnceRef.current = true;
+        if (payload.projectScope.selectedProjectId !== selectedProjectId) {
+          setSelectedProjectId(payload.projectScope.selectedProjectId);
+        }
+      } catch (loadError) {
+        if (loadError instanceof DOMException && loadError.name === "AbortError") return;
+        const message = loadError instanceof Error ? loadError.message : "Gagal memuat dashboard";
+        setError(message);
+      } finally {
+        if (!controller.signal.aborted) {
+          setInitialLoading(false);
+          setRefreshing(false);
+        }
+      }
+    }
+
+    void loadDashboard();
+    return () => controller.abort();
+  }, [range, selectedProjectId]);
+
+  const refresh = useCallback(() => {
+    setRefreshing(true);
+    setError(null);
+    const params = new URLSearchParams();
+    if (selectedProjectId) params.set("projectId", selectedProjectId);
+    params.set("range", range);
+    const query = params.toString();
+    void fetch(`/api/dashboard${query ? `?${query}` : ""}`)
+      .then(async (response) => {
+        if (response.status === 404) {
+          setSelectedProjectId(null);
+          throw new Error("Proyek tidak ditemukan");
+        }
+        if (!response.ok) throw new Error("Gagal memuat dashboard");
+        return response.json() as Promise<DashboardApiResponse>;
+      })
+      .then((payload) => {
+        setData(payload);
+        if (payload.projectScope.selectedProjectId !== selectedProjectId) {
+          setSelectedProjectId(payload.projectScope.selectedProjectId);
+        }
+      })
+      .catch((loadError) => {
+        const message = loadError instanceof Error ? loadError.message : "Gagal memuat dashboard";
+        setError(message);
+      })
+      .finally(() => setRefreshing(false));
+  }, [range, selectedProjectId]);
+
+  const loading = initialLoading;
+  const chartLoading = initialLoading && !data;
 
   const kpis = data?.kpis;
-  const bookedDelta = useMemo(
-    () => buildTrendDelta(data?.discountMarginTrend.series ?? [], "bookedRevenue"),
-    [data?.discountMarginTrend.series]
+  const trendSeries = data?.discountMarginTrend.series ?? [];
+  const ytdBookedDelta = useMemo(
+    () => buildYtdBookedDelta(trendSeries, kpis?.bookedRevenueYtd ?? 0),
+    [trendSeries, kpis?.bookedRevenueYtd]
   );
+  const mtdBookedDelta = useMemo(() => buildMtdBookedDelta(trendSeries), [trendSeries]);
   const marginDelta = useMemo(
-    () => buildTrendDelta(data?.discountMarginTrend.series ?? [], "weightedMarginPct"),
-    [data?.discountMarginTrend.series]
+    () => buildTrendDelta(trendSeries, "weightedMarginPct"),
+    [trendSeries]
   );
   const leakageDelta = useMemo(
-    () => buildTrendDelta(data?.discountMarginTrend.series ?? [], "discountLeakage"),
-    [data?.discountMarginTrend.series]
+    () => buildTrendDelta(trendSeries, "discountLeakage"),
+    [trendSeries]
   );
 
   const { sentinelRef, isStuck } = useDashboardToolbarStuck();
@@ -140,17 +222,17 @@ export function DashboardPage() {
     scopeOptions: data?.projectScope.options ?? [],
     selectedProjectId,
     range,
-    loading,
+    loading: refreshing,
     onProjectChange: setSelectedProjectId,
     onRangeChange: setRange,
-    onRefresh: () => void load(),
+    onRefresh: refresh,
   };
 
   if (error && !data) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <p className="text-foreground">{error}</p>
-        <Button type="button" className="mt-4 gap-2" onClick={() => void load()}>
+        <Button type="button" className="mt-4 gap-2" onClick={refresh}>
           <RefreshCw className="size-4" />
           Coba lagi
         </Button>
@@ -163,36 +245,44 @@ export function DashboardPage() {
       eyebrow="Ringkasan"
       title="Dashboard"
       description="Ringkasan finansial proyek dan quotation untuk estimasi, sales, dan manajemen."
-      contentClassName="gap-6 py-6 sm:py-8"
-      actions={<DashboardToolbar {...toolbarProps} align="center" />}
+      contentClassName="gap-6 pt-8 pb-6 sm:pt-10 sm:pb-8"
+      actions={<DashboardToolbar {...toolbarProps} align="center" surface="panel" />}
     >
-      <div ref={sentinelRef} className="pointer-events-none -mt-6 h-px w-full" aria-hidden />
+      <div ref={sentinelRef} className="pointer-events-none h-px w-full" aria-hidden />
 
       <DashboardStickyToolbar visible={isStuck}>
-        <DashboardToolbar {...toolbarProps} align="end" />
+        <DashboardToolbar {...toolbarProps} align="start" surface="panel" />
       </DashboardStickyToolbar>
 
       {error ? (
-        <div className="rounded-lg border border-border bg-muted px-4 py-3 text-xs text-muted-foreground">
+        <div className="rounded-none border border-warning/35 bg-warning-muted px-4 py-3 text-xs text-warning">
           {error}. Menampilkan data terakhir yang tersedia.
         </div>
       ) : null}
 
       <section className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-5" data-testid="dashboard-hero-kpis">
+        {loading && !kpis ? (
+          <div className="col-span-full">
+            <TableLoadingSkeleton columns={5} rows={2} />
+          </div>
+        ) : (
+          <>
         <KpiStatCard
           title="Booked revenue YTD"
           value={kpis?.bookedRevenueYtd ?? 0}
           formatter={formatIDR}
-          deltaPct={bookedDelta}
-          deltaLabel="dibanding bulan sebelumnya"
+          deltaPct={ytdBookedDelta}
+          deltaLabel="kontribusi bulan ini vs YTD sebelumnya"
           hint="Nilai bersih setelah diskon"
+          accent="revenue"
         />
         <KpiStatCard
           title="Booked revenue MTD"
           value={kpis?.bookedRevenueMtd ?? 0}
           formatter={formatIDR}
-          deltaPct={bookedDelta}
+          deltaPct={mtdBookedDelta}
           deltaLabel="dibanding bulan sebelumnya"
+          accent="revenue"
         />
         <KpiStatCard
           title="Weighted gross margin"
@@ -200,12 +290,14 @@ export function DashboardPage() {
           formatter={formatPercent}
           deltaPct={marginDelta}
           deltaLabel="perubahan margin"
+          accent="margin"
         />
         <KpiStatCard
           title="Pipeline value"
           value={kpis?.pipelineValue ?? 0}
           formatter={formatIDR}
           hint="Draft quotation pada periode aktif"
+          accent="pipeline"
         />
         <KpiStatCard
           title="Discount leakage"
@@ -213,7 +305,10 @@ export function DashboardPage() {
           formatter={formatIDR}
           deltaPct={leakageDelta}
           deltaLabel="perubahan leakage"
+          accent="leakage"
         />
+          </>
+        )}
       </section>
 
       <section aria-label="KPI pendukung">
@@ -221,7 +316,7 @@ export function DashboardPage() {
           <SecondaryKpiGrid kpis={kpis} />
         </div>
         <Collapsible className="group/kpi-secondary sm:hidden">
-          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm font-medium text-foreground">
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-none border-2 border-primary/20 bg-primary/[0.06] px-4 py-3 text-sm font-medium text-foreground">
             KPI pendukung
             <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=open]/kpi-secondary:rotate-180 motion-reduce:transition-none" />
           </CollapsibleTrigger>
@@ -232,35 +327,58 @@ export function DashboardPage() {
       </section>
 
       <section
-        className="min-w-0 rounded-xl border border-border bg-muted/30 p-4 sm:p-6"
+        className={cn("min-w-0 p-4 sm:p-6", dashboardSegmentClass)}
         data-testid="dashboard-insight-panel"
         aria-labelledby="dashboard-insight-heading"
       >
-        <h2 id="dashboard-insight-heading" className="text-lg font-semibold text-foreground">
-          Insight utama
-        </h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Tiga area fokus — finansial, penjualan, dan costing — tanpa scroll panjang.
-        </p>
+        <div className="mb-4 border-b border-border pb-4">
+          <span
+            className="bg-primary mb-2 block h-0.5 w-10 rounded-full sm:mb-2.5 sm:w-12"
+            aria-hidden
+          />
+          <h2
+            id="dashboard-insight-heading"
+            className="font-display text-foreground text-2xl leading-tight font-semibold tracking-tight sm:text-3xl"
+          >
+            Insight utama
+          </h2>
+        </div>
 
-        <Tabs defaultValue="finansial" className="mt-4">
-          <TabsList className="grid h-10 w-full grid-cols-3 sm:w-auto sm:inline-flex">
-            <TabsTrigger value="finansial" data-testid="dashboard-tab-finansial">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <PillTabsList>
+            <PillTabsTrigger
+              value="finansial"
+              layoutId="dashboard-insight-pill"
+              data-testid="dashboard-tab-finansial"
+            >
               Finansial
-            </TabsTrigger>
-            <TabsTrigger value="penjualan" data-testid="dashboard-tab-penjualan">
+            </PillTabsTrigger>
+            <PillTabsTrigger
+              value="penjualan"
+              layoutId="dashboard-insight-pill"
+              data-testid="dashboard-tab-penjualan"
+            >
               Penjualan
-            </TabsTrigger>
-            <TabsTrigger value="costing" data-testid="dashboard-tab-costing">
+            </PillTabsTrigger>
+            <PillTabsTrigger
+              value="costing"
+              layoutId="dashboard-insight-pill"
+              data-testid="dashboard-tab-costing"
+            >
               Costing
-            </TabsTrigger>
-          </TabsList>
+            </PillTabsTrigger>
+          </PillTabsList>
 
-          <TabsContent value="finansial" className="mt-4 space-y-4">
+          {activeTab === "finansial" ? (
+          <TabsContent
+            value="finansial"
+            className={cn("mt-4 space-y-4 rounded-none border p-3 sm:p-4", dashboardTabPaneClass.finansial)}
+          >
             <ChartInsightBlock
               title="Profit bridge"
               description="Waterfall cost-to-revenue dengan sinyal positif/negatif yang eksplisit."
-              loading={loading}
+              loading={chartLoading}
+              accent="bridge"
               detailDescription="Tabel tahap profit bridge untuk review aksesibilitas."
               detailContent={
                 data?.sankey.links.length ? (
@@ -276,7 +394,7 @@ export function DashboardPage() {
                   title="Belum ada data profit bridge"
                   description="Tambahkan data costing dan quotation untuk melihat alur profit."
                   actionLabel="Buka Costing"
-                  onAction={() => router.push("/costing")}
+                  onAction={goToCosting}
                 />
               )}
             </ChartInsightBlock>
@@ -284,7 +402,8 @@ export function DashboardPage() {
             <ChartInsightBlock
               title="Cashflow timeline"
               description="Cash-in dan cash-out bulanan dengan saldo berjalan."
-              loading={loading}
+              loading={chartLoading}
+              accent="cashflow"
               detailDescription="Tabel bulanan cashflow dan saldo berjalan."
               detailContent={
                 data?.cashflowProjection.series.length ? (
@@ -300,18 +419,24 @@ export function DashboardPage() {
                   title="Belum ada proyeksi cashflow"
                   description="Setidaknya satu quotation booked dibutuhkan untuk menampilkan timeline."
                   actionLabel="Buka Costing"
-                  onAction={() => router.push("/costing")}
+                  onAction={goToCosting}
                 />
               )}
             </ChartInsightBlock>
           </TabsContent>
+          ) : null}
 
-          <TabsContent value="penjualan" className="mt-4 space-y-4">
-            <div className="grid gap-4 lg:grid-cols-2">
+          {activeTab === "penjualan" ? (
+          <TabsContent
+            value="penjualan"
+            className={cn("mt-4 space-y-4 rounded-none border p-3 sm:p-4", dashboardTabPaneClass.penjualan)}
+          >
+            <div className={cn("grid gap-4 lg:grid-cols-2", dashboardSubsegmentClass)}>
               <ChartInsightBlock
                 title="Quotation funnel"
-                description="Konversi dari draft ke approved dalam periode aktif."
-                loading={loading}
+                description="Konversi dari draft ke booked dalam periode aktif."
+                loading={chartLoading}
+                accent="funnel"
               >
                 {data ? <QuotationFunnel data={data.quotationFunnel} /> : null}
               </ChartInsightBlock>
@@ -319,7 +444,8 @@ export function DashboardPage() {
               <ChartInsightBlock
                 title="Status distribution"
                 description="Distribusi status quotation/proyek dengan fallback tabel."
-                loading={loading}
+                loading={chartLoading}
+                accent="status"
               >
                 {data ? <StatusDistribution data={data.statusDistribution} /> : null}
               </ChartInsightBlock>
@@ -328,19 +454,26 @@ export function DashboardPage() {
             <ChartInsightBlock
               title="Sales leaderboard"
               description="Performa berdasarkan salesman jika tersedia, fallback ke konsentrasi klien."
-              loading={loading}
+              loading={chartLoading}
+              accent="leaderboard"
               detailDescription="Daftar lengkap performa per principal."
               detailContent={data ? <SalesLeaderboard data={data.salesLeaderboard} /> : null}
             >
               {data ? <SalesLeaderboard data={data.salesLeaderboard} maxRows={5} /> : null}
             </ChartInsightBlock>
           </TabsContent>
+          ) : null}
 
-          <TabsContent value="costing" className="mt-4 space-y-4">
+          {activeTab === "costing" ? (
+          <TabsContent
+            value="costing"
+            className={cn("mt-4 space-y-4 rounded-none border p-3 sm:p-4", dashboardTabPaneClass.costing)}
+          >
             <ChartInsightBlock
               title="Cost breakdown"
               description="Komposisi biaya material per sub-assembly atau kategori raw."
-              loading={loading}
+              loading={chartLoading}
+              accent="cost"
               detailDescription="Tabel breakdown material lengkap."
               detailContent={data ? <CostBreakdownChart costingData={data.costingData} /> : null}
             >
@@ -350,34 +483,39 @@ export function DashboardPage() {
             <ChartInsightBlock
               title="Revenue trend"
               description="Tren booked vs potential revenue dalam periode bulanan."
-              loading={loading}
+              loading={chartLoading}
+              accent="revenue"
               detailDescription="Tabel tren revenue per bulan."
               detailContent={data ? <RevenueTrendChart data={data.revenueTrend} /> : null}
             >
               {data ? <RevenueTrendChart data={data.revenueTrend} compact /> : null}
             </ChartInsightBlock>
           </TabsContent>
+          ) : null}
         </Tabs>
       </section>
 
       <Accordion
         type="single"
         collapsible
-        className="rounded-xl border border-border bg-card/40 px-4 sm:px-6"
+        className={cn("px-4 sm:px-6", dashboardSegmentClass)}
         data-testid="dashboard-detail-accordion"
       >
         <AccordionItem value="detail" className="border-none">
-          <AccordionTrigger className="text-base font-semibold hover:no-underline">
+          <AccordionTrigger className="border-primary/20 -mx-4 rounded-none border-b bg-primary/[0.08] px-4 py-4 text-base font-semibold hover:no-underline sm:-mx-6 sm:px-6">
             Detail & tindak lanjut
           </AccordionTrigger>
-          <AccordionContent className="space-y-6 pb-6">
-            <ChartInsightBlock
-              title="Quotation aging"
-              description="Pantau umur quotation dan masa berlaku yang mendekati habis."
-              loading={loading}
+          <AccordionContent className="space-y-4 pb-6 pt-4">
+            <div className={dashboardDetailInnerClass()}>
+              <ChartInsightBlock
+                title="Quotation aging"
+                description="Pantau umur quotation dan masa berlaku yang mendekati habis."
+                loading={chartLoading}
+                accent="aging"
             >
               {data ? <QuotationAgingTable data={data.quotationAging} /> : null}
             </ChartInsightBlock>
+            </div>
           </AccordionContent>
         </AccordionItem>
       </Accordion>

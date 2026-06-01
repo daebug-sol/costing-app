@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowDown } from "lucide-react";
 import {
   Bar,
   CartesianGrid,
@@ -52,11 +51,9 @@ const CHART_FRAME_CLASS = "aspect-auto h-72 w-full min-w-0";
 
 export function CashflowTimelineChart({
   data,
-  onScrollToProjectionCard,
   compact = false,
 }: {
   data: DashboardCashflowProjectionPayload;
-  onScrollToProjectionCard?: () => void;
   compact?: boolean;
 }) {
   const { ref, tier } = useContainerWidth<HTMLDivElement>();
@@ -76,7 +73,7 @@ export function CashflowTimelineChart({
     <div className="space-y-4" data-testid="cashflow-timeline-chart">
       <div
         ref={ref}
-        className="min-w-0 rounded-xl border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
+        className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
       >
         <ChartContainer config={chartConfig} className={CHART_FRAME_CLASS} aria-label="Cashflow timeline dengan saldo berjalan">
           <ComposedChart
@@ -133,22 +130,12 @@ export function CashflowTimelineChart({
         </ChartContainer>
       </div>
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+      <div className="rounded-none border border-warning/30 bg-warning-muted p-3 text-xs text-warning">
         {buildCashflowAssumptionNote(data)} Projected cashflow only; not actual invoice
         collection.
-        {onScrollToProjectionCard ? (
-          <button
-            type="button"
-            className="mt-2 inline-flex items-center gap-1 font-medium text-amber-900 underline-offset-4 hover:underline dark:text-amber-100"
-            onClick={onScrollToProjectionCard}
-          >
-            Lihat detail di card Cashflow Projection
-            <ArrowDown className="size-3" aria-hidden />
-          </button>
-        ) : null}
       </div>
 
-      <div className={compact ? "sr-only" : "rounded-lg border border-border/70"}>
+      <div className={compact ? "sr-only" : "rounded-none border border-border/70"}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -172,7 +159,7 @@ export function CashflowTimelineChart({
                 <TableCell
                   className={cn(
                     "tabular-money text-right",
-                    row.isNegativeNet ? "text-rose-600" : "text-emerald-600"
+                    row.isNegativeNet ? "text-destructive" : "text-success"
                   )}
                 >
                   {formatIDR(row.projectedNet)}

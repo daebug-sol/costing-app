@@ -50,7 +50,7 @@ export default function RootLayout({
       <body className="min-h-full">
         <TooltipProvider>
           <Navbar />
-          <main className="min-h-screen bg-muted/30 pt-14">{children}</main>
+          <main className="min-h-screen bg-background pt-14">{children}</main>
           <Toaster />
         </TooltipProvider>
       </body>

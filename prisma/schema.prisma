@@ -38,51 +38,96 @@ model AppSettings {
   updatedAt          DateTime @updatedAt
 }
 
+/** Folder tree for /database — scope `custom` or `ahu`. */
+model DatabaseFolder {
+  id        String   @id @default(cuid())
+  scope     String
+  name      String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customTables CustomDbTable[]
+  ahuFiles     AhuDatasetFile[]
+
+  @@index([scope, sortOrder])
+}
+
+/** AHU dataset file (materials / profiles / components) under a folder. */
+model AhuDatasetFile {
+  id        String   @id @default(cuid())
+  folderId  String
+  folder    DatabaseFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  kind      String
+  name      String
+  sortOrder Int      @default(0)
+  materials  MaterialPrice[]
+  profiles   ProfileData[]
+  components ComponentCatalog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([folderId, kind])
+  @@index([folderId, sortOrder])
+}
+
 model MaterialPrice {
-  id         String   @id @default(cuid())
-  code       String   @unique
-  name       String
-  category   String
-  density    Float
-  pricePerKg Float
-  currency   String   @default("IDR")
-  unit       String   @default("kg")
-  notes      String?
-  updatedAt  DateTime @updatedAt
-  createdAt  DateTime @default(now())
+  id            String          @id @default(cuid())
+  datasetFileId String?
+  datasetFile   AhuDatasetFile? @relation(fields: [datasetFileId], references: [id], onDelete: Cascade)
+  code          String          @unique
+  name          String
+  category      String
+  density       Float
+  pricePerKg    Float
+  currency      String          @default("IDR")
+  unit          String          @default("kg")
+  notes         String?
+  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime        @default(now())
+
+  @@index([datasetFileId])
 }
 
 model ProfileData {
-  id         String   @id @default(cuid())
-  code       String   @unique
-  name       String
-  type       String
-  weightPerM Float
-  pricePerM  Float
-  panelThick Int?
-  notes      String?
-  updatedAt  DateTime @updatedAt
-  createdAt  DateTime @default(now())
+  id            String          @id @default(cuid())
+  datasetFileId String?
+  datasetFile   AhuDatasetFile? @relation(fields: [datasetFileId], references: [id], onDelete: Cascade)
+  code          String          @unique
+  name          String
+  type          String
+  weightPerM    Float
+  pricePerM     Float
+  panelThick    Int?
+  notes         String?
+  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime        @default(now())
+
+  @@index([datasetFileId])
 }
 
 model ComponentCatalog {
-  id           String   @id @default(cuid())
-  code         String   @unique
-  name         String
-  category     String
-  subcategory  String?
-  brand        String?
-  model        String?
-  spec         String?
-  unitPrice    Float
-  currency     String   @default("IDR")
-  unit         String   @default("pcs")
-  moq          Int?
-  leadTimeDays Int?
-  supplier     String?
-  notes        String?
-  updatedAt    DateTime @updatedAt
-  createdAt    DateTime @default(now())
+  id            String          @id @default(cuid())
+  datasetFileId String?
+  datasetFile   AhuDatasetFile? @relation(fields: [datasetFileId], references: [id], onDelete: Cascade)
+  code          String          @unique
+  name          String
+  category      String
+  subcategory   String?
+  brand         String?
+  model         String?
+  spec          String?
+  unitPrice     Float
+  currency      String          @default("IDR")
+  unit          String          @default("pcs")
+  moq           Int?
+  leadTimeDays  Int?
+  supplier      String?
+  notes         String?
+  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime        @default(now())
+
+  @@index([datasetFileId])
 }
 
 model CostingProject {
@@ -174,11 +219,15 @@ model ManualCostingItem {
 
 model CustomDbTable {
   id        String           @id @default(cuid())
+  folderId  String?
+  folder    DatabaseFolder?  @relation(fields: [folderId], references: [id], onDelete: Cascade)
   name      String           @default("Custom Database")
   columns   CustomDbColumn[]
   rows      CustomDbRow[]
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
+
+  @@index([folderId])
 }
 
 model CustomDbColumn {

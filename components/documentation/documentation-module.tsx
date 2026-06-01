@@ -1021,6 +1021,9 @@ export function DocumentationModule() {
           }}
           selectedIds={selectedIds}
           onToggleSelect={handleToggleSelect}
+          onSelectAll={() =>
+            setSelectedIds(new Set(filteredListQuotations.map((q) => q.id)))
+          }
           onDeleteSelected={() => void handleBulkDelete()}
           deleting={deletingBulk}
           search={listSearch}

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileSpreadsheet, Plus, Search, Trash2 } from "lucide-react";
+import { FileSpreadsheet, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,10 @@ import {
 import { columnHeaderToVariableKey, hasColumnKey } from "@/lib/custom-db";
 import { exportDatabaseSheet, parseXlsxFirstSheet } from "@/lib/database-xlsx";
 import { MANDATORY_DB_HEADER, matchMandatoryExcelHeaders } from "@/lib/excel-column-match";
+import { cn } from "@/lib/utils";
 import { formatIDR } from "@/lib/utils/format";
+import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
+import { DatabaseExplorer } from "./database-explorer";
 
 type CustomCol = {
   id: string;
@@ -61,14 +64,6 @@ type CustomTable = {
   rows: CustomRow[];
 };
 
-type FileItem = {
-  id: string;
-  name: string;
-  updatedAt: string;
-  rowsCount: number;
-  columnsCount: number;
-};
-
 type UpdateCellResponse = {
   rowId: string;
   updatedCell: CustomCell;
@@ -90,6 +85,43 @@ function hashToToneIndex(key: string): number {
   let h = 0;
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
   return h % FORMULA_REF_CELL_CLASSES.length;
+}
+
+/** Spreadsheet cell focus — inset outline avoids broken ring on table borders (UI-HARNESS: clear state). */
+function getGridCellInteractionClasses(opts: {
+  isActive: boolean;
+  isEditing: boolean;
+  inFill: boolean;
+  isFormulaRefTarget: boolean;
+  refCellClass: string;
+  refCellBorderClass: string;
+  hasRefHighlight: boolean;
+}): string {
+  const {
+    isActive,
+    isEditing,
+    inFill,
+    isFormulaRefTarget,
+    refCellClass,
+    refCellBorderClass,
+    hasRefHighlight,
+  } = opts;
+
+  if (isActive) {
+    return cn(
+      "z-20 bg-primary/10 transition-[background-color,box-shadow] duration-150 ease-out",
+      isEditing && "bg-primary/14",
+      "shadow-[inset_0_0_0_2px_var(--primary)]"
+    );
+  }
+  if (inFill) return "bg-primary/12";
+  if (isFormulaRefTarget) {
+    return "z-10 bg-primary/8 shadow-[inset_0_0_0_2px_var(--primary)] transition-[box-shadow] duration-150";
+  }
+  if (refCellClass) {
+    return cn(refCellClass, refCellBorderClass, hasRefHighlight && "z-20");
+  }
+  return "bg-card";
 }
 
 function getRefToneClasses(index: number) {
@@ -193,11 +225,12 @@ export function CustomDatabasePanel({
 }: {
   show: (t: "success" | "error", m: string) => void;
 }) {
-  const [files, setFiles] = useState<FileItem[]>([]);
   const [table, setTable] = useState<CustomTable | null>(null);
-  const [activeFileId, setActiveFileId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [newFileName, setNewFileName] = useState("");
+  const customFolderId = useUiWorkflowStore((s) => s.database.customFolderId);
+  const customFileId = useUiWorkflowStore((s) => s.database.customFileId);
+  const setDatabaseCustomNav = useUiWorkflowStore((s) => s.setDatabaseCustomNav);
+  const activeFileId = customFileId;
+  const [loading, setLoading] = useState(false);
   const [newColumns, setNewColumns] = useState<Array<{ header: string; kind: string }>>([]);
   const [insertRef, setInsertRef] = useState<{ rowId: string } | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
@@ -207,8 +240,6 @@ export function CustomDatabasePanel({
   const [addColumnDialogOpen, setAddColumnDialogOpen] = useState(false);
   const [addColumnName, setAddColumnName] = useState("");
   const [addColumnKind, setAddColumnKind] = useState("text");
-  const [newFileDialogOpen, setNewFileDialogOpen] = useState(false);
-  const [explorerSearch, setExplorerSearch] = useState("");
   const [ctxMenu, setCtxMenu] = useState<ContextMenuState>({
     open: false,
     x: 0,
@@ -234,21 +265,12 @@ export function CustomDatabasePanel({
   } | null>(null);
   const formulaInputRef = useRef<HTMLInputElement | null>(null);
 
-  const loadFiles = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await fetch("/api/custom-db", { cache: "no-store" });
-      if (!r.ok) throw new Error("Gagal memuat daftar file");
-      const data = (await r.json()) as FileItem[];
-      setFiles(data);
-    } catch (e) {
-      show("error", e instanceof Error ? e.message : "Gagal memuat daftar file");
-    } finally {
-      setLoading(false);
-    }
-  }, [show]);
-
   const openFile = useCallback(async (id: string, resetPage = true) => {
+    if (!id) {
+      setDatabaseCustomNav({ customFileId: null });
+      setTable(null);
+      return;
+    }
     setLoading(true);
     try {
       const r = await fetch(`/api/custom-db/${id}`, { cache: "no-store" });
@@ -257,7 +279,7 @@ export function CustomDatabasePanel({
       data.columns.sort((a, b) => a.sortOrder - b.sortOrder);
       data.rows.sort((a, b) => a.sortOrder - b.sortOrder);
       setTable(data);
-      setActiveFileId(id);
+      setDatabaseCustomNav({ customFileId: id });
       if (resetPage) {
         setGridPage(0);
         const firstRowId = data.rows[0]?.id;
@@ -274,35 +296,11 @@ export function CustomDatabasePanel({
     } finally {
       setLoading(false);
     }
-  }, [show]);
-
-  const deleteFile = useCallback(
-    async (id: string) => {
-      if (!window.confirm("Hapus file database ini? Tindakan ini tidak dapat dibatalkan.")) return;
-      try {
-        const r = await fetch(`/api/custom-db/${id}`, { method: "DELETE" });
-        if (!r.ok) {
-          show("error", await readErr(r));
-          return;
-        }
-        show("success", "File dihapus");
-        if (activeFileId === id) {
-          setActiveFileId(null);
-          setTable(null);
-          setSelectedCell(null);
-          setFocusedCell(null);
-        }
-        await loadFiles();
-      } catch (e) {
-        show("error", e instanceof Error ? e.message : "Gagal menghapus file");
-      }
-    },
-    [activeFileId, loadFiles, show]
-  );
+  }, [setDatabaseCustomNav, show]);
 
   useEffect(() => {
-    void loadFiles();
-  }, [loadFiles]);
+    if (customFileId) void openFile(customFileId, false);
+  }, [customFileId, openFile]);
 
   useEffect(() => {
     const onWindowClick = () => setCtxMenu((s) => ({ ...s, open: false }));
@@ -700,26 +698,29 @@ export function CustomDatabasePanel({
     document.addEventListener("mouseup", onUp);
   };
 
-  const createFile = async () => {
-    if (!newFileName.trim()) {
-      show("error", "Nama file wajib diisi");
-      return;
+  const createCustomFile = async (name: string): Promise<boolean> => {
+    if (!customFolderId) {
+      show("error", "Pilih folder terlebih dahulu");
+      return false;
     }
-    const r = await fetch("/api/custom-db", {
+    const r = await fetch("/api/database/files", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newFileName, columns: newColumns }),
+      body: JSON.stringify({
+        scope: "custom",
+        folderId: customFolderId,
+        name,
+        columns: newColumns,
+      }),
     });
     if (!r.ok) {
       show("error", await readErr(r));
-      return;
+      return false;
     }
     const created = (await r.json()) as CustomTable;
-    setNewFileName("");
     setNewColumns([]);
-    setNewFileDialogOpen(false);
-    await loadFiles();
     await openFile(created.id);
+    return true;
   };
 
   const exportActiveFile = async () => {
@@ -769,10 +770,12 @@ export function CustomDatabasePanel({
     let target: CustomTable | null = table;
     if (mode === "new") {
       const dynamicHeaders = headers.filter((h) => !matchedExcelTitles.has(h));
-      const createRes = await fetch("/api/custom-db", {
+      const createRes = await fetch("/api/database/files", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          scope: "custom",
+          folderId: customFolderId,
           name: file.name.replace(/\.xlsx$/i, ""),
           columns: dynamicHeaders.map((h) => ({ header: h, kind: "text" })),
         }),
@@ -804,7 +807,6 @@ export function CustomDatabasePanel({
       setSaveStatus("failed");
       return;
     }
-    await loadFiles();
     await openFile(target.id);
     setSaveStatus("saved");
     setTimeout(() => setSaveStatus((prev) => (prev === "saved" ? "idle" : prev)), 1200);
@@ -827,11 +829,55 @@ export function CustomDatabasePanel({
     await importIntoTable(file, "new");
   };
 
-  const filteredFiles = files.filter((f) => {
-    const q = explorerSearch.trim().toLowerCase();
-    if (!q) return true;
-    return f.name.toLowerCase().includes(q);
-  });
+  const customColumnSchema = (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label>Skema kolom dinamis (opsional)</Label>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setNewColumns((prev) => [...prev, { header: "", kind: "text" }])}
+        >
+          <Plus className="size-4" />
+          Tambah kolom skema
+        </Button>
+      </div>
+      <div className="space-y-2">
+        {newColumns.map((col, idx) => (
+          <div key={`${idx}-${col.header}`} className="flex gap-2">
+            <Input
+              value={col.header}
+              onChange={(e) =>
+                setNewColumns((prev) =>
+                  prev.map((c, i) => (i === idx ? { ...c, header: e.target.value } : c))
+                )
+              }
+              placeholder="Nama kolom"
+            />
+            <Select
+              value={col.kind}
+              onValueChange={(v) =>
+                setNewColumns((prev) =>
+                  prev.map((c, i) => (i === idx ? { ...c, kind: v } : c))
+                )
+              }
+            >
+              <SelectTrigger className="w-[190px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="text">Text</SelectItem>
+                <SelectItem value="number">Number</SelectItem>
+                <SelectItem value="currency">Finance/Forex</SelectItem>
+                <SelectItem value="uom">UOM</SelectItem>
+                <SelectItem value="formula">Formula</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   const openContextMenu = (
     e: React.MouseEvent,
@@ -850,172 +896,35 @@ export function CustomDatabasePanel({
 
   if (!activeFileId || !table) {
     return (
-      <div className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
-          <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="relative max-w-md flex-1">
-              <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Cari nama file…"
-                value={explorerSearch}
-                onChange={(e) => setExplorerSearch(e.target.value)}
-                className="max-w-md bg-card pl-8"
-              />
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" onClick={() => setNewFileDialogOpen(true)}>
-              <Plus className="size-4" />
-              Add New
-            </Button>
-            <input
-              ref={importRef}
-              type="file"
-              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              className="hidden"
-              onChange={onImportFile}
-            />
+      <>
+        <input
+          ref={importRef}
+          type="file"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          className="hidden"
+          onChange={onImportFile}
+        />
+        <DatabaseExplorer
+          scope="custom"
+          activeFolderId={customFolderId}
+          activeFileId={activeFileId}
+          onFolderSelect={(id) =>
+            setDatabaseCustomNav({ customFolderId: id || null, customFileId: null })
+          }
+          onFileOpen={(id) => void openFile(id)}
+          show={show}
+          emptyFileTitle="Belum ada custom database"
+          emptyFileDescription="Buat file baru di folder ini atau impor Excel."
+          createFileLabel="Buat file"
+          onCreateFile={createCustomFile}
+          newFileDialogContent={customColumnSchema}
+          toolbarExtra={
             <Button type="button" variant="outline" onClick={() => importRef.current?.click()}>
               Import Excel
             </Button>
-            <Button type="button" variant="outline" disabled>
-              Export Excel
-            </Button>
-          </div>
-        </div>
-
-        {filteredFiles.length === 0 ? (
-          <EmptyState
-            icon={FileSpreadsheet}
-            title="Belum ada custom database"
-            description="Buat file baru atau import Excel untuk mulai input data."
-            actionLabel="Add New File"
-            onAction={() => setNewFileDialogOpen(true)}
-          />
-        ) : (
-          <div className="overflow-hidden rounded-lg border border-border bg-card">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/60">
-                  <th className="px-4 py-2.5 text-left">File Name</th>
-                  <th className="px-4 py-2.5 text-left">Rows</th>
-                  <th className="px-4 py-2.5 text-left">Columns</th>
-                  <th className="px-4 py-2.5 text-left">Updated</th>
-                  <th className="px-4 py-2.5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredFiles.map((f) => (
-                  <tr
-                    key={f.id}
-                    className="border-b last:border-b-0 cursor-pointer hover:bg-muted/50"
-                    title="Double-click untuk membuka file"
-                    onDoubleClick={() => void openFile(f.id)}
-                  >
-                    <td className="px-4 py-2.5">{f.name}</td>
-                    <td className="px-4 py-2.5">{f.rowsCount}</td>
-                    <td className="px-4 py-2.5">{f.columnsCount}</td>
-                    <td className="px-4 py-2.5">{new Date(f.updatedAt).toLocaleString("id-ID")}</td>
-                    <td
-                      className="px-4 py-2.5 text-right"
-                      onClick={(e) => e.stopPropagation()}
-                      onDoubleClick={(e) => e.stopPropagation()}
-                    >
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        aria-label={`Hapus ${f.name}`}
-                        onClick={() => void deleteFile(f.id)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        <Dialog open={newFileDialogOpen} onOpenChange={setNewFileDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Buat file baru</DialogTitle>
-              <DialogDescription>
-                Tentukan nama file dan kategori kolom dinamis untuk custom database.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-2">
-              <Label htmlFor="file-name">Nama file</Label>
-              <Input
-                id="file-name"
-                value={newFileName}
-                onChange={(e) => setNewFileName(e.target.value)}
-                placeholder="contoh: PLAT SS 304"
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Skema kolom dinamis (opsional)</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    setNewColumns((prev) => [...prev, { header: "", kind: "text" }])
-                  }
-                >
-                  <Plus className="size-4" />
-                  Tambah kolom skema
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {newColumns.map((col, idx) => (
-                  <div key={`${idx}-${col.header}`} className="flex gap-2">
-                    <Input
-                      value={col.header}
-                      onChange={(e) =>
-                        setNewColumns((prev) =>
-                          prev.map((c, i) => (i === idx ? { ...c, header: e.target.value } : c))
-                        )
-                      }
-                      placeholder="Column name"
-                    />
-                    <Select
-                      value={col.kind}
-                      onValueChange={(v) =>
-                        setNewColumns((prev) =>
-                          prev.map((c, i) => (i === idx ? { ...c, kind: v } : c))
-                        )
-                      }
-                    >
-                      <SelectTrigger className="w-[190px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="text">Text</SelectItem>
-                        <SelectItem value="number">Number</SelectItem>
-                        <SelectItem value="currency">Finance/Forex</SelectItem>
-                        <SelectItem value="uom">UOM</SelectItem>
-                        <SelectItem value="formula">Formula</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setNewFileDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="button" onClick={() => void createFile()}>
-                Create
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+          }
+        />
+      </>
     );
   }
 
@@ -1026,12 +935,9 @@ export function CustomDatabasePanel({
           <Button
             type="button"
             variant="outline"
-            onClick={() => {
-              setActiveFileId(null);
-              setTable(null);
-            }}
+            onClick={() => void openFile("")}
           >
-            Back to Files
+            Kembali ke file
           </Button>
           <span className="truncate text-sm text-muted-foreground">Editing: {table.name}</span>
         </div>
@@ -1063,7 +969,7 @@ export function CustomDatabasePanel({
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-card">
+      <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-card shadow-sm">
         <table className="min-w-full border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
@@ -1153,10 +1059,13 @@ export function CustomDatabasePanel({
                     const isFormulaCell =
                       activeFormulaRefs?.rowId === row.id &&
                       activeFormulaRefs.formulaColumnId === col.id;
-                    const isCellSelected =
-                      !focusedCell &&
-                      selectedCell?.rowId === row.id &&
-                      selectedCell?.columnId === col.id;
+                    const isActiveCell =
+                      focused ||
+                      (selectedCell?.rowId === row.id && selectedCell?.columnId === col.id);
+                    const isFormulaRefTarget =
+                      !isActiveCell &&
+                      formulaRefSelecting?.rowId === row.id &&
+                      formulaRefSelecting?.columnId === col.id;
                     const formulaRaw = String(cell?.rawValue ?? "");
                     const showFormulaTokenColors =
                       isFormulaCell && focused && formulaRaw.trimStart().startsWith("=");
@@ -1188,22 +1097,19 @@ export function CustomDatabasePanel({
                           insertVarKeyAtCursor(key);
                         }}
                         onContextMenu={(e) => openContextMenu(e, { rowId: row.id, columnId: col.id })}
-                        className={`relative border-b border-r px-2 py-1 ${
-                          isCellSelected
-                            ? "bg-green-50/60"
-                            : inFill
-                              ? "bg-primary/15"
-                              : refCellClass || "bg-background"
-                        } ${isCellSelected ? "" : refCellBorderClass} ${
-                          refColorIndex !== undefined ? "z-20" : ""
-                        } ${
-                          isCellSelected
-                            ? "ring-2 ring-green-300/90"
-                            : formulaRefSelecting?.rowId === row.id &&
-                                formulaRefSelecting?.columnId === col.id
-                              ? `ring-2 ring-[#203351]/70`
-                              : ""
-                        }`}
+                        className={cn(
+                          "relative border-b border-r border-border/80 px-2 py-1",
+                          getGridCellInteractionClasses({
+                            isActive: isActiveCell,
+                            isEditing: focused,
+                            inFill: Boolean(inFill),
+                            isFormulaRefTarget,
+                            refCellClass: refColorIndex !== undefined ? refCellClass : "",
+                            refCellBorderClass:
+                              refColorIndex !== undefined ? refCellBorderClass : "",
+                            hasRefHighlight: refColorIndex !== undefined,
+                          })
+                        )}
                       >
                         <div className="relative">
                           {showFormulaTokenColors ? (

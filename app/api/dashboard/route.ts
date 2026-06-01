@@ -1,21 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { buildDashboardAnalyticsPayload } from "@/lib/dashboard-analytics";
-import { EMPTY_DASHBOARD_RESPONSE, type DashboardRange } from "@/lib/dashboard-contract";
+import type { DashboardRange } from "@/lib/dashboard-contract";
+
+function parseDashboardRange(value: string | null): DashboardRange {
+  return value === "mtd" || value === "ytd" || value === "12m" || value === "all" ? value : "all";
+}
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const projectIdParam = searchParams.get("projectId");
     const selectedProjectId = projectIdParam && projectIdParam.trim() ? projectIdParam.trim() : null;
-    const rangeParam = searchParams.get("range");
-    const range: DashboardRange =
-      rangeParam === "mtd" || rangeParam === "ytd" || rangeParam === "12m" || rangeParam === "all"
-        ? rangeParam
-        : "all";
+    const range = parseDashboardRange(searchParams.get("range"));
+
+    const projectWhere = selectedProjectId ? { id: selectedProjectId } : undefined;
+    const quotationWhere = selectedProjectId ? { projectId: selectedProjectId } : undefined;
 
     const [projects, quotations, settings] = await Promise.all([
       prisma.costingProject.findMany({
+        where: projectWhere,
         orderBy: { updatedAt: "desc" },
         select: {
           id: true,
@@ -67,6 +71,7 @@ export async function GET(request: Request) {
         },
       }),
       prisma.quotation.findMany({
+        where: quotationWhere,
         orderBy: { tanggal: "asc" },
         select: {
           id: true,
@@ -79,7 +84,6 @@ export async function GET(request: Request) {
           clientName: true,
           clientCompany: true,
           validityDays: true,
-          discount: true,
           discountEnabled: true,
           totalBeforeDisc: true,
           totalAfterDisc: true,
@@ -103,6 +107,13 @@ export async function GET(request: Request) {
       }),
     ]);
 
+    if (selectedProjectId && projects.length === 0) {
+      return NextResponse.json(
+        { error: "Project not found", projectId: selectedProjectId },
+        { status: 404 }
+      );
+    }
+
     const payload = buildDashboardAnalyticsPayload({
       projects,
       quotations,
@@ -113,6 +124,6 @@ export async function GET(request: Request) {
     return NextResponse.json(payload);
   } catch (e) {
     console.error(e);
-    return NextResponse.json(EMPTY_DASHBOARD_RESPONSE);
+    return NextResponse.json({ error: "Failed to load dashboard analytics" }, { status: 500 });
   }
 }

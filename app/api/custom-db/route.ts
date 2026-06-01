@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildColumnId, sanitizeColumnId } from "@/lib/custom-db";
+import { DEFAULT_CUSTOM_FOLDER_ID, ensureDefaultFolders } from "@/lib/database-folders";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_COLUMNS = [
@@ -9,9 +10,11 @@ const DEFAULT_COLUMNS = [
   { key: "col_price", header: "Price", locked: true, kind: "price", sortOrder: 3 },
 ];
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const folderId = new URL(request.url).searchParams.get("folderId");
     const tables = await prisma.customDbTable.findMany({
+      where: folderId ? { folderId } : undefined,
       orderBy: { updatedAt: "desc" },
       include: {
         _count: {
@@ -22,6 +25,7 @@ export async function GET() {
     return NextResponse.json(
       tables.map((t) => ({
         id: t.id,
+        folderId: t.folderId,
         name: t.name,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
@@ -37,8 +41,14 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { name?: string; columns?: Array<{ header?: string; kind?: string }> };
+    await ensureDefaultFolders();
+    const body = (await request.json()) as {
+      name?: string;
+      folderId?: string;
+      columns?: Array<{ header?: string; kind?: string }>;
+    };
     const name = String(body.name ?? "").trim() || "Custom Database";
+    const folderId = String(body.folderId ?? "").trim() || DEFAULT_CUSTOM_FOLDER_ID;
     const dynamicColumns = (Array.isArray(body.columns) ? body.columns : [])
       .map((c, idx) => {
         const base = sanitizeColumnId(String(c.header ?? ""));
@@ -50,7 +60,7 @@ export async function POST(request: Request) {
       };
       })
       .filter((c) => c.header.length > 0);
-    const table = await prisma.customDbTable.create({ data: { name } });
+    const table = await prisma.customDbTable.create({ data: { name, folderId } });
     const columns = [
       {
         id: buildColumnId(table.id, DEFAULT_COLUMNS[0].key),
