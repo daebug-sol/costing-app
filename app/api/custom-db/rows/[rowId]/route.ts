@@ -1,12 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireCustomRowInOrg } from "@/lib/tenant-context";
 
 type Ctx = { params: Promise<{ rowId: string }> };
 
 export async function DELETE(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { rowId } = await context.params;
-    const row = await prisma.customDbRow.findUnique({ where: { id: rowId } });
+    const rowCheck = await requireCustomRowInOrg(rowId, orgId);
+    if (!rowCheck.ok) return rowCheck.response;
+
+    const row = await prisma.customDbRow.findFirst({
+      where: { id: rowId, table: { organizationId: orgId } },
+    });
     if (!row) return NextResponse.json({ error: "Row not found" }, { status: 404 });
     await prisma.$transaction([
       prisma.customDbCell.deleteMany({ where: { rowId } }),

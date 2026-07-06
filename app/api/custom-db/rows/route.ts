@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireCustomTableInOrg } from "@/lib/tenant-context";
 
 export async function POST(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const body = (await request.json()) as { tableId?: string };
     const tableId = String(body.tableId ?? "").trim();
     if (!tableId) return NextResponse.json({ error: "tableId is required" }, { status: 400 });
+
+    const tableCheck = await requireCustomTableInOrg(tableId, orgId);
+    if (!tableCheck.ok) return tableCheck.response;
+
     const maxOrder = await prisma.customDbRow.aggregate({
       where: { tableId },
       _max: { sortOrder: true },

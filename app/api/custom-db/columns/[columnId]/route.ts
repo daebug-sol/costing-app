@@ -1,15 +1,30 @@
 import { NextResponse } from "next/server";
 import { isLockedColumnId, normalizeHeader } from "@/lib/custom-db";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireCustomTableInOrg } from "@/lib/tenant-context";
 
 type Ctx = { params: Promise<{ columnId: string }> };
 
 export async function PATCH(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { columnId } = await context.params;
     if (isLockedColumnId(columnId)) {
       return NextResponse.json({ error: "Locked columns cannot be renamed" }, { status: 400 });
     }
+
+    const col = await prisma.customDbColumn.findFirst({
+      where: { id: columnId, table: { organizationId: orgId } },
+      select: { tableId: true },
+    });
+    if (!col) return NextResponse.json({ error: "Column not found" }, { status: 404 });
+    const tableCheck = await requireCustomTableInOrg(col.tableId, orgId);
+    if (!tableCheck.ok) return tableCheck.response;
+
     const body = (await request.json()) as { header?: string };
     const header = normalizeHeader(String(body.header ?? ""));
     if (!header) return NextResponse.json({ error: "header is required" }, { status: 400 });
@@ -25,13 +40,21 @@ export async function PATCH(request: Request, context: Ctx) {
 }
 
 export async function DELETE(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { columnId } = await context.params;
     if (isLockedColumnId(columnId)) {
       return NextResponse.json({ error: "Locked columns cannot be deleted" }, { status: 400 });
     }
-    const col = await prisma.customDbColumn.findUnique({ where: { id: columnId } });
+    const col = await prisma.customDbColumn.findFirst({
+      where: { id: columnId, table: { organizationId: orgId } },
+    });
     if (!col) return NextResponse.json({ error: "Column not found" }, { status: 404 });
+    const tableCheck = await requireCustomTableInOrg(col.tableId, orgId);
+    if (!tableCheck.ok) return tableCheck.response;
 
     await prisma.$transaction([
       prisma.customDbCell.deleteMany({ where: { columnId } }),

@@ -3,153 +3,203 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+}
+
+model Organization {
+  id         String   @id @default(cuid())
+  clerkOrgId String?  @unique
+  name       String
+  slug       String   @unique
+  createdAt  DateTime @default(now())
+
+  members          OrganizationMember[]
+  settings         AppSettings?
+  materials        MaterialPrice[]
+  profiles         ProfileData[]
+  components       ComponentCatalog[]
+  customDbTables     CustomDbTable[]
+  projects         CostingProject[]
+  quotations       Quotation[]
+  databaseFolders  DatabaseFolder[]
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  role           String       @default("member")
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, userId])
+  @@index([userId])
 }
 
 model AppSettings {
-  id                 String   @id @default(cuid())
-  companyName        String   @default("PT Thermal True Indonesia")
-  companyAddress     String   @default("")
-  companyPhone       String   @default("")
-  companyEmail       String   @default("")
+  id                 String       @id @default(cuid())
+  organizationId     String       @unique
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  companyName        String       @default("PT Thermal True Indonesia")
+  companyAddress     String       @default("")
+  companyPhone       String       @default("")
+  companyEmail       String       @default("")
   companyLogo        String?
-  forexUSD           Float    @default(15800)
-  forexEUR           Float    @default(17200)
-  forexRM            Float    @default(3500)
-  forexSGD           Float    @default(11700)
-  defaultOverhead    Float    @default(5.0)
-  defaultContingency Float    @default(3.0)
-  defaultMargin      Float    @default(20.0)
-  defaultEskalasi    Float    @default(0.0)
-  defaultAsuransi    Float    @default(0.0)
-  defaultMobilisasi  Float    @default(0.0)
-  ppnRate            Float    @default(11.0)
-  paymentTerms       String   @default("DP 50%, balance CBD")
-  deliveryTerms      String   @default("Ex-work Cikarang")
-  warrantyTerms      String   @default("12 months since delivery")
-  validityDays       Int      @default(14)
-  termsConditions    String   @default("")
-  presetSignedByName String   @default("")
-  presetCheckedByName String  @default("")
-  presetApprovedByName String @default("")
+  forexUSD           Float        @default(15800)
+  forexEUR           Float        @default(17200)
+  forexRM            Float        @default(3500)
+  forexSGD           Float        @default(11700)
+  defaultOverhead    Float        @default(5.0)
+  defaultContingency Float        @default(3.0)
+  defaultMargin      Float        @default(20.0)
+  defaultEskalasi    Float        @default(0.0)
+  defaultAsuransi    Float        @default(0.0)
+  defaultMobilisasi  Float        @default(0.0)
+  ppnRate            Float        @default(11.0)
+  paymentTerms       String       @default("DP 50%, balance CBD")
+  deliveryTerms      String       @default("Ex-work Cikarang")
+  warrantyTerms      String       @default("12 months since delivery")
+  validityDays       Int          @default(14)
+  termsConditions    String       @default("")
+  presetSignedByName String       @default("")
+  presetCheckedByName String      @default("")
+  presetApprovedByName String     @default("")
   presetTtdPrepared  String?
   presetTtdReviewed  String?
   presetTtdApproved  String?
-  updatedAt          DateTime @updatedAt
+  onboardingComplete Boolean      @default(false)
+  updatedAt          DateTime     @updatedAt
 }
 
 /** Folder tree for /database — scope `custom` or `ahu`. */
 model DatabaseFolder {
-  id        String   @id @default(cuid())
-  scope     String
-  name      String
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  scope          String
+  name           String
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   customTables CustomDbTable[]
   ahuFiles     AhuDatasetFile[]
 
-  @@index([scope, sortOrder])
+  @@index([organizationId, scope, sortOrder])
 }
 
 /** AHU dataset file (materials / profiles / components) under a folder. */
 model AhuDatasetFile {
-  id        String   @id @default(cuid())
+  id        String         @id @default(cuid())
   folderId  String
   folder    DatabaseFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
   kind      String
   name      String
-  sortOrder Int      @default(0)
+  sortOrder Int            @default(0)
   materials  MaterialPrice[]
   profiles   ProfileData[]
   components ComponentCatalog[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   @@index([folderId, kind])
   @@index([folderId, sortOrder])
 }
 
 model MaterialPrice {
-  id            String          @id @default(cuid())
-  datasetFileId String?
-  datasetFile   AhuDatasetFile? @relation(fields: [datasetFileId], references: [id], onDelete: Cascade)
-  code          String          @unique
-  name          String
-  category      String
-  density       Float
-  pricePerKg    Float
-  currency      String          @default("IDR")
-  unit          String          @default("kg")
-  notes         String?
-  updatedAt     DateTime        @updatedAt
-  createdAt     DateTime        @default(now())
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  datasetFileId  String?
+  datasetFile    AhuDatasetFile? @relation(fields: [datasetFileId], references: [id], onDelete: Cascade)
+  code           String
+  name           String
+  category       String
+  density        Float
+  pricePerKg     Float
+  currency       String          @default("IDR")
+  unit           String          @default("kg")
+  notes          String?
+  updatedAt      DateTime        @updatedAt
+  createdAt      DateTime        @default(now())
 
+  @@unique([organizationId, code])
   @@index([datasetFileId])
+  @@index([organizationId])
 }
 
 model ProfileData {
-  id            String          @id @default(cuid())
-  datasetFileId String?
-  datasetFile   AhuDatasetFile? @relation(fields: [datasetFileId], references: [id], onDelete: Cascade)
-  code          String          @unique
-  name          String
-  type          String
-  weightPerM    Float
-  pricePerM     Float
-  panelThick    Int?
-  notes         String?
-  updatedAt     DateTime        @updatedAt
-  createdAt     DateTime        @default(now())
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  datasetFileId  String?
+  datasetFile    AhuDatasetFile? @relation(fields: [datasetFileId], references: [id], onDelete: Cascade)
+  code           String
+  name           String
+  type           String
+  weightPerM     Float
+  pricePerM      Float
+  panelThick     Int?
+  notes          String?
+  updatedAt      DateTime        @updatedAt
+  createdAt      DateTime        @default(now())
 
+  @@unique([organizationId, code])
   @@index([datasetFileId])
+  @@index([organizationId])
 }
 
 model ComponentCatalog {
-  id            String          @id @default(cuid())
-  datasetFileId String?
-  datasetFile   AhuDatasetFile? @relation(fields: [datasetFileId], references: [id], onDelete: Cascade)
-  code          String          @unique
-  name          String
-  category      String
-  subcategory   String?
-  brand         String?
-  model         String?
-  spec          String?
-  unitPrice     Float
-  currency      String          @default("IDR")
-  unit          String          @default("pcs")
-  moq           Int?
-  leadTimeDays  Int?
-  supplier      String?
-  notes         String?
-  updatedAt     DateTime        @updatedAt
-  createdAt     DateTime        @default(now())
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  datasetFileId  String?
+  datasetFile    AhuDatasetFile? @relation(fields: [datasetFileId], references: [id], onDelete: Cascade)
+  code           String
+  name           String
+  category       String
+  subcategory    String?
+  brand          String?
+  model          String?
+  spec           String?
+  unitPrice      Float
+  currency       String          @default("IDR")
+  unit           String          @default("pcs")
+  moq            Int?
+  leadTimeDays   Int?
+  supplier       String?
+  notes          String?
+  updatedAt      DateTime        @updatedAt
+  createdAt      DateTime        @default(now())
 
+  @@unique([organizationId, code])
   @@index([datasetFileId])
+  @@index([organizationId])
 }
 
 model CostingProject {
-  id           String           @id @default(cuid())
-  name         String
-  status       String           @default("draft")
-  /** Qty unit for selling / per-unit breakdown (proyek keseluruhan). */
-  qty          Int              @default(1)
-  overhead     Float            @default(5.0)
-  contingency  Float            @default(3.0)
-  eskalasi     Float            @default(0.0)
-  asuransi     Float            @default(0.0)
-  mobilisasi   Float            @default(0.0)
-  margin       Float            @default(20.0)
-  totalHPP     Float            @default(0.0)
-  totalSelling Float            @default(0.0)
-  notes        String?
-  segments     CostingSegment[]
-  quotations   Quotation[]
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  status         String           @default("draft")
+  qty            Int              @default(1)
+  overhead       Float            @default(5.0)
+  contingency    Float            @default(3.0)
+  eskalasi       Float            @default(0.0)
+  asuransi       Float            @default(0.0)
+  mobilisasi     Float            @default(0.0)
+  margin         Float            @default(20.0)
+  totalHPP       Float            @default(0.0)
+  totalSelling   Float            @default(0.0)
+  notes          String?
+  segments       CostingSegment[]
+  quotations     Quotation[]
   quotationItems QuotationItem[]
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([organizationId])
 }
 
 /** Satu baris costing dalam proyek: AHU (kalkulasi dimensi) atau manual (DB). */
@@ -157,7 +207,7 @@ model CostingSegment {
   id          String   @id @default(cuid())
   projectId   String
   project     CostingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  type        String // "ahu" | "manual"
+  type        String
   title       String   @default("")
   sortOrder   Int      @default(0)
   subtotal    Float    @default(0.0)
@@ -169,7 +219,6 @@ model CostingSegment {
   dimW        Float?
   dimD        Float?
   profileType String?
-  /** JSON: nSections, coil, damper, fanMotor — lihat lib/ahu-recalc-params.ts */
   ahuRecalcParams Json?
   sections          CostingSection[]
   manualGroups      ManualCostingGroup[]
@@ -218,16 +267,19 @@ model ManualCostingItem {
 }
 
 model CustomDbTable {
-  id        String           @id @default(cuid())
-  folderId  String?
-  folder    DatabaseFolder?  @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  name      String           @default("Custom Database")
-  columns   CustomDbColumn[]
-  rows      CustomDbRow[]
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  folderId       String?
+  folder         DatabaseFolder?  @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  name           String           @default("Custom Database")
+  columns        CustomDbColumn[]
+  rows           CustomDbRow[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@index([folderId])
+  @@index([organizationId])
 }
 
 model CustomDbColumn {
@@ -311,6 +363,8 @@ model CostingLineItem {
 
 model Quotation {
   id              String          @id @default(cuid())
+  organizationId  String
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   projectId       String?
   project         CostingProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   items           QuotationItem[]
@@ -351,6 +405,8 @@ model Quotation {
   stampPath       String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+
+  @@index([organizationId])
 }
 
 model QuotationItem {

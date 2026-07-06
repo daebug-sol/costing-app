@@ -2,12 +2,21 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { finite } from "@/lib/calculations";
 import { rollupSectionAndProject } from "@/lib/project-rollup";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireProjectInOrg } from "@/lib/tenant-context";
 
 type Ctx = { params: Promise<{ id: string; itemId: string }> };
 
 export async function PUT(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id: projectId, itemId } = await context.params;
+    const projectCheck = await requireProjectInOrg(projectId, orgId);
+    if (!projectCheck.ok) return projectCheck.response;
+
     const body = await request.json();
     const qtyRaw = body.qty;
     const qty = Number(qtyRaw);
@@ -18,7 +27,7 @@ export async function PUT(request: Request, context: Ctx) {
     const item = await prisma.costingLineItem.findFirst({
       where: {
         id: itemId,
-        section: { segment: { projectId } },
+        section: { segment: { projectId, project: { organizationId: orgId } } },
       },
     });
     if (!item) {
@@ -54,13 +63,19 @@ export async function PUT(request: Request, context: Ctx) {
 }
 
 export async function DELETE(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id: projectId, itemId } = await context.params;
+    const projectCheck = await requireProjectInOrg(projectId, orgId);
+    if (!projectCheck.ok) return projectCheck.response;
 
     const item = await prisma.costingLineItem.findFirst({
       where: {
         id: itemId,
-        section: { segment: { projectId } },
+        section: { segment: { projectId, project: { organizationId: orgId } } },
       },
     });
     if (!item) {

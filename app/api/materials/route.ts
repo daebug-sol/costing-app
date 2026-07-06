@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
+import { guardApiRoute } from "@/lib/api-guard";
 import { resolveAhuDatasetFileId } from "@/lib/database-folders";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const fileId = new URL(request.url).searchParams.get("fileId");
-    const datasetFileId = await resolveAhuDatasetFileId(fileId, "materials");
+    const datasetFileId = await resolveAhuDatasetFileId(fileId, "materials", orgId);
     const materials = await prisma.materialPrice.findMany({
-      where: datasetFileId ? { datasetFileId } : undefined,
+      where: {
+        organizationId: orgId,
+        ...(datasetFileId ? { datasetFileId } : {}),
+      },
       orderBy: { code: "asc" },
     });
     return NextResponse.json(materials);
@@ -21,6 +29,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const body = await request.json();
     const {
@@ -38,7 +50,8 @@ export async function POST(request: Request) {
 
     const datasetFileId = await resolveAhuDatasetFileId(
       String(fileId ?? bodyFileId ?? ""),
-      "materials"
+      "materials",
+      orgId
     );
     if (!datasetFileId) {
       return NextResponse.json(
@@ -72,6 +85,7 @@ export async function POST(request: Request) {
 
     const material = await prisma.materialPrice.create({
       data: {
+        organizationId: orgId,
         datasetFileId,
         code: code.trim(),
         name: name.trim(),

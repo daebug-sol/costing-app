@@ -1,27 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import {
+  AHU_DATASET_KINDS,
+  type AhuDatasetKind,
+  type DatabaseScope,
+  defaultAhuFileId,
+  defaultAhuFolderId,
+  defaultCustomFolderId,
+} from "@/lib/database-folders-constants";
 
-export const DATABASE_SCOPES = ["custom", "ahu"] as const;
-export type DatabaseScope = (typeof DATABASE_SCOPES)[number];
-
-export const AHU_DATASET_KINDS = ["materials", "profiles", "components"] as const;
-export type AhuDatasetKind = (typeof AHU_DATASET_KINDS)[number];
-
-export const DEFAULT_CUSTOM_FOLDER_ID = "folder_custom_default";
-export const DEFAULT_AHU_FOLDER_ID = "folder_ahu_default";
-
-export const DEFAULT_AHU_FILE_IDS: Record<AhuDatasetKind, string> = {
-  materials: "ahufile_materials_default",
-  profiles: "ahufile_profiles_default",
-  components: "ahufile_components_default",
-};
-
-export function isDatabaseScope(value: string): value is DatabaseScope {
-  return (DATABASE_SCOPES as readonly string[]).includes(value);
-}
-
-export function isAhuDatasetKind(value: string): value is AhuDatasetKind {
-  return (AHU_DATASET_KINDS as readonly string[]).includes(value);
-}
+export * from "@/lib/database-folders-constants";
 
 export function folderListOrder() {
   return [{ sortOrder: "asc" as const }, { name: "asc" as const }];
@@ -31,11 +18,15 @@ export function fileListOrder() {
   return [{ sortOrder: "asc" as const }, { name: "asc" as const }];
 }
 
-export async function ensureDefaultFolders() {
+export async function ensureDefaultFolders(organizationId: string) {
+  const customId = defaultCustomFolderId(organizationId);
+  const ahuId = defaultAhuFolderId(organizationId);
+
   await prisma.databaseFolder.upsert({
-    where: { id: DEFAULT_CUSTOM_FOLDER_ID },
+    where: { id: customId },
     create: {
-      id: DEFAULT_CUSTOM_FOLDER_ID,
+      id: customId,
+      organizationId,
       scope: "custom",
       name: "Umum",
       sortOrder: 0,
@@ -43,9 +34,10 @@ export async function ensureDefaultFolders() {
     update: {},
   });
   await prisma.databaseFolder.upsert({
-    where: { id: DEFAULT_AHU_FOLDER_ID },
+    where: { id: ahuId },
     create: {
-      id: DEFAULT_AHU_FOLDER_ID,
+      id: ahuId,
+      organizationId,
       scope: "ahu",
       name: "Umum",
       sortOrder: 0,
@@ -53,7 +45,7 @@ export async function ensureDefaultFolders() {
     update: {},
   });
   for (const kind of AHU_DATASET_KINDS) {
-    const id = DEFAULT_AHU_FILE_IDS[kind];
+    const id = defaultAhuFileId(organizationId, kind);
     const names: Record<AhuDatasetKind, string> = {
       materials: "Material Prices",
       profiles: "Profile Data",
@@ -63,7 +55,7 @@ export async function ensureDefaultFolders() {
       where: { id },
       create: {
         id,
-        folderId: DEFAULT_AHU_FOLDER_ID,
+        folderId: ahuId,
         kind,
         name: names[kind],
         sortOrder: AHU_DATASET_KINDS.indexOf(kind),
@@ -101,24 +93,19 @@ export type CustomFileSummary = {
   updatedAt: string;
 };
 
-const DEFAULT_FOLDER_IDS = new Set([DEFAULT_CUSTOM_FOLDER_ID, DEFAULT_AHU_FOLDER_ID]);
-const DEFAULT_AHU_FILE_ID_SET = new Set(Object.values(DEFAULT_AHU_FILE_IDS));
-
-export function isDefaultFolderId(id: string): boolean {
-  return DEFAULT_FOLDER_IDS.has(id);
-}
-
-export function isDefaultAhuFileId(id: string): boolean {
-  return DEFAULT_AHU_FILE_ID_SET.has(id);
-}
-
 export async function resolveAhuDatasetFileId(
   fileId: string | null | undefined,
-  kind: AhuDatasetKind
+  kind: AhuDatasetKind,
+  organizationId: string
 ): Promise<string | null> {
   if (!fileId) return null;
-  await ensureDefaultFolders();
-  const file = await prisma.ahuDatasetFile.findUnique({ where: { id: fileId } });
-  if (!file || file.kind !== kind) return null;
+  await ensureDefaultFolders(organizationId);
+  const file = await prisma.ahuDatasetFile.findUnique({
+    where: { id: fileId },
+    include: { folder: { select: { organizationId: true } } },
+  });
+  if (!file || file.kind !== kind || file.folder.organizationId !== organizationId) {
+    return null;
+  }
   return file.id;
 }

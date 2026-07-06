@@ -1,18 +1,25 @@
 import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { guardApiRoute } from "@/lib/api-guard";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { prisma } from "@/lib/prisma";
 import { syncQuotationItemsFromProject } from "@/lib/sync-quotation-items-from-project";
+import { requireProjectInOrg } from "@/lib/tenant-context";
+import { tenantWhere } from "@/lib/tenant-queries";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export const projectDetailInclude = costingProjectDetailInclude;
 
 export async function GET(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id } = await context.params;
-    const project = await prisma.costingProject.findUnique({
-      where: { id },
+    const project = await prisma.costingProject.findFirst({
+      where: tenantWhere.project(orgId, id),
       include: costingProjectDetailInclude,
     });
     if (!project) {
@@ -29,8 +36,15 @@ export async function GET(_request: Request, context: Ctx) {
 }
 
 export async function PUT(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id } = await context.params;
+    const check = await requireProjectInOrg(id, orgId);
+    if (!check.ok) return check.response;
+
     const body = await request.json();
 
     const num = (v: unknown) => {
@@ -100,8 +114,15 @@ export async function PUT(request: Request, context: Ctx) {
 }
 
 export async function DELETE(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id } = await context.params;
+    const check = await requireProjectInOrg(id, orgId);
+    if (!check.ok) return check.response;
+
     await prisma.costingProject.delete({ where: { id } });
     return new NextResponse(null, { status: 204 });
   } catch (e: unknown) {

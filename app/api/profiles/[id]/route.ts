@@ -1,11 +1,27 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import { tenantWhere } from "@/lib/tenant-queries";
 
 type Ctx = { params: Promise<{ id: string }> };
 
+async function findProfile(orgId: string, id: string) {
+  return prisma.profileData.findFirst({
+    where: tenantWhere.profile(orgId, id),
+  });
+}
+
 export async function PUT(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id } = await context.params;
+    const existing = await findProfile(orgId, id);
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     const body = await request.json();
     const { code, name, type, weightPerM, pricePerM, panelThick, notes } =
       body;
@@ -100,8 +116,16 @@ export async function PUT(request: Request, context: Ctx) {
 }
 
 export async function DELETE(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id } = await context.params;
+    const existing = await findProfile(orgId, id);
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     await prisma.profileData.delete({ where: { id } });
     return new NextResponse(null, { status: 204 });
   } catch (e: unknown) {

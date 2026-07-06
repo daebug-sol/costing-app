@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { buildColumnId, sanitizeColumnId } from "@/lib/custom-db";
-import { DEFAULT_CUSTOM_FOLDER_ID, ensureDefaultFolders } from "@/lib/database-folders";
+import { defaultCustomFolderId, ensureDefaultFolders } from "@/lib/database-folders";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
 
 const DEFAULT_COLUMNS = [
   { key: "col_code", header: "Code", locked: true, kind: "code", sortOrder: 0 },
@@ -11,10 +12,17 @@ const DEFAULT_COLUMNS = [
 ];
 
 export async function GET(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const folderId = new URL(request.url).searchParams.get("folderId");
     const tables = await prisma.customDbTable.findMany({
-      where: folderId ? { folderId } : undefined,
+      where: {
+        organizationId: orgId,
+        ...(folderId ? { folderId } : {}),
+      },
       orderBy: { updatedAt: "desc" },
       include: {
         _count: {
@@ -40,15 +48,19 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
-    await ensureDefaultFolders();
+    await ensureDefaultFolders(orgId);
     const body = (await request.json()) as {
       name?: string;
       folderId?: string;
       columns?: Array<{ header?: string; kind?: string }>;
     };
     const name = String(body.name ?? "").trim() || "Custom Database";
-    const folderId = String(body.folderId ?? "").trim() || DEFAULT_CUSTOM_FOLDER_ID;
+    const folderId = String(body.folderId ?? "").trim() || defaultCustomFolderId(orgId);
     const dynamicColumns = (Array.isArray(body.columns) ? body.columns : [])
       .map((c, idx) => {
         const base = sanitizeColumnId(String(c.header ?? ""));
@@ -60,7 +72,9 @@ export async function POST(request: Request) {
       };
       })
       .filter((c) => c.header.length > 0);
-    const table = await prisma.customDbTable.create({ data: { name, folderId } });
+    const table = await prisma.customDbTable.create({
+      data: { name, folderId, organizationId: orgId },
+    });
     const columns = [
       {
         id: buildColumnId(table.id, DEFAULT_COLUMNS[0].key),

@@ -41,8 +41,10 @@ import { PillTabsList, PillTabsTrigger } from "@/components/ui/pill-tabs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/empty-state";
 import { TableLoadingSkeleton } from "@/components/table-loading-skeleton";
+import { FIXED_UOMS } from "@/lib/custom-db";
 import {
   exportDatabaseSheet,
+  exportTemplateSheet,
   parseXlsxFirstSheet,
   validateRequiredColumns,
 } from "@/lib/database-xlsx";
@@ -336,6 +338,21 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
     show("success", "Excel diekspor");
   };
 
+  const downloadTemplate = async () => {
+    const header = [
+      "code",
+      "name",
+      "category",
+      "density",
+      "pricePerKg",
+      "currency",
+      "unit",
+      "notes",
+    ];
+    await exportTemplateSheet("materials_template.xlsx", header);
+    show("success", "Template diunduh");
+  };
+
   const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -481,6 +498,10 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
           >
             <Upload className="size-4" />
             Import Excel
+          </Button>
+          <Button type="button" variant="outline" onClick={() => void downloadTemplate()}>
+            <Download className="size-4" />
+            Download Template
           </Button>
           <Button type="button" variant="outline" onClick={() => void exportXlsx()}>
             <Download className="size-4" />
@@ -640,11 +661,21 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="m-unit">Satuan</Label>
-                <Input
-                  id="m-unit"
-                  value={fUnit}
-                  onChange={(e) => setFUnit(e.target.value)}
-                />
+                <Select value={fUnit} onValueChange={setFUnit}>
+                  <SelectTrigger id="m-unit" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FIXED_UOMS.map((u) => (
+                      <SelectItem key={u} value={u}>
+                        {u}
+                      </SelectItem>
+                    ))}
+                    {fUnit && !(FIXED_UOMS as readonly string[]).includes(fUnit) ? (
+                      <SelectItem value={fUnit}>{fUnit}</SelectItem>
+                    ) : null}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="grid gap-1.5">
@@ -844,6 +875,20 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
     show("success", "Excel diekspor");
   };
 
+  const downloadTemplate = async () => {
+    const header = [
+      "code",
+      "name",
+      "type",
+      "weightPerM",
+      "pricePerM",
+      "panelThick",
+      "notes",
+    ];
+    await exportTemplateSheet("profiles_template.xlsx", header);
+    show("success", "Template diunduh");
+  };
+
   const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -991,6 +1036,10 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
           >
             <Upload className="size-4" />
             Import Excel
+          </Button>
+          <Button type="button" variant="outline" onClick={() => void downloadTemplate()}>
+            <Download className="size-4" />
+            Download Template
           </Button>
           <Button type="button" variant="outline" onClick={() => void exportXlsx()}>
             <Download className="size-4" />
@@ -1395,6 +1444,27 @@ function ComponentsPanel({
     show("success", "Excel diekspor");
   };
 
+  const downloadTemplate = async () => {
+    const header = [
+      "code",
+      "name",
+      "category",
+      "subcategory",
+      "brand",
+      "model",
+      "spec",
+      "unitPrice",
+      "currency",
+      "unit",
+      "moq",
+      "leadTimeDays",
+      "supplier",
+      "notes",
+    ];
+    await exportTemplateSheet("components_template.xlsx", header);
+    show("success", "Template diunduh");
+  };
+
   const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -1561,6 +1631,10 @@ function ComponentsPanel({
           >
             <Upload className="size-4" />
             Import Excel
+          </Button>
+          <Button type="button" variant="outline" onClick={() => void downloadTemplate()}>
+            <Download className="size-4" />
+            Download Template
           </Button>
           <Button type="button" variant="outline" onClick={() => void exportXlsx()}>
             <Download className="size-4" />
@@ -1750,11 +1824,21 @@ function ComponentsPanel({
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="c-unit">Satuan</Label>
-                <Input
-                  id="c-unit"
-                  value={fUnit}
-                  onChange={(e) => setFUnit(e.target.value)}
-                />
+                <Select value={fUnit} onValueChange={setFUnit}>
+                  <SelectTrigger id="c-unit" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FIXED_UOMS.map((u) => (
+                      <SelectItem key={u} value={u}>
+                        {u}
+                      </SelectItem>
+                    ))}
+                    {fUnit && !(FIXED_UOMS as readonly string[]).includes(fUnit) ? (
+                      <SelectItem value={fUnit}>{fUnit}</SelectItem>
+                    ) : null}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="grid gap-1.5 sm:grid-cols-2">

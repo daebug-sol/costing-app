@@ -2,17 +2,33 @@ import { NextResponse } from "next/server";
 import { finite } from "@/lib/calculations";
 import { rollupManualSegmentFinancials } from "@/lib/manual-costing-rollup";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import {
+  requireManualItemInOrg,
+  requireProjectInOrg,
+  requireSegmentInOrg,
+} from "@/lib/tenant-context";
 
 type Ctx = { params: Promise<{ id: string; segmentId: string; itemId: string }> };
 
 export async function PUT(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id: projectId, segmentId, itemId } = await context.params;
+    const projectCheck = await requireProjectInOrg(projectId, orgId);
+    if (!projectCheck.ok) return projectCheck.response;
+    const segmentCheck = await requireSegmentInOrg(segmentId, projectId, orgId);
+    if (!segmentCheck.ok) return segmentCheck.response;
+    const itemCheck = await requireManualItemInOrg(itemId, projectId, orgId);
+    if (!itemCheck.ok) return itemCheck.response;
 
     const item = await prisma.manualCostingItem.findFirst({
       where: {
         id: itemId,
-        group: { segmentId, segment: { projectId } },
+        group: { segmentId, segment: { projectId, project: { organizationId: orgId } } },
       },
       include: {
         group: {
@@ -117,13 +133,23 @@ export async function PUT(request: Request, context: Ctx) {
 }
 
 export async function DELETE(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id: projectId, segmentId, itemId } = await context.params;
+    const projectCheck = await requireProjectInOrg(projectId, orgId);
+    if (!projectCheck.ok) return projectCheck.response;
+    const segmentCheck = await requireSegmentInOrg(segmentId, projectId, orgId);
+    if (!segmentCheck.ok) return segmentCheck.response;
+    const itemCheck = await requireManualItemInOrg(itemId, projectId, orgId);
+    if (!itemCheck.ok) return itemCheck.response;
 
     const item = await prisma.manualCostingItem.findFirst({
       where: {
         id: itemId,
-        group: { segmentId, segment: { projectId } },
+        group: { segmentId, segment: { projectId, project: { organizationId: orgId } } },
       },
       include: {
         group: {

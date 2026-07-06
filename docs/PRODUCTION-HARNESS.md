@@ -14,20 +14,20 @@ This document is the **operational and product harness** for taking **costing-ap
 
 ---
 
-## 2. Current baseline (typical gaps for SaaS)
+## 2. Current baseline (SaaS launch checklist)
 
-Verify in code and deployment; update this section as you ship features.
+Verify in code and deployment; update status as you ship features.
 
-| Area | Target state for SaaS |
-|------|------------------------|
-| **Auth** | Real user accounts (email/OAuth/SSO); sessions; password or IdP policies. |
-| **Multi-tenancy** | `tenantId` / `organizationId` on tenant-owned models; **every** query scoped; no cross-tenant leakage in APIs. |
-| **Database** | Hosted Postgres (or equivalent) with backups, PITR if required; migrations in CI. SQLite is usually **not** the long-term multi-tenant store. |
-| **Secrets** | Only in environment / vault on the host; rotateable; never in git. |
-| **API security** | HTTPS; CSRF strategy if cookie sessions; rate limits on auth and expensive routes; validate all inputs. |
-| **Observability** | Structured logs; error tracking (e.g. Sentry); optional metrics (latency, errors). |
-| **CI** | Lint, typecheck, test, build on every PR; block merge on failure. |
-| **Legal / privacy** | Privacy policy, terms; data retention; export/delete if serving EU/UK users (GDPR-style). |
+| Area | Target state for SaaS | Status | Verified |
+|------|------------------------|--------|----------|
+| **Auth** | Real user accounts (email/OAuth/SSO); sessions; password or IdP policies. | ✅ Clerk (`@clerk/nextjs`), middleware route protection, `lib/auth.ts` | Code + CI; staging login pending manual |
+| **Multi-tenancy** | `organizationId` on tenant-owned models; **every** query scoped; no cross-tenant leakage in APIs. | ✅ `Organization` model, `lib/tenant-context.ts`, nested route verifiers, isolation tests | Automated tests PASS; staging IDOR walk pending |
+| **Database** | Hosted Postgres with backups, PITR if required; migrations in CI. | ✅ Postgres datasource, `docker-compose.yml`, migrate in CI/build | Neon backup enablement pending manual |
+| **Secrets** | Only in environment / vault on the host; rotateable; never in git. | ✅ `.env.example` template; no secrets in repo | Grep audit PASS |
+| **API security** | HTTPS; CSRF via Clerk session cookies (SameSite=Lax); rate limits on expensive routes. | ✅ `lib/rate-limit.ts` on recalculate/import; auth on all API routes except `/api/health` | Rate limit code present; prod load test pending |
+| **Observability** | Structured logs; error tracking (Sentry); optional metrics. | ✅ `lib/logger.ts`, Sentry scaffold (env-gated) | Sentry test event pending manual |
+| **CI** | Lint, test, build on every PR; block merge on failure. | ✅ `.github/workflows/ci.yml` | Local: test/build PASS |
+| **Legal / privacy** | Privacy policy, terms; data export/delete for GDPR-style compliance. | ✅ `/legal/privacy`, `/legal/terms`, `/api/org/export`, `/api/org/delete`, footer links | Pages exist; staging URL check pending |
 
 ---
 
@@ -65,9 +65,37 @@ Document **required env vars** in a template (e.g. `.env.example`) without real 
 
 ## 6. Incident response (minimal)
 
-- **On-call / owner**: Define who receives alerts.
-- **Severity**: P1 (data leak / full outage) vs P2 (degraded).
-- **Post-incident**: Short root cause note for P1.
+### On-call / owner
+
+| Role | Contact | Channel |
+|------|---------|---------|
+| **Primary on-call** | Engineering lead (define name) | Slack `#costing-app-alerts`, email |
+| **Backup** | Secondary engineer | Same channel |
+| **Product / customer** | Account owner for pilot customers | Direct contact for P1 comms |
+
+Sentry alerts route to the primary on-call when `SENTRY_DSN` is configured. Vercel deployment notifications go to the engineering Slack channel.
+
+### Severity levels
+
+| Level | Definition | Response target | Examples |
+|-------|------------|-----------------|----------|
+| **P1** | Data leak, auth bypass, or full outage affecting all tenants | Acknowledge ≤ 15 min; mitigate ≤ 2 h | Cross-tenant data visible; app unreachable; DB corruption |
+| **P2** | Degraded service or single-tenant impact | Acknowledge ≤ 1 h; fix or workaround ≤ 1 business day | Recalculate failures; slow imports; staging-only regression |
+| **P3** | Minor bug, cosmetic, non-blocking | Next sprint | UI glitch; non-critical export formatting |
+
+### Response playbook (P1)
+
+1. **Acknowledge** — Post in `#costing-app-alerts` with severity and impact scope.
+2. **Contain** — Revoke compromised keys; disable affected route via Vercel if needed; rotate Clerk/DB credentials if leak suspected.
+3. **Communicate** — Notify affected pilot customers within 4 h for data-related P1.
+4. **Fix** — Hotfix branch → staging smoke → production deploy.
+5. **Post-incident** — Short root-cause note (what, why, prevention) within 48 h for P1.
+
+### Post-incident
+
+- P1: mandatory blameless postmortem (timeline, root cause, action items).
+- P2: optional short note in team channel.
+- Log retention: Sentry 90 days; Vercel logs per plan.
 
 ---
 

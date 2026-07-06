@@ -8,7 +8,7 @@ import {
   isDatabaseScope,
   isDefaultAhuFileId,
   isDefaultFolderId,
-} from "./database-folders";
+} from "./database-folders-constants";
 
 describe("database-folders", () => {
   it("recognizes valid scopes and kinds", () => {

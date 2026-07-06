@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { hasColumnKey, isLockedColumnId, normalizeHeader, sanitizeColumnId } from "@/lib/custom-db";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireCustomTableInOrg } from "@/lib/tenant-context";
 
 export async function POST(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const body = (await request.json()) as { tableId?: string; header?: string; kind?: string };
     const tableId = String(body.tableId ?? "").trim();
@@ -11,8 +17,12 @@ export async function POST(request: Request) {
     if (!tableId || !header) {
       return NextResponse.json({ error: "tableId and header are required" }, { status: 400 });
     }
-    const table = await prisma.customDbTable.findUnique({
-      where: { id: tableId },
+
+    const tableCheck = await requireCustomTableInOrg(tableId, orgId);
+    if (!tableCheck.ok) return tableCheck.response;
+
+    const table = await prisma.customDbTable.findFirst({
+      where: { id: tableId, organizationId: orgId },
       include: { columns: { orderBy: { sortOrder: "asc" } } },
     });
     if (!table) return NextResponse.json({ error: "Table not found" }, { status: 404 });
@@ -68,6 +78,10 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const body = (await request.json()) as { tableId?: string; order?: string[] };
     const tableId = String(body.tableId ?? "").trim();
@@ -75,6 +89,10 @@ export async function PATCH(request: Request) {
     if (!tableId || order.length === 0) {
       return NextResponse.json({ error: "tableId and order are required" }, { status: 400 });
     }
+
+    const tableCheck = await requireCustomTableInOrg(tableId, orgId);
+    if (!tableCheck.ok) return tableCheck.response;
+
     if (!hasColumnKey(order[0]!, "col_code") || !hasColumnKey(order[1]!, "col_name")) {
       return NextResponse.json({ error: "Locked columns order is invalid" }, { status: 400 });
     }

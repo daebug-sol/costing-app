@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, IBM_Plex_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/Navbar";
-import { Toaster } from "@/components/Toast";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { AppProviders } from "@/components/app-providers";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({
@@ -12,7 +10,6 @@ const inter = Inter({
   display: "swap",
 });
 
-/** Display serif for page titles (pairs with Inter body + taupe theme). */
 const displaySerif = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
@@ -28,8 +25,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Costing App — PT Thermal True Indonesia",
-  description: "AHU project costing for PT Thermal True Indonesia",
+  title: "Costing App",
+  description: "AHU project costing — multi-tenant SaaS",
 };
 
 export default function RootLayout({
@@ -39,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="id"
       className={cn(
         "h-full font-sans antialiased",
         inter.variable,
@@ -48,11 +45,7 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full">
-        <TooltipProvider>
-          <Navbar />
-          <main className="min-h-screen bg-background pt-14">{children}</main>
-          <Toaster />
-        </TooltipProvider>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

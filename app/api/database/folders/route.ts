@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardApiRoute } from "@/lib/api-guard";
 import {
   ensureDefaultFolders,
   folderListOrder,
@@ -9,6 +10,10 @@ import {
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const scopeParam = new URL(request.url).searchParams.get("scope");
     if (!scopeParam || !isDatabaseScope(scopeParam)) {
@@ -17,9 +22,9 @@ export async function GET(request: Request) {
         { status: 400 }
       );
     }
-    await ensureDefaultFolders();
+    await ensureDefaultFolders(orgId);
     const folders = await prisma.databaseFolder.findMany({
-      where: { scope: scopeParam },
+      where: { scope: scopeParam, organizationId: orgId },
       orderBy: folderListOrder(),
       include: {
         _count: {
@@ -44,6 +49,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const body = (await request.json()) as { scope?: string; name?: string };
     const scope = String(body.scope ?? "");
@@ -55,11 +64,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Nama folder wajib diisi" }, { status: 400 });
     }
     const maxOrder = await prisma.databaseFolder.aggregate({
-      where: { scope },
+      where: { scope, organizationId: orgId },
       _max: { sortOrder: true },
     });
     const folder = await prisma.databaseFolder.create({
       data: {
+        organizationId: orgId,
         scope,
         name,
         sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,

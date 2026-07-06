@@ -9,10 +9,14 @@ jest.mock("@/lib/prisma", () => ({
     materialPrice: { findMany: jest.fn() },
     profileData: { findMany: jest.fn() },
     componentCatalog: { findMany: jest.fn() },
-    costingProject: { findUnique: jest.fn() },
+    costingProject: { findUnique: jest.fn(), findFirst: jest.fn() },
     costingSection: { deleteMany: jest.fn(), create: jest.fn() },
     $transaction: jest.fn(),
   },
+}));
+
+jest.mock("@/lib/api-guard", () => ({
+  guardApiRoute: jest.fn(async () => ({ userId: "test-user", orgId: "org-a" })),
 }));
 
 jest.mock("@/lib/ahu-recalc-params", () => ({
@@ -44,7 +48,7 @@ describe("POST /api/projects/[id]/segments/[segmentId]/recalculate", () => {
       materialPrice: { findMany: jest.Mock };
       profileData: { findMany: jest.Mock };
       componentCatalog: { findMany: jest.Mock };
-      costingProject: { findUnique: jest.Mock };
+      costingProject: { findUnique: jest.Mock; findFirst: jest.Mock };
       $transaction: jest.Mock;
     };
     const createdSections: Array<{ category: string; subtotal: number }> = [];
@@ -92,6 +96,7 @@ describe("POST /api/projects/[id]/segments/[segmentId]/recalculate", () => {
       };
       return cb(tx);
     });
+    mockedPrisma.costingProject.findFirst.mockResolvedValue({ id: "proj-1" });
     mockedPrisma.costingProject.findUnique.mockResolvedValue({ id: "proj-1", segments: [] });
 
     const req = new Request("http://localhost", {

@@ -21,11 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { columnHeaderToVariableKey, hasColumnKey } from "@/lib/custom-db";
-import { exportDatabaseSheet, parseXlsxFirstSheet } from "@/lib/database-xlsx";
+import { columnHeaderToVariableKey, FIXED_UOMS, hasColumnKey } from "@/lib/custom-db";
+import { exportDatabaseSheet, exportTemplateSheet, parseXlsxFirstSheet } from "@/lib/database-xlsx";
 import { MANDATORY_DB_HEADER, matchMandatoryExcelHeaders } from "@/lib/excel-column-match";
 import { cn } from "@/lib/utils";
-import { formatIDR } from "@/lib/utils/format";
+import { formatIDR, formatNumber } from "@/lib/utils/format";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
 import { DatabaseExplorer } from "./database-explorer";
 
@@ -34,6 +34,13 @@ type CustomCol = {
   header: string;
   sortOrder: number;
   locked: boolean;
+  kind: string;
+};
+
+type SchemaCol = {
+  header: string;
+  kind: string;
+  dropdownOptions?: string;
 };
 
 type ContextMenuState = {
@@ -200,22 +207,76 @@ async function readErr(res: Response): Promise<string> {
   return res.statusText || "Request failed";
 }
 
+function isCurrencyKind(kind: string): boolean {
+  return kind === "currency" || kind === "finance";
+}
+
+function isNumericKind(kind: string): boolean {
+  return kind === "number" || isCurrencyKind(kind);
+}
+
+function parseNumericRaw(raw: string): number | null {
+  const n = Number(raw.replace(/,/g, "").replace(/\s/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+function parseDropdownOptions(kind: string): string[] {
+  if (!kind.startsWith("dropdown:")) return [];
+  const body = kind.slice("dropdown:".length);
+  if (!body) return [];
+  return body.split("|").filter(Boolean);
+}
+
+function encodeDropdownKind(optionsText: string): string {
+  const opts = optionsText
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (opts.length === 0) return "dropdown:";
+  return `dropdown:${opts.join("|")}`;
+}
+
+function getCellRenderMode(col: CustomCol): "uom" | "dropdown" | "input" {
+  if (hasColumnKey(col.id, "col_uom") || col.kind === "uom") return "uom";
+  if (parseDropdownOptions(col.kind).length > 0) return "dropdown";
+  return "input";
+}
+
+function normalizeNumericOnBlur(raw: string, kind: string): string {
+  if (!isNumericKind(kind)) return raw;
+  const n = parseNumericRaw(raw);
+  return n !== null ? String(n) : raw;
+}
+
 function cellInputDisplay(
   cell: CustomCell | undefined,
-  colId: string,
+  col: CustomCol,
   focused: boolean
 ): string {
   const raw = cell?.rawValue ?? "";
+  const colId = col.id;
+  const kind = col.kind ?? "text";
   if (focused) return raw;
   const t = raw.trim();
   if (t.startsWith("=")) {
     if (hasColumnKey(colId, "col_price") && cell?.computedValue != null) {
       return formatIDR(cell.computedValue);
     }
+    if (isCurrencyKind(kind) && cell?.computedValue != null) {
+      return formatIDR(cell.computedValue);
+    }
     return cell?.computedValue != null ? String(cell.computedValue) : "";
   }
   if (hasColumnKey(colId, "col_price") && cell?.computedValue != null) {
     return formatIDR(cell.computedValue);
+  }
+  if (isCurrencyKind(kind)) {
+    const n = parseNumericRaw(raw);
+    if (n !== null) return formatIDR(n);
+  }
+  if (kind === "number") {
+    const n = parseNumericRaw(raw);
+    if (n !== null) return formatNumber(n);
   }
   return raw;
 }
@@ -231,7 +292,7 @@ export function CustomDatabasePanel({
   const setDatabaseCustomNav = useUiWorkflowStore((s) => s.setDatabaseCustomNav);
   const activeFileId = customFileId;
   const [loading, setLoading] = useState(false);
-  const [newColumns, setNewColumns] = useState<Array<{ header: string; kind: string }>>([]);
+  const [newColumns, setNewColumns] = useState<SchemaCol[]>([]);
   const [insertRef, setInsertRef] = useState<{ rowId: string } | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -240,6 +301,7 @@ export function CustomDatabasePanel({
   const [addColumnDialogOpen, setAddColumnDialogOpen] = useState(false);
   const [addColumnName, setAddColumnName] = useState("");
   const [addColumnKind, setAddColumnKind] = useState("text");
+  const [addColumnDropdownOptions, setAddColumnDropdownOptions] = useState("");
   const [ctxMenu, setCtxMenu] = useState<ContextMenuState>({
     open: false,
     x: 0,
@@ -710,7 +772,10 @@ export function CustomDatabasePanel({
         scope: "custom",
         folderId: customFolderId,
         name,
-        columns: newColumns,
+        columns: newColumns.map(({ header, kind, dropdownOptions }) => ({
+          header,
+          kind: kind === "dropdown" ? encodeDropdownKind(dropdownOptions ?? "") : kind,
+        })),
       }),
     });
     if (!r.ok) {
@@ -734,6 +799,13 @@ export function CustomDatabasePanel({
     );
     await exportDatabaseSheet(`${table.name}.xlsx`, header, data);
     show("success", "Export Excel berhasil");
+  };
+
+  const downloadTemplate = async () => {
+    if (!table) return;
+    const header = table.columns.map((c) => c.header);
+    await exportTemplateSheet(`${table.name}_template.xlsx`, header);
+    show("success", "Template diunduh");
   };
 
   const importIntoTable = async (file: File, mode: "new" | "append") => {
@@ -844,35 +916,63 @@ export function CustomDatabasePanel({
       </div>
       <div className="space-y-2">
         {newColumns.map((col, idx) => (
-          <div key={`${idx}-${col.header}`} className="flex gap-2">
-            <Input
-              value={col.header}
-              onChange={(e) =>
-                setNewColumns((prev) =>
-                  prev.map((c, i) => (i === idx ? { ...c, header: e.target.value } : c))
-                )
-              }
-              placeholder="Nama kolom"
-            />
-            <Select
-              value={col.kind}
-              onValueChange={(v) =>
-                setNewColumns((prev) =>
-                  prev.map((c, i) => (i === idx ? { ...c, kind: v } : c))
-                )
-              }
-            >
-              <SelectTrigger className="w-[190px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="text">Text</SelectItem>
-                <SelectItem value="number">Number</SelectItem>
-                <SelectItem value="currency">Finance/Forex</SelectItem>
-                <SelectItem value="uom">UOM</SelectItem>
-                <SelectItem value="formula">Formula</SelectItem>
-              </SelectContent>
-            </Select>
+          <div key={`${idx}-${col.header}`} className="space-y-2 rounded-md border border-border p-2">
+            <div className="flex gap-2">
+              <Input
+                value={col.header}
+                onChange={(e) =>
+                  setNewColumns((prev) =>
+                    prev.map((c, i) => (i === idx ? { ...c, header: e.target.value } : c))
+                  )
+                }
+                placeholder="Nama kolom"
+              />
+              <Select
+                value={col.kind === "dropdown" || col.kind.startsWith("dropdown:") ? "dropdown" : col.kind}
+                onValueChange={(v) =>
+                  setNewColumns((prev) =>
+                    prev.map((c, i) =>
+                      i === idx
+                        ? {
+                            ...c,
+                            kind: v,
+                            dropdownOptions: v === "dropdown" ? c.dropdownOptions ?? "" : undefined,
+                          }
+                        : c
+                    )
+                  )
+                }
+              >
+                <SelectTrigger className="w-[190px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text">Text</SelectItem>
+                  <SelectItem value="number">Number</SelectItem>
+                  <SelectItem value="currency">Finance/Forex</SelectItem>
+                  <SelectItem value="uom">UOM</SelectItem>
+                  <SelectItem value="dropdown">Dropdown</SelectItem>
+                  <SelectItem value="formula">Formula</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {(col.kind === "dropdown" || col.kind.startsWith("dropdown:")) ? (
+              <div className="grid gap-1.5">
+                <Label>Opsi (satu per baris)</Label>
+                <textarea
+                  className="border-input bg-background focus-visible:ring-ring flex min-h-[72px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
+                  value={col.dropdownOptions ?? ""}
+                  onChange={(e) =>
+                    setNewColumns((prev) =>
+                      prev.map((c, i) =>
+                        i === idx ? { ...c, dropdownOptions: e.target.value } : c
+                      )
+                    )
+                  }
+                  placeholder={"Vendor A\nVendor B\nVendor C"}
+                />
+              </div>
+            ) : null}
           </div>
         ))}
       </div>
@@ -944,6 +1044,9 @@ export function CustomDatabasePanel({
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" variant="outline" onClick={() => importRef.current?.click()}>
             Import Excel
+          </Button>
+          <Button type="button" variant="outline" onClick={() => void downloadTemplate()}>
+            Download Template
           </Button>
           <Button type="button" variant="outline" onClick={() => void exportActiveFile()}>
             Export Excel
@@ -1033,7 +1136,10 @@ export function CustomDatabasePanel({
                     const cell = getCell(row, col.id);
                     const focused =
                       focusedCell?.rowId === row.id && focusedCell?.columnId === col.id;
-                    const display = cellInputDisplay(cell, col.id, focused);
+                    const display = cellInputDisplay(cell, col, focused);
+                    const renderMode = getCellRenderMode(col);
+                    const cellValue = cell?.rawValue ?? "";
+                    const colKind = col.kind ?? "text";
                     const fp = fillPreview;
                     const inFill =
                       fp &&
@@ -1133,11 +1239,49 @@ export function CustomDatabasePanel({
                               })}
                             </div>
                           ) : null}
+                          {renderMode === "uom" || renderMode === "dropdown" ? (
+                            <Select
+                              value={cellValue || undefined}
+                              onValueChange={(v) => void updateCell(row.id, col.id, v)}
+                            >
+                              <SelectTrigger
+                                className="h-8 min-w-[120px] border-0 bg-transparent shadow-none focus:ring-0"
+                                onMouseDown={(e) => {
+                                  if (focusedCell) return;
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedCell({ rowId: row.id, columnId: col.id });
+                                  setInsertRef(null);
+                                  setFormulaRefSelecting(null);
+                                }}
+                              >
+                                <SelectValue placeholder="—" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(renderMode === "uom"
+                                  ? [...FIXED_UOMS]
+                                  : parseDropdownOptions(col.kind)
+                                ).map((opt) => (
+                                  <SelectItem key={opt} value={opt}>
+                                    {opt}
+                                  </SelectItem>
+                                ))}
+                                {cellValue &&
+                                !(renderMode === "uom"
+                                  ? (FIXED_UOMS as readonly string[])
+                                  : parseDropdownOptions(col.kind)
+                                ).includes(cellValue) ? (
+                                  <SelectItem value={cellValue}>{cellValue}</SelectItem>
+                                ) : null}
+                              </SelectContent>
+                            </Select>
+                          ) : (
                           <Input
                             ref={focused ? formulaInputRef : undefined}
                           data-grid-row-id={row.id}
                           data-grid-col-id={col.id}
                             value={display}
+                            inputMode={isNumericKind(colKind) ? "decimal" : undefined}
                           onMouseDown={(e) => {
                             // Selection mode: when not typing, mouse click should select cell only.
                             if (focusedCell) return;
@@ -1149,6 +1293,9 @@ export function CustomDatabasePanel({
                           }}
                             onChange={(e) => {
                               const next = e.target.value;
+                              if (isNumericKind(colKind) && next && !/^[\d.,\s-]*$/.test(next)) {
+                                return;
+                              }
                               setTable((prev) => {
                                 if (!prev) return prev;
                                 return {
@@ -1281,8 +1428,9 @@ export function CustomDatabasePanel({
                               const dCol = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
 
                               skipBlurCommitRef.current = true;
+                              const commitValue = normalizeNumericOnBlur(curValue, colKind);
                               void (async () => {
-                                await updateCell(row.id, col.id, curValue);
+                                await updateCell(row.id, col.id, commitValue);
                                 if (dCol !== 0) {
                                   const targetCol = columns[colIdx + dCol];
                                   if (!targetCol) return;
@@ -1305,8 +1453,9 @@ export function CustomDatabasePanel({
                               const targetCol = columns[colIdx + delta];
                               if (!targetCol) return;
                               skipBlurCommitRef.current = true;
+                              const commitValue = normalizeNumericOnBlur(curValue, colKind);
                               void (async () => {
-                                await updateCell(row.id, col.id, curValue);
+                                await updateCell(row.id, col.id, commitValue);
                                 focusCellInput(row.id, targetCol.id);
                               })();
                               return;
@@ -1315,8 +1464,9 @@ export function CustomDatabasePanel({
                             if (isEnter) {
                               e.preventDefault();
                               skipBlurCommitRef.current = true;
+                              const commitValue = normalizeNumericOnBlur(curValue, colKind);
                               void (async () => {
-                                await updateCell(row.id, col.id, curValue);
+                                await updateCell(row.id, col.id, commitValue);
                                 if (e.ctrlKey) {
                                   // Commit but stay in same cell.
                                   focusCellInput(row.id, col.id);
@@ -1342,9 +1492,15 @@ export function CustomDatabasePanel({
                             setFocusedCell(null);
                             setInsertRef(null);
                               setFormulaRefSelecting(null);
-                            void updateCell(row.id, col.id, e.target.value);
+                            void updateCell(
+                              row.id,
+                              col.id,
+                              normalizeNumericOnBlur(e.target.value, colKind)
+                            );
                             }}
-                            className={`h-full min-w-[120px] rounded-none border-0 bg-transparent px-1 py-1 shadow-none focus-visible:ring-0 ${
+                            className={cn(
+                              "h-full min-w-[120px] rounded-none border-0 bg-transparent px-1 py-1 shadow-none focus-visible:ring-0",
+                              isNumericKind(colKind) && "text-right tabular-nums",
                               showFormulaTokenColors
                                 ? "relative z-20 font-mono text-transparent caret-foreground"
                                 : isFormulaCell
@@ -1352,8 +1508,9 @@ export function CustomDatabasePanel({
                                   : refColorIndex !== undefined
                                     ? "font-medium"
                                     : ""
-                            }`}
+                            )}
                           />
+                          )}
                         </div>
                         <div
                           data-fill-handle
@@ -1561,7 +1718,13 @@ export function CustomDatabasePanel({
               placeholder="contoh: panjang, raw_price, currency"
             />
             <Label htmlFor="add-column-kind">Kategori kolom</Label>
-            <Select value={addColumnKind} onValueChange={setAddColumnKind}>
+            <Select
+              value={addColumnKind}
+              onValueChange={(v) => {
+                setAddColumnKind(v);
+                if (v !== "dropdown") setAddColumnDropdownOptions("");
+              }}
+            >
               <SelectTrigger id="add-column-kind">
                 <SelectValue />
               </SelectTrigger>
@@ -1570,9 +1733,22 @@ export function CustomDatabasePanel({
                 <SelectItem value="number">Angka</SelectItem>
                 <SelectItem value="currency">Finance/Forex</SelectItem>
                 <SelectItem value="uom">UOM</SelectItem>
+                <SelectItem value="dropdown">Dropdown</SelectItem>
                 <SelectItem value="formula">Formula</SelectItem>
               </SelectContent>
             </Select>
+            {addColumnKind === "dropdown" ? (
+              <div className="grid gap-1.5">
+                <Label htmlFor="add-column-dropdown-options">Opsi (satu per baris)</Label>
+                <textarea
+                  id="add-column-dropdown-options"
+                  className="border-input bg-background focus-visible:ring-ring flex min-h-[72px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
+                  value={addColumnDropdownOptions}
+                  onChange={(e) => setAddColumnDropdownOptions(e.target.value)}
+                  placeholder={"Vendor A\nVendor B\nVendor C"}
+                />
+              </div>
+            ) : null}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setAddColumnDialogOpen(false)}>
@@ -1583,9 +1759,18 @@ export function CustomDatabasePanel({
               onClick={async () => {
                 const name = addColumnName.trim();
                 if (!name) return;
-                await addColumn(name, addColumnKind);
+                if (addColumnKind === "dropdown" && !addColumnDropdownOptions.trim()) {
+                  show("error", "Isi minimal satu opsi dropdown");
+                  return;
+                }
+                const kind =
+                  addColumnKind === "dropdown"
+                    ? encodeDropdownKind(addColumnDropdownOptions)
+                    : addColumnKind;
+                await addColumn(name, kind);
                 setAddColumnName("");
                 setAddColumnKind("text");
+                setAddColumnDropdownOptions("");
                 setAddColumnDialogOpen(false);
               }}
             >

@@ -1,27 +1,15 @@
 import { NextResponse } from "next/server";
+import { guardApiRoute } from "@/lib/api-guard";
 import { prisma } from "@/lib/prisma";
-
-async function getOrCreateSettings() {
-  let settings = await prisma.appSettings.findUnique({
-    where: { id: "default" },
-  });
-  if (!settings) {
-    settings = await prisma.appSettings.findFirst();
-  }
-  if (!settings) {
-    settings = await prisma.appSettings.create({
-      data: {
-        id: "default",
-        companyName: "PT Thermal True Indonesia",
-      },
-    });
-  }
-  return settings;
-}
+import { getOrCreateSettings } from "@/lib/tenant-queries";
 
 export async function GET() {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
-    const settings = await getOrCreateSettings();
+    const settings = await getOrCreateSettings(orgId);
     return NextResponse.json(settings);
   } catch (e) {
     console.error(e);
@@ -33,9 +21,13 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const body = await request.json();
-    const settings = await getOrCreateSettings();
+    const settings = await getOrCreateSettings(orgId);
 
     const data: {
       forexUSD?: number;
@@ -65,6 +57,7 @@ export async function PUT(request: Request) {
       warrantyTerms?: string;
       validityDays?: number;
       termsConditions?: string;
+      onboardingComplete?: boolean;
     } = {};
 
     const takeNum = (v: unknown): number | undefined => {
@@ -141,6 +134,8 @@ export async function PUT(request: Request) {
       data.warrantyTerms = String(body.warrantyTerms);
     if (body.termsConditions !== undefined)
       data.termsConditions = String(body.termsConditions);
+    if (body.onboardingComplete !== undefined)
+      data.onboardingComplete = Boolean(body.onboardingComplete);
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json(

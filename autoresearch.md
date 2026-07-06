@@ -44,7 +44,9 @@ Success means moving toward:
 
 ## What’s Been Tried
 
-_(empty — baseline not logged yet)_
+- **Baseline note**: `gates_pass` may start at `0` if ESLint reports errors in touched UI files (e.g. `kpi-stat-card.tsx`, `costing-workspace.tsx`). Prefer iterations that raise `gates_pass` to `1` without weakening tests.
+
+_(experiments append to `autoresearch.jsonl` via MCP `log_experiment`)_
 
 ## Resume commands
 

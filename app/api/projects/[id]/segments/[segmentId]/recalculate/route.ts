@@ -2,17 +2,36 @@ import { NextResponse } from "next/server";
 import { mergeRecalcParams, parseAhuRecalcParams } from "@/lib/ahu-recalc-params";
 import { validateAhuRecalculateContext } from "@/lib/ahu-recalc-validation";
 import { computeAhuSegmentCostingBlocks } from "@/lib/ahu-segment-costing";
+import { guardApiRoute } from "@/lib/api-guard";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { finite } from "@/lib/calculations";
 import { normalizeCostingScope } from "@/lib/costing-scope";
 import { prisma } from "@/lib/prisma";
 import { rollupProjectFinancials } from "@/lib/project-rollup";
+import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
+import { requireProjectInOrg, requireSegmentInOrg } from "@/lib/tenant-context";
 
 type Ctx = { params: Promise<{ id: string; segmentId: string }> };
 
 export async function POST(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
+  const rate = checkRateLimit(rateLimitKey([orgId, "recalculate"]), 20, 60_000);
+  if (!rate.ok) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } }
+    );
+  }
+
   try {
     const { id: projectId, segmentId } = await context.params;
+    const projectCheck = await requireProjectInOrg(projectId, orgId);
+    if (!projectCheck.ok) return projectCheck.response;
+    const segmentCheck = await requireSegmentInOrg(segmentId, projectId, orgId);
+    if (!segmentCheck.ok) return segmentCheck.response;
     const body =
       (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
@@ -34,9 +53,9 @@ export async function POST(request: Request, context: Ctx) {
     }
 
     const [materials, profiles, components] = await Promise.all([
-      prisma.materialPrice.findMany(),
-      prisma.profileData.findMany(),
-      prisma.componentCatalog.findMany(),
+      prisma.materialPrice.findMany({ where: { organizationId: orgId } }),
+      prisma.profileData.findMany({ where: { organizationId: orgId } }),
+      prisma.componentCatalog.findMany({ where: { organizationId: orgId } }),
     ]);
 
     const storedParams = parseAhuRecalcParams(segment.ahuRecalcParams);

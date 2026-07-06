@@ -1,11 +1,27 @@
 import { NextResponse } from "next/server";
+import { guardApiRoute } from "@/lib/api-guard";
 import { prisma } from "@/lib/prisma";
+import { tenantWhere } from "@/lib/tenant-queries";
 
 type Ctx = { params: Promise<{ id: string }> };
 
+async function findMaterial(orgId: string, id: string) {
+  return prisma.materialPrice.findFirst({
+    where: tenantWhere.material(orgId, id),
+  });
+}
+
 export async function PUT(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id } = await context.params;
+    const existing = await findMaterial(orgId, id);
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     const body = await request.json();
     const {
       code,
@@ -96,8 +112,16 @@ export async function PUT(request: Request, context: Ctx) {
 }
 
 export async function DELETE(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id } = await context.params;
+    const existing = await findMaterial(orgId, id);
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     await prisma.materialPrice.delete({ where: { id } });
     return new NextResponse(null, { status: 204 });
   } catch (e: unknown) {

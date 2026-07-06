@@ -3,18 +3,23 @@ import { NextResponse } from "next/server";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { prisma } from "@/lib/prisma";
 import { syncQuotationItemsFromProject } from "@/lib/sync-quotation-items-from-project";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireProjectInOrg, requireSegmentInOrg } from "@/lib/tenant-context";
+import { tenantWhere } from "@/lib/tenant-queries";
 
 type Ctx = { params: Promise<{ id: string; segmentId: string }> };
 
 export async function PUT(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id: projectId, segmentId } = await context.params;
-    const existing = await prisma.costingSegment.findFirst({
-      where: { id: segmentId, projectId },
-    });
-    if (!existing) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
+    const projectCheck = await requireProjectInOrg(projectId, orgId);
+    if (!projectCheck.ok) return projectCheck.response;
+    const segmentCheck = await requireSegmentInOrg(segmentId, projectId, orgId);
+    if (!segmentCheck.ok) return segmentCheck.response;
 
     const body = (await request.json()) as Record<string, unknown>;
     const num = (v: unknown) => {
@@ -119,8 +124,8 @@ export async function PUT(request: Request, context: Ctx) {
       }
     });
 
-    const fullProject = await prisma.costingProject.findUnique({
-      where: { id: projectId },
+    const fullProject = await prisma.costingProject.findFirst({
+      where: tenantWhere.project(orgId, projectId),
       include: costingProjectDetailInclude,
     });
     try {
@@ -140,22 +145,24 @@ export async function PUT(request: Request, context: Ctx) {
 }
 
 export async function DELETE(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id: projectId, segmentId } = await context.params;
-    const existing = await prisma.costingSegment.findFirst({
-      where: { id: segmentId, projectId },
-    });
-    if (!existing) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
+    const projectCheck = await requireProjectInOrg(projectId, orgId);
+    if (!projectCheck.ok) return projectCheck.response;
+    const segmentCheck = await requireSegmentInOrg(segmentId, projectId, orgId);
+    if (!segmentCheck.ok) return segmentCheck.response;
 
     await prisma.costingSegment.delete({ where: { id: segmentId } });
 
     const { rollupProjectFinancials } = await import("@/lib/project-rollup");
     await rollupProjectFinancials(projectId);
 
-    const fullProject = await prisma.costingProject.findUnique({
-      where: { id: projectId },
+    const fullProject = await prisma.costingProject.findFirst({
+      where: tenantWhere.project(orgId, projectId),
       include: costingProjectDetailInclude,
     });
     return NextResponse.json(fullProject);

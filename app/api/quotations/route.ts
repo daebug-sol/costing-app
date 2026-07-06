@@ -1,42 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
+import { guardApiRoute } from "@/lib/api-guard";
 import { prisma } from "@/lib/prisma";
 import { computeQuotationTotals } from "@/lib/quotation-financials";
-
-function isSqliteBusyError(e: unknown): boolean {
-  const msg = e instanceof Error ? e.message : String(e);
-  return /locked|SQLITE_BUSY|busy/i.test(msg);
-}
-
-async function withSqliteRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> {
-  for (let i = 0; i < attempts; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (i < attempts - 1 && isSqliteBusyError(e)) {
-        await new Promise((r) => setTimeout(r, 50 * (i + 1)));
-        continue;
-      }
-      throw e;
-    }
-  }
-  throw new Error("withSqliteRetry: exhausted retries");
-}
-
-async function getOrCreateSettings() {
-  let settings = await prisma.appSettings.findUnique({
-    where: { id: "default" },
-  });
-  if (!settings) {
-    settings = await prisma.appSettings.findFirst();
-  }
-  if (!settings) {
-    settings = await prisma.appSettings.create({
-      data: { id: "default", companyName: "PT Thermal True Indonesia" },
-    });
-  }
-  return settings;
-}
+import { getOrCreateSettings } from "@/lib/tenant-queries";
 
 const quotationProjectSelect = {
   id: true,
@@ -84,8 +51,13 @@ const listInclude = {
 } as const;
 
 export async function GET() {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const rows = await prisma.quotation.findMany({
+      where: { organizationId: orgId },
       orderBy: { updatedAt: "desc" },
       include: listInclude,
     });
@@ -100,8 +72,12 @@ export async function GET() {
 }
 
 export async function POST() {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
-    const settings = await getOrCreateSettings();
+    const settings = await getOrCreateSettings(orgId);
     const ppnRate =
       typeof settings.ppnRate === "number" && Number.isFinite(settings.ppnRate)
         ? settings.ppnRate
@@ -121,46 +97,31 @@ export async function POST() {
     const warrantyTerms = settings.warrantyTerms ?? "12 months since delivery";
     const termsConditions = settings.termsConditions ?? "";
 
-    const quotation = await withSqliteRetry(async () => {
-      const newId = randomUUID();
-      const tanggal = new Date();
-      await prisma.$executeRaw`
-        INSERT INTO "Quotation" (
-          "id", "projectId", "status", "tanggal", "perihal",
-          "discount", "discountEnabled", "ppn", "ppnEnabled", "pphEnabled", "pphRate",
-          "totalBeforeDisc", "totalAfterDisc", "totalPPN", "totalPPH", "grandTotal",
-          "paymentTerms", "deliveryTerms", "warrantyTerms", "validityDays", "termsConditions",
-          "createdAt", "updatedAt"
-        ) VALUES (
-          ${newId},
-          NULL,
-          ${"draft"},
-          ${tanggal},
-          ${"Penawaran Harga AHU"},
-          ${0},
-          ${true},
-          ${ppnRate},
-          ${true},
-          ${false},
-          ${0},
-          ${totals.totalBeforeDisc},
-          ${totals.totalAfterDisc},
-          ${totals.totalPPN},
-          ${totals.totalPPH},
-          ${totals.grandTotal},
-          ${paymentTerms},
-          ${deliveryTerms},
-          ${warrantyTerms},
-          ${validityDays},
-          ${termsConditions},
-          ${tanggal},
-          ${tanggal}
-        )
-      `;
-      return prisma.quotation.findUniqueOrThrow({
-        where: { id: newId },
-        include: quotationPostInclude,
-      });
+    const quotation = await prisma.quotation.create({
+      data: {
+        id: randomUUID(),
+        organizationId: orgId,
+        status: "draft",
+        tanggal: new Date(),
+        perihal: "Penawaran Harga AHU",
+        discount: 0,
+        discountEnabled: true,
+        ppn: ppnRate,
+        ppnEnabled: true,
+        pphEnabled: false,
+        pphRate: 0,
+        totalBeforeDisc: totals.totalBeforeDisc,
+        totalAfterDisc: totals.totalAfterDisc,
+        totalPPN: totals.totalPPN,
+        totalPPH: totals.totalPPH,
+        grandTotal: totals.grandTotal,
+        paymentTerms,
+        deliveryTerms,
+        warrantyTerms,
+        validityDays,
+        termsConditions,
+      },
+      include: quotationPostInclude,
     });
 
     return NextResponse.json(quotation, { status: 201 });

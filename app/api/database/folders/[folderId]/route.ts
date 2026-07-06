@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
 import { isDefaultFolderId } from "@/lib/database-folders";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireFolderInOrg } from "@/lib/tenant-context";
+import { tenantWhere } from "@/lib/tenant-queries";
 
 type Params = { params: Promise<{ folderId: string }> };
 
 export async function PATCH(request: Request, { params }: Params) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { folderId } = await params;
+    const check = await requireFolderInOrg(folderId, orgId);
+    if (!check.ok) return check.response;
+
     const body = (await request.json()) as { name?: string };
     const name = String(body.name ?? "").trim();
     if (!name) {
@@ -30,10 +40,17 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { folderId } = await params;
-    const folder = await prisma.databaseFolder.findUnique({
-      where: { id: folderId },
+    const check = await requireFolderInOrg(folderId, orgId);
+    if (!check.ok) return check.response;
+
+    const folder = await prisma.databaseFolder.findFirst({
+      where: tenantWhere.folder(orgId, folderId),
       include: {
         _count: { select: { customTables: true, ahuFiles: true } },
       },

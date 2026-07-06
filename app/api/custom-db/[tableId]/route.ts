@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireCustomTableInOrg } from "@/lib/tenant-context";
+import { tenantWhere } from "@/lib/tenant-queries";
 
 type Ctx = { params: Promise<{ tableId: string }> };
 
 export async function GET(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { tableId } = await context.params;
-    const table = await prisma.customDbTable.findUnique({
-      where: { id: tableId },
+    const tableCheck = await requireCustomTableInOrg(tableId, orgId);
+    if (!tableCheck.ok) return tableCheck.response;
+
+    const table = await prisma.customDbTable.findFirst({
+      where: tenantWhere.customTable(orgId, tableId),
       include: {
         columns: { orderBy: { sortOrder: "asc" } },
         rows: { orderBy: { sortOrder: "asc" }, include: { cells: true } },
@@ -22,12 +32,22 @@ export async function GET(_request: Request, context: Ctx) {
 }
 
 export async function PATCH(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { tableId } = await context.params;
+    const tableCheck = await requireCustomTableInOrg(tableId, orgId);
+    if (!tableCheck.ok) return tableCheck.response;
+
     const body = (await request.json()) as { name?: string };
     const name = String(body.name ?? "").trim();
     if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
-    const updated = await prisma.customDbTable.update({ where: { id: tableId }, data: { name } });
+    const updated = await prisma.customDbTable.update({
+      where: tenantWhere.customTable(orgId, tableId),
+      data: { name },
+    });
     return NextResponse.json(updated);
   } catch (e) {
     console.error(e);
@@ -36,9 +56,18 @@ export async function PATCH(request: Request, context: Ctx) {
 }
 
 export async function DELETE(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { tableId } = await context.params;
-    await prisma.customDbTable.delete({ where: { id: tableId } });
+    const tableCheck = await requireCustomTableInOrg(tableId, orgId);
+    if (!tableCheck.ok) return tableCheck.response;
+
+    await prisma.customDbTable.delete({
+      where: tenantWhere.customTable(orgId, tableId),
+    });
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error(e);

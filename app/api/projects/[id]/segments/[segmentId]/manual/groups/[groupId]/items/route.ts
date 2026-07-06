@@ -3,6 +3,8 @@ import { finite } from "@/lib/calculations";
 import { rollupManualSegmentFinancials } from "@/lib/manual-costing-rollup";
 import { resolveManualSource } from "@/lib/manual-source-resolve";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireProjectInOrg, requireSegmentInOrg } from "@/lib/tenant-context";
 
 type Ctx = { params: Promise<{ id: string; segmentId: string; groupId: string }> };
 
@@ -18,8 +20,16 @@ type BulkInput = {
 };
 
 export async function POST(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id: projectId, segmentId, groupId } = await context.params;
+    const projectCheck = await requireProjectInOrg(projectId, orgId);
+    if (!projectCheck.ok) return projectCheck.response;
+    const segmentCheck = await requireSegmentInOrg(segmentId, projectId, orgId);
+    if (!segmentCheck.ok) return segmentCheck.response;
 
     const segment = await prisma.costingSegment.findFirst({
       where: { id: segmentId, projectId },
@@ -36,7 +46,11 @@ export async function POST(request: Request, context: Ctx) {
     }
 
     const group = await prisma.manualCostingGroup.findFirst({
-      where: { id: groupId, segmentId },
+      where: {
+        id: groupId,
+        segmentId,
+        segment: { projectId, project: { organizationId: orgId } },
+      },
     });
     if (!group) {
       return NextResponse.json({ error: "Group not found" }, { status: 404 });

@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { parseQuotationItemsFromBody } from "@/lib/quotation-items-parse";
 import { computeQuotationTotals } from "@/lib/quotation-financials";
 import { replaceQuotationItems } from "@/lib/replace-quotation-items";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireQuotationInOrg } from "@/lib/tenant-context";
+import { tenantWhere } from "@/lib/tenant-queries";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -38,10 +41,17 @@ const fullInclude = {
 } as const;
 
 export async function GET(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id } = await context.params;
-    const row = await prisma.quotation.findUnique({
-      where: { id },
+    const check = await requireQuotationInOrg(id, orgId);
+    if (!check.ok) return check.response;
+
+    const row = await prisma.quotation.findFirst({
+      where: tenantWhere.quotation(orgId, id),
       include: fullInclude,
     });
     if (!row) {
@@ -72,12 +82,19 @@ function recalcTotalsFromItems(
 }
 
 export async function PUT(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id } = await context.params;
+    const check = await requireQuotationInOrg(id, orgId);
+    if (!check.ok) return check.response;
+
     const body = (await request.json()) as Record<string, unknown>;
 
-    const existing = await prisma.quotation.findUnique({
-      where: { id },
+    const existing = await prisma.quotation.findFirst({
+      where: tenantWhere.quotation(orgId, id),
     });
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -325,8 +342,15 @@ export async function PUT(request: Request, context: Ctx) {
 }
 
 export async function DELETE(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id } = await context.params;
+    const check = await requireQuotationInOrg(id, orgId);
+    if (!check.ok) return check.response;
+
     await prisma.quotation.delete({ where: { id } });
     return new NextResponse(null, { status: 204 });
   } catch (e: unknown) {

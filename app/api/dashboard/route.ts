@@ -1,21 +1,31 @@
 import { NextResponse } from "next/server";
+import { guardApiRoute } from "@/lib/api-guard";
 import { prisma } from "@/lib/prisma";
 import { buildDashboardAnalyticsPayload } from "@/lib/dashboard-analytics";
 import type { DashboardRange } from "@/lib/dashboard-contract";
+import { getOrCreateSettings } from "@/lib/tenant-queries";
 
 function parseDashboardRange(value: string | null): DashboardRange {
   return value === "mtd" || value === "ytd" || value === "12m" || value === "all" ? value : "all";
 }
 
 export async function GET(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { searchParams } = new URL(request.url);
     const projectIdParam = searchParams.get("projectId");
     const selectedProjectId = projectIdParam && projectIdParam.trim() ? projectIdParam.trim() : null;
     const range = parseDashboardRange(searchParams.get("range"));
 
-    const projectWhere = selectedProjectId ? { id: selectedProjectId } : undefined;
-    const quotationWhere = selectedProjectId ? { projectId: selectedProjectId } : undefined;
+    const projectWhere = selectedProjectId
+      ? { id: selectedProjectId, organizationId: orgId }
+      : { organizationId: orgId };
+    const quotationWhere = selectedProjectId
+      ? { projectId: selectedProjectId, organizationId: orgId }
+      : { organizationId: orgId };
 
     const [projects, quotations, settings] = await Promise.all([
       prisma.costingProject.findMany({
@@ -84,6 +94,7 @@ export async function GET(request: Request) {
           clientName: true,
           clientCompany: true,
           validityDays: true,
+          discount: true,
           discountEnabled: true,
           totalBeforeDisc: true,
           totalAfterDisc: true,
@@ -101,10 +112,7 @@ export async function GET(request: Request) {
           },
         },
       }),
-      prisma.appSettings.findUnique({
-        where: { id: "default" },
-        select: { paymentTerms: true },
-      }),
+      getOrCreateSettings(orgId),
     ]);
 
     if (selectedProjectId && projects.length === 0) {
@@ -117,7 +125,7 @@ export async function GET(request: Request) {
     const payload = buildDashboardAnalyticsPayload({
       projects,
       quotations,
-      defaultPaymentTerms: settings?.paymentTerms ?? "DP 50%, balance CBD",
+      defaultPaymentTerms: settings.paymentTerms ?? "DP 50%, balance CBD",
       selectedProjectId,
       range,
     });

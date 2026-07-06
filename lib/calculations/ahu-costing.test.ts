@@ -746,8 +746,8 @@ describe("AHU costing parity (golden vs excel-formulas-dump.json)", () => {
       expect(String(m238.formula)).toBe("=J238*K238*L238");
 
       const pCalc = mCalc
-        .mul(Number(n238.value ?? n238.calculatedResult ?? 1))
-        .mul(Number(o238.value ?? o238.calculatedResult ?? 1));
+        .mul(Number(n238?.value ?? n238?.calculatedResult ?? 1))
+        .mul(Number(o238?.value ?? o238?.calculatedResult ?? 1));
       expectDecimalNear(pCalc, Number(p238.calculatedResult), 0);
       expect(String(p238.formula)).toBe("=M238*N238*O238");
 

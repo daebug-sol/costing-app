@@ -340,14 +340,9 @@ function AhuSegmentEditor({
     [seg.sections]
   );
 
-  const paramsKey = JSON.stringify(seg.ahuRecalcParams ?? null);
   const [ahu, setAhu] = useState<AhuRecalcParams>(() =>
     initialAhuFromSegment(seg.ahuRecalcParams)
   );
-
-  useLayoutEffect(() => {
-    setAhu(initialAhuFromSegment(seg.ahuRecalcParams));
-  }, [seg.id, paramsKey]);
 
   const setCoil = (patch: Partial<NonNullable<AhuRecalcParams["coil"]>>) => {
     setAhu((p) => ({ ...p, coil: { ...p.coil, ...patch } }));
@@ -2514,6 +2509,7 @@ export function CostingWorkspace() {
                                       />
                                     ) : (
                                       <AhuSegmentEditor
+                                        key={`${seg.id}:${JSON.stringify(seg.ahuRecalcParams ?? null)}`}
                                         segment={seg}
                                         patchSegment={patchSegment}
                                         saveAhuParams={saveAhuParams}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildColumnId, sanitizeColumnId } from "@/lib/custom-db";
+import { guardApiRoute } from "@/lib/api-guard";
 import {
   ensureDefaultFolders,
   fileListOrder,
@@ -19,6 +20,10 @@ const DEFAULT_COLUMNS = [
 ];
 
 export async function GET(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const url = new URL(request.url);
     const scopeParam = url.searchParams.get("scope");
@@ -35,7 +40,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Parameter folderId wajib" }, { status: 400 });
     }
 
-    await ensureDefaultFolders();
+    await ensureDefaultFolders(orgId);
 
     if (scopeParam === "custom") {
       const tables = await prisma.customDbTable.findMany({
@@ -95,6 +100,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const body = (await request.json()) as {
       scope?: string;
@@ -117,7 +126,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Nama file wajib diisi" }, { status: 400 });
     }
 
-    const folder = await prisma.databaseFolder.findUnique({ where: { id: folderId } });
+    const folder = await prisma.databaseFolder.findFirst({
+      where: { id: folderId, organizationId: orgId },
+    });
     if (!folder || folder.scope !== scope) {
       return NextResponse.json({ error: "Folder tidak ditemukan" }, { status: 404 });
     }
@@ -166,7 +177,7 @@ export async function POST(request: Request) {
       .filter((c) => c.header.length > 0);
 
     const table = await prisma.customDbTable.create({
-      data: { name, folderId },
+      data: { name, folderId, organizationId: orgId },
     });
     const columns = [
       {

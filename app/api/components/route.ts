@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 import { resolveAhuDatasetFileId } from "@/lib/database-folders";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
 
 export async function GET(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const fileId = new URL(request.url).searchParams.get("fileId");
-    const datasetFileId = await resolveAhuDatasetFileId(fileId, "components");
+    const datasetFileId = await resolveAhuDatasetFileId(fileId, "components", orgId);
     const components = await prisma.componentCatalog.findMany({
-      where: datasetFileId ? { datasetFileId } : undefined,
+      where: {
+        organizationId: orgId,
+        ...(datasetFileId ? { datasetFileId } : {}),
+      },
       orderBy: { code: "asc" },
     });
     return NextResponse.json(components);
@@ -21,6 +29,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const body = await request.json();
     const {
@@ -45,7 +57,7 @@ export async function POST(request: Request) {
     const datasetFileId = await resolveAhuDatasetFileId(
       String(fileId ?? bodyFileId ?? ""),
       "components"
-    );
+    , orgId);
     if (!datasetFileId) {
       return NextResponse.json(
         { error: "fileId dataset wajib untuk komponen baru" },
@@ -84,6 +96,7 @@ export async function POST(request: Request) {
 
     const component = await prisma.componentCatalog.create({
       data: {
+        organizationId: orgId,
         datasetFileId,
         code: code.trim(),
         name: name.trim(),

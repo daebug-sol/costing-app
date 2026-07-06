@@ -1,24 +1,28 @@
 import { NextResponse } from "next/server";
 import { rollupManualSegmentFinancials } from "@/lib/manual-costing-rollup";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireProjectInOrg, requireSegmentInOrg } from "@/lib/tenant-context";
 
 type Ctx = { params: Promise<{ id: string; segmentId: string; groupId: string }> };
 
 async function requireManualGroup(
   projectId: string,
   segmentId: string,
-  groupId: string
+  groupId: string,
+  orgId: string
 ) {
   const group = await prisma.manualCostingGroup.findFirst({
-    where: { id: groupId, segmentId },
+    where: {
+      id: groupId,
+      segmentId,
+      segment: { projectId, project: { organizationId: orgId } },
+    },
     include: {
       segment: { select: { projectId: true, type: true } },
     },
   });
   if (!group) return { error: "Not found" as const, status: 404 as const };
-  if (group.segment.projectId !== projectId) {
-    return { error: "Not found" as const, status: 404 as const };
-  }
   if (group.segment.type !== "manual") {
     return {
       error: "Segmen ini bukan manual costing" as const,
@@ -29,9 +33,18 @@ async function requireManualGroup(
 }
 
 export async function PUT(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id: projectId, segmentId, groupId } = await context.params;
-    const res = await requireManualGroup(projectId, segmentId, groupId);
+    const projectCheck = await requireProjectInOrg(projectId, orgId);
+    if (!projectCheck.ok) return projectCheck.response;
+    const segmentCheck = await requireSegmentInOrg(segmentId, projectId, orgId);
+    if (!segmentCheck.ok) return segmentCheck.response;
+
+    const res = await requireManualGroup(projectId, segmentId, groupId, orgId);
     if ("error" in res) {
       return NextResponse.json({ error: res.error }, { status: res.status });
     }
@@ -70,9 +83,18 @@ export async function PUT(request: Request, context: Ctx) {
 }
 
 export async function DELETE(_request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id: projectId, segmentId, groupId } = await context.params;
-    const res = await requireManualGroup(projectId, segmentId, groupId);
+    const projectCheck = await requireProjectInOrg(projectId, orgId);
+    if (!projectCheck.ok) return projectCheck.response;
+    const segmentCheck = await requireSegmentInOrg(segmentId, projectId, orgId);
+    if (!segmentCheck.ok) return segmentCheck.response;
+
+    const res = await requireManualGroup(projectId, segmentId, groupId, orgId);
     if ("error" in res) {
       return NextResponse.json({ error: res.error }, { status: res.status });
     }

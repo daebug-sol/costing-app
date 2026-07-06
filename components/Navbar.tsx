@@ -1,5 +1,6 @@
 "use client";
 
+import { OrganizationSwitcher, Show, SignInButton, UserButton } from "@clerk/nextjs";
 import { Factory, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -50,6 +51,37 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+function AuthControls() {
+  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+    return (
+      <Badge variant="secondary" className="hidden font-normal sm:inline-flex">
+        Dev mode
+      </Badge>
+    );
+  }
+
+  return (
+    <>
+      <Show when="signed-in">
+        <OrganizationSwitcher
+          hidePersonal
+          appearance={{
+            elements: { rootBox: "hidden sm:flex" },
+          }}
+        />
+        <UserButton />
+      </Show>
+      <Show when="signed-out">
+        <SignInButton mode="modal">
+          <Button variant="outline" size="sm">
+            Masuk
+          </Button>
+        </SignInButton>
+      </Show>
+    </>
+  );
+}
+
 export function Navbar() {
   const [open, setOpen] = useState(false);
 
@@ -75,9 +107,7 @@ export function Navbar() {
         </div>
 
         <div className="flex shrink-0 items-center justify-end gap-2 md:min-w-[200px]">
-          <Badge variant="secondary" className="hidden font-normal sm:inline-flex">
-            PT Thermal True
-          </Badge>
+          <AuthControls />
 
           <Button
             type="button"
@@ -100,10 +130,21 @@ export function Navbar() {
         )}
       >
         <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-4 py-3 sm:px-6">
-          <Badge variant="secondary" className="w-fit font-normal sm:hidden">
-            PT Thermal True
-          </Badge>
           <NavLinks onNavigate={() => setOpen(false)} />
+        </div>
+      </div>
+
+      <div className="border-t border-border bg-card/80">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-2 text-xs text-muted-foreground sm:px-6">
+          <Link href="/legal/privacy" className="hover:text-foreground transition-colors">
+            Kebijakan Privasi
+          </Link>
+          <span aria-hidden className="text-border">
+            ·
+          </span>
+          <Link href="/legal/terms" className="hover:text-foreground transition-colors">
+            Syarat & Ketentuan
+          </Link>
         </div>
       </div>
     </header>

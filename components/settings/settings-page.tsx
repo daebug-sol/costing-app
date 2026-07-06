@@ -39,6 +39,7 @@ type Settings = {
   warrantyTerms: string;
   validityDays: number;
   termsConditions: string;
+  onboardingComplete?: boolean;
   updatedAt: string;
 };
 
@@ -138,6 +139,31 @@ export function SettingsPage() {
       description="Profil perusahaan, default costing, forex, dan syarat penawaran"
       contentClassName="flex flex-col gap-6 lg:py-8"
     >
+      {!row.onboardingComplete ? (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-lg">Selamat datang — setup organisasi</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              Lengkapi nama perusahaan dan kurs forex default di bawah. Data ini
+              dipakai untuk quotation dan database harga organisasi Anda.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void put({ onboardingComplete: true }, "onboarding")}
+              disabled={saving === "onboarding"}
+            >
+              {saving === "onboarding" ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                "Tandai setup selesai"
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
       <Card size="sm" className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">Profil perusahaan</CardTitle>

@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import { tenantWhere } from "@/lib/tenant-queries";
 
 /** Costing projects that can be added as quotation lines (final / approved, selling > 0). */
 export async function GET() {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const rows = await prisma.costingProject.findMany({
       where: {
+        ...tenantWhere.projects(orgId),
         status: { in: ["final", "approved", "finalized"] },
         totalSelling: { gt: 0 },
       },

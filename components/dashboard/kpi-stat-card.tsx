@@ -29,11 +29,7 @@ function CountUpValue({ value, formatter }: { value: number; formatter: (value: 
   const previousValueRef = useRef(value);
 
   useEffect(() => {
-    if (shouldReduceMotion) {
-      setAnimatedValue(value);
-      previousValueRef.current = value;
-      return;
-    }
+    if (shouldReduceMotion) return;
     const controls = animate(previousValueRef.current, value, {
       duration: 0.45,
       ease: "easeOut",
@@ -42,6 +38,10 @@ function CountUpValue({ value, formatter }: { value: number; formatter: (value: 
     previousValueRef.current = value;
     return () => controls.stop();
   }, [shouldReduceMotion, value]);
+
+  if (shouldReduceMotion) {
+    return <span>{formatter(value)}</span>;
+  }
 
   return <span>{formatter(animatedValue)}</span>;
 }

@@ -2,20 +2,24 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { finite } from "@/lib/calculations";
 import { rollupSectionAndProject } from "@/lib/project-rollup";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireProjectInOrg, requireSectionInOrg } from "@/lib/tenant-context";
 
 type Ctx = { params: Promise<{ id: string; sectionId: string }> };
 
 export async function POST(request: Request, context: Ctx) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const { id: projectId, sectionId } = await context.params;
-    const body = (await request.json()) as Record<string, unknown>;
+    const projectCheck = await requireProjectInOrg(projectId, orgId);
+    if (!projectCheck.ok) return projectCheck.response;
+    const sectionCheck = await requireSectionInOrg(sectionId, projectId, orgId);
+    if (!sectionCheck.ok) return sectionCheck.response;
 
-    const section = await prisma.costingSection.findFirst({
-      where: { id: sectionId, segment: { projectId } },
-    });
-    if (!section) {
-      return NextResponse.json({ error: "Section not found" }, { status: 404 });
-    }
+    const body = (await request.json()) as Record<string, unknown>;
 
     const description = String(body.description ?? "").trim();
     const uom = String(body.uom ?? "pcs").trim() || "pcs";

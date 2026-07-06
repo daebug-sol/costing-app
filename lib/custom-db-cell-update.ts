@@ -13,17 +13,20 @@ import { prisma } from "@/lib/prisma";
 export async function applyCustomDbCellValue(
   rowId: string,
   columnId: string,
-  rawValue: string
+  rawValue: string,
+  orgId: string
 ) {
-  const row = await prisma.customDbRow.findUnique({
-    where: { id: rowId },
+  const row = await prisma.customDbRow.findFirst({
+    where: { id: rowId, table: { organizationId: orgId } },
     include: {
       table: { include: { columns: { orderBy: { sortOrder: "asc" } } } },
     },
   });
   if (!row) throw new Error("Row not found");
 
-  const settings = await prisma.appSettings.findFirst();
+  const settings = await prisma.appSettings.findUnique({
+    where: { organizationId: row.table.organizationId },
+  });
 
   await prisma.customDbCell.upsert({
     where: { rowId_columnId: { rowId, columnId } },

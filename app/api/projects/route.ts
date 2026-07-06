@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
+import { guardApiRoute } from "@/lib/api-guard";
 import { prisma } from "@/lib/prisma";
+import { tenantWhere } from "@/lib/tenant-queries";
 
 export async function GET() {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const projects = await prisma.costingProject.findMany({
+      where: tenantWhere.projects(orgId),
       orderBy: { updatedAt: "desc" },
       select: {
         id: true,
@@ -53,6 +60,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const body = await request.json();
     const name =
@@ -69,6 +80,7 @@ export async function POST(request: Request) {
 
     const project = await prisma.costingProject.create({
       data: {
+        organizationId: orgId,
         name,
         status:
           typeof body.status === "string" ? body.status : "draft",

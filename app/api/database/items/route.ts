@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { hasColumnKey } from "@/lib/custom-db";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
 
 export async function GET() {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const [materials, profiles, components, customRows] = await Promise.all([
       prisma.materialPrice.findMany({ orderBy: { code: "asc" } }),

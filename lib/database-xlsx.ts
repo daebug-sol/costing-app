@@ -26,6 +26,13 @@ function cellToString(v: unknown): string {
   return String(v);
 }
 
+export async function exportTemplateSheet(
+  filename: string,
+  headers: string[]
+): Promise<void> {
+  return exportDatabaseSheet(filename, headers, []);
+}
+
 export async function exportDatabaseSheet(
   filename: string,
   header: string[],

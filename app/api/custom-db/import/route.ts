@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireCustomTableInOrg } from "@/lib/tenant-context";
 import {
   columnHeaderToVariableKey,
   computeNumericVariablesForRow,
@@ -7,6 +9,7 @@ import {
 } from "@/lib/custom-db";
 import { resolveImportColumnId } from "@/lib/excel-column-match";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
 
 type ImportRow = Record<string, unknown>;
 
@@ -27,6 +30,18 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
+  const rate = checkRateLimit(rateLimitKey([orgId, "custom-db-import"]), 5, 60_000);
+  if (!rate.ok) {
+    return NextResponse.json(
+      { error: "Too many import requests" },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } }
+    );
+  }
+
   try {
     const body = (await request.json()) as {
       tableId?: string;
@@ -44,8 +59,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const table = await prisma.customDbTable.findUnique({
-      where: { id: tableId },
+    const tableCheck = await requireCustomTableInOrg(tableId, orgId);
+    if (!tableCheck.ok) return tableCheck.response;
+
+    const table = await prisma.customDbTable.findFirst({
+      where: { id: tableId, organizationId: orgId },
       include: { columns: { orderBy: { sortOrder: "asc" } } },
     });
     if (!table) return NextResponse.json({ error: "Table not found" }, { status: 404 });
@@ -82,7 +100,9 @@ export async function POST(request: Request) {
 
     const priceColumnId = resolveColumnIdByKey(table.columns, "col_price");
     const formulaColumnId = resolveColumnIdByKey(table.columns, "col_formula");
-    const settings = await prisma.appSettings.findFirst();
+    const settings = await prisma.appSettings.findUnique({
+      where: { organizationId: orgId },
+    });
 
     const cellRecords: Array<{
       rowId: string;

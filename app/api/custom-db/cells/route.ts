@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { applyCustomDbCellValue } from "@/lib/custom-db-cell-update";
 import { prisma } from "@/lib/prisma";
+import { guardApiRoute } from "@/lib/api-guard";
+import { requireCustomRowInOrg } from "@/lib/tenant-context";
 
 export async function PATCH(request: Request) {
+  const guard = await guardApiRoute();
+  if ("response" in guard) return guard.response;
+  const { orgId } = guard;
+
   try {
     const body = (await request.json()) as {
       rowId?: string;
@@ -16,8 +22,11 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "rowId and columnId are required" }, { status: 400 });
     }
 
+    const rowCheck = await requireCustomRowInOrg(rowId, orgId);
+    if (!rowCheck.ok) return rowCheck.response;
+
     try {
-      const saved = await applyCustomDbCellValue(rowId, columnId, rawValue);
+      const saved = await applyCustomDbCellValue(rowId, columnId, rawValue, orgId);
       const cells = await prisma.customDbCell.findMany({
         where: { rowId },
         select: {
