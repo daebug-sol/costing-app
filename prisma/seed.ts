@@ -1,13 +1,11 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
 import {
   defaultAhuFileId,
   defaultAhuFolderId,
   defaultCustomFolderId,
   ensureDefaultFolders,
 } from "../lib/database-folders";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 const ORG_A_ID = process.env.TEST_ORG_ID ?? "org_seed_a";
 const ORG_B_ID = "org_seed_b";

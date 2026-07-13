@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "./prisma";
 import {
   AHU_DATASET_KINDS,
   type AhuDatasetKind,
@@ -6,9 +6,9 @@ import {
   defaultAhuFileId,
   defaultAhuFolderId,
   defaultCustomFolderId,
-} from "@/lib/database-folders-constants";
+} from "./database-folders-constants";
 
-export * from "@/lib/database-folders-constants";
+export * from "./database-folders-constants";
 
 export function folderListOrder() {
   return [{ sortOrder: "asc" as const }, { name: "asc" as const }];

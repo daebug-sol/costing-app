@@ -1,6 +1,7 @@
 "use client";
 
 import { ClerkProvider } from "@clerk/nextjs";
+import { shadcn } from "@clerk/ui/themes";
 import { Navbar } from "@/components/Navbar";
 import { Toaster } from "@/components/Toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,7 +18,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   );
 
   if (useClerk) {
-    return <ClerkProvider>{shell}</ClerkProvider>;
+    return <ClerkProvider appearance={{ theme: shadcn }}>{shell}</ClerkProvider>;
   }
 
   return shell;

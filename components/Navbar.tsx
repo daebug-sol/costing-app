@@ -1,6 +1,12 @@
 "use client";
 
-import { OrganizationSwitcher, Show, SignInButton, UserButton } from "@clerk/nextjs";
+import {
+  OrganizationSwitcher,
+  Show,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs";
 import { Factory, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -77,6 +83,9 @@ function AuthControls() {
             Masuk
           </Button>
         </SignInButton>
+        <SignUpButton mode="modal">
+          <Button size="sm">Daftar</Button>
+        </SignUpButton>
       </Show>
     </>
   );
