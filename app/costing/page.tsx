@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { CostingWorkspace } from "@/components/costing/costing-workspace";
+import { CostingWorkspaceLazy } from "@/components/costing/costing-workspace-lazy";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function CostingFallback() {
@@ -17,7 +17,7 @@ export default function CostingPage() {
   return (
     <div className="min-h-[calc(100vh-3.5rem)]">
       <Suspense fallback={<CostingFallback />}>
-        <CostingWorkspace />
+        <CostingWorkspaceLazy />
       </Suspense>
     </div>
   );

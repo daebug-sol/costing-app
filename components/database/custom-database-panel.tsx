@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { columnHeaderToVariableKey, FIXED_UOMS, hasColumnKey } from "@/lib/custom-db";
-import { exportDatabaseSheet, exportTemplateSheet, parseXlsxFirstSheet } from "@/lib/database-xlsx";
 import { MANDATORY_DB_HEADER, matchMandatoryExcelHeaders } from "@/lib/excel-column-match";
 import { cn } from "@/lib/utils";
 import { formatIDR, formatNumber } from "@/lib/utils/format";
@@ -797,6 +796,7 @@ export function CustomDatabasePanel({
         return cell?.rawValue ?? cell?.computedValue ?? "";
       })
     );
+    const { exportDatabaseSheet } = await import("@/lib/database-xlsx");
     await exportDatabaseSheet(`${table.name}.xlsx`, header, data);
     show("success", "Export Excel berhasil");
   };
@@ -804,12 +804,14 @@ export function CustomDatabasePanel({
   const downloadTemplate = async () => {
     if (!table) return;
     const header = table.columns.map((c) => c.header);
+    const { exportTemplateSheet } = await import("@/lib/database-xlsx");
     await exportTemplateSheet(`${table.name}_template.xlsx`, header);
     show("success", "Template diunduh");
   };
 
   const importIntoTable = async (file: File, mode: "new" | "append") => {
     setSaveStatus("saving");
+    const { parseXlsxFirstSheet } = await import("@/lib/database-xlsx");
     const parsed = await parseXlsxFirstSheet(file);
     const headers = parsed.headers.map((h) => h.trim()).filter(Boolean);
     if (headers.length === 0) {

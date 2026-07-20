@@ -43,6 +43,28 @@ one (e.g. MUI, Chakra, Mantine, raw HTML buttons).
 use (`emerald-*` for positive, `amber-*` for warning, `rose-*` / `red-*` for
 negative). New tones should be added to `app/globals.css` first.
 
+**Selectable themes:** palette and appearance are independent, device-local
+preferences (no DB/API). Users choose **Profesional** (green, default) or
+**Hangat** (legacy taupe) palette, and **Terang**, **Gelap**, or **Sistem**
+appearance in Pengaturan → Tampilan. Preferences persist in
+`localStorage` key `costing-appearance` as
+`{ palette: "professional"|"warm", appearance: "light"|"dark"|"system" }`.
+The root `<html>` receives `data-palette` and the `.dark` class (when resolved
+appearance is dark). An inline boot script in `app/layout.tsx` applies saved
+preferences before first paint; `ThemeProvider` keeps React state, Clerk
+shadcn appearance, and system `prefers-color-scheme` in sync. Token sets live
+in `app/globals.css` under four combinations (Professional/Warm × light/dark).
+New users default to **Professional + System**.
+
+**Help module (`/help`):** in-app lessons live as a TypeScript catalog under
+`content/help/` (no MDX). Progress is device-local in `localStorage` key
+`costing-help-progress` (`completedLessonKeys`, `lastOpenedKey`, `updatedAt`).
+Lesson steps may reference a `demoId` rendered by `components/help/help-demo-registry.tsx`
+with `motion/react` — honor `useReducedMotion()` (static end-frame). No video
+embeds, no product tour. Nav label is **Help**; body copy is Indonesian
+sentence case. Entry points: Navbar, Settings onboarding CTA, `ContextualHelpLink`,
+and optional `EmptyState` secondary action.
+
 **Density:** match neighboring screens. The dashboard, costing workspace, and
 database module all use the `mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8`
 shell with `space-y-6`. Card padding is `p-3`–`p-4` and headings are
@@ -95,7 +117,7 @@ If an action can exceed 800 ms, it **must** show a pending indicator within
 ## 3. Accessibility checklist
 
 Costing-app targets **WCAG 2.1 AA** for screens accessed during day-to-day
-use (Dashboard, Costing, Database, Documentation, Settings).
+use (Dashboard, Costing, Database, Documentation, Help, Settings).
 
 ### 3.1 Per-screen quick check
 

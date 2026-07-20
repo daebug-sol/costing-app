@@ -45,7 +45,7 @@ export function PageShell({
       />
       <div
         className={cn(
-          "mx-auto flex w-full flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8",
+          "mx-auto flex w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8",
           "min-h-[calc(100vh-3.5rem)]",
           widthClass[width],
           contentClassName

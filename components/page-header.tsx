@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { dashboardToolbarPanelClass } from "@/components/dashboard/dashboard-surface-styles";
 import { cn } from "@/lib/utils";
 
 export type PageHeaderWidth = "wide" | "narrow" | "doc";
@@ -13,7 +12,7 @@ const widthClass: Record<PageHeaderWidth, string> = {
 export type PageHeaderProps = {
   title: string;
   description?: string;
-  /** Short label above the title (e.g. module name). */
+  /** Kept for call-site compatibility; not rendered. */
   eyebrow?: string;
   actions?: ReactNode;
   width?: PageHeaderWidth;
@@ -29,7 +28,6 @@ export type PageHeaderProps = {
 export function PageHeader({
   title,
   description,
-  eyebrow,
   actions,
   width = "wide",
   className,
@@ -39,46 +37,29 @@ export function PageHeader({
   const inner = (
     <div
       className={cn(
-        "mx-auto flex w-full flex-col items-center px-4 text-center sm:px-6 lg:px-8",
+        "mx-auto flex w-full flex-col gap-3 px-4 sm:px-6 lg:px-8",
         widthClass[width],
-        variant === "band" ? "gap-6 py-7 pb-8 sm:py-9 sm:pb-10" : "gap-5 pt-5 pb-4",
+        variant === "band" ? "py-5 sm:py-6" : "pt-4 pb-3",
         innerClassName
       )}
     >
-      <div className="flex w-full max-w-3xl flex-col items-center">
-        {eyebrow ? (
-          <p className="text-primary mb-2 text-[0.7rem] font-semibold tracking-[0.2em] uppercase sm:text-xs">
-            {eyebrow}
-          </p>
-        ) : null}
-        <span
-          className="bg-primary mb-4 block h-1 w-14 rounded-full sm:mb-5 sm:w-16"
-          aria-hidden
-        />
-        <h1
-          className={cn(
-            "font-display text-foreground w-full text-4xl leading-[1.1] font-semibold tracking-tight sm:text-5xl lg:text-[3.25rem]",
-            "text-balance"
-          )}
-        >
-          {title}
-        </h1>
-        {description ? (
-          <p className="text-muted-foreground mt-3 max-w-2xl text-base leading-relaxed text-pretty sm:mt-4 sm:text-lg">
-            {description}
-          </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0 flex-1 space-y-1">
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight text-balance">
+            {title}
+          </h1>
+          {description ? (
+            <p className="text-muted-foreground max-w-2xl text-sm text-pretty">
+              {description}
+            </p>
+          ) : null}
+        </div>
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+            {actions}
+          </div>
         ) : null}
       </div>
-      {actions ? (
-        <div
-          className={cn(
-            dashboardToolbarPanelClass,
-            "flex min-h-[4.75rem] w-full max-w-3xl flex-wrap items-center justify-center gap-3 rounded-lg px-4 py-3.5 sm:gap-4 sm:px-5 sm:py-4"
-          )}
-        >
-          {actions}
-        </div>
-      ) : null}
     </div>
   );
 
@@ -87,12 +68,7 @@ export function PageHeader({
   }
 
   return (
-    <header
-      className={cn(
-        "border-border/80 w-full border-b bg-gradient-to-b from-card via-card to-muted/25 shadow-sm",
-        className
-      )}
-    >
+    <header className={cn("border-border w-full border-b bg-card", className)}>
       {inner}
     </header>
   );

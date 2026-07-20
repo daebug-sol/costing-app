@@ -8,6 +8,8 @@ type EmptyStateProps = {
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
   className?: string;
 };
 
@@ -17,8 +19,13 @@ export function EmptyState({
   description,
   actionLabel,
   onAction,
+  secondaryActionLabel,
+  onSecondaryAction,
   className,
 }: EmptyStateProps) {
+  const hasPrimary = Boolean(actionLabel && onAction);
+  const hasSecondary = Boolean(secondaryActionLabel && onSecondaryAction);
+
   return (
     <div
       className={cn(
@@ -37,11 +44,20 @@ export function EmptyState({
           </p>
         )}
       </div>
-      {actionLabel && onAction && (
-        <Button type="button" onClick={onAction}>
-          {actionLabel}
-        </Button>
-      )}
+      {hasPrimary || hasSecondary ? (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {hasPrimary ? (
+            <Button type="button" onClick={onAction}>
+              {actionLabel}
+            </Button>
+          ) : null}
+          {hasSecondary ? (
+            <Button type="button" variant="outline" onClick={onSecondaryAction}>
+              {secondaryActionLabel}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

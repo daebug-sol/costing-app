@@ -75,6 +75,51 @@ function normalizeProject(json: unknown): CostingProjectDetail {
   };
 }
 
+function listFieldsFromProject(p: CostingProjectDetail): CostingProjectListItem {
+  const segments = p.segments ?? [];
+  const sorted = [...segments].sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+  );
+  const s0 = sorted[0];
+  return {
+    id: p.id,
+    name: p.name,
+    status: p.status,
+    qty: p.qty,
+    totalHPP: p.totalHPP,
+    totalSelling: p.totalSelling,
+    updatedAt: p.updatedAt,
+    createdAt: p.createdAt,
+    segmentCount: segments.length,
+    previewAhuModel: s0?.ahuModel ?? null,
+    previewFlowCMH: s0?.flowCMH ?? null,
+  };
+}
+
+function patchProjectInList(
+  projects: CostingProjectListItem[],
+  p: CostingProjectDetail
+): CostingProjectListItem[] {
+  const patch = listFieldsFromProject(p);
+  const idx = projects.findIndex((x) => x.id === p.id);
+  if (idx < 0) {
+    return [patch, ...projects];
+  }
+  const next = projects.slice();
+  next[idx] = { ...next[idx], ...patch };
+  next.sort(
+    (a, b) =>
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
+  return next;
+}
+
+async function fetchProjectDetail(id: string): Promise<CostingProjectDetail> {
+  const r = await fetch(`/api/projects/${id}`, { cache: "no-store" });
+  if (!r.ok) throw new Error(await readErr(r));
+  return normalizeProject(await r.json());
+}
+
 export interface CostingStore {
   projects: CostingProjectListItem[];
   currentProject: CostingProjectDetail | null;
@@ -119,16 +164,11 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
   },
 
   loadProject: async (id: string) => {
-    set({ isLoading: true });
-    try {
-      const r = await fetch(`/api/projects/${id}`, { cache: "no-store" });
-      if (!r.ok) throw new Error(await readErr(r));
-      const raw = await r.json();
-      const p = normalizeProject(raw);
-      set({ currentProject: p });
-    } finally {
-      set({ isLoading: false });
-    }
+    const p = await fetchProjectDetail(id);
+    set({
+      currentProject: p,
+      projects: patchProjectInList(get().projects, p),
+    });
   },
 
   createProject: async (name: string) => {
@@ -171,8 +211,10 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
     });
     if (!r.ok) throw new Error(await readErr(r));
     const p = normalizeProject(await r.json());
-    set({ currentProject: p });
-    await get().loadProjects();
+    set({
+      currentProject: p,
+      projects: patchProjectInList(get().projects, p),
+    });
   },
 
   updateSegment: async (segmentId, patch) => {
@@ -191,8 +233,10 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
     );
     if (!r.ok) throw new Error(await readErr(r));
     const p = normalizeProject(await r.json());
-    set({ currentProject: p });
-    await get().loadProjects();
+    set({
+      currentProject: p,
+      projects: patchProjectInList(get().projects, p),
+    });
   },
 
   addSegment: async (type) => {
@@ -205,8 +249,10 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
     });
     if (!r.ok) throw new Error(await readErr(r));
     const p = normalizeProject(await r.json());
-    set({ currentProject: p });
-    await get().loadProjects();
+    set({
+      currentProject: p,
+      projects: patchProjectInList(get().projects, p),
+    });
   },
 
   deleteSegment: async (segmentId) => {
@@ -218,8 +264,10 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
     );
     if (!r.ok) throw new Error(await readErr(r));
     const p = normalizeProject(await r.json());
-    set({ currentProject: p });
-    await get().loadProjects();
+    set({
+      currentProject: p,
+      projects: patchProjectInList(get().projects, p),
+    });
   },
 
   reorderSegments: async (orderedSegmentIds) => {
@@ -232,8 +280,10 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
     });
     if (!r.ok) throw new Error(await readErr(r));
     const p = normalizeProject(await r.json());
-    set({ currentProject: p });
-    await get().loadProjects();
+    set({
+      currentProject: p,
+      projects: patchProjectInList(get().projects, p),
+    });
   },
 
   recalculateSegment: async (segmentId, body = {}) => {
@@ -254,8 +304,10 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
       );
       if (!r.ok) throw new Error(await readErr(r));
       const p = normalizeProject(await r.json());
-      set({ currentProject: p });
-      await get().loadProjects();
+      set({
+        currentProject: p,
+        projects: patchProjectInList(get().projects, p),
+      });
     } finally {
       set({ isCalculating: false });
     }
@@ -270,8 +322,11 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
       body: JSON.stringify({ qty }),
     });
     if (!r.ok) throw new Error(await readErr(r));
-    await get().loadProject(cur.id);
-    await get().loadProjects();
+    const p = await fetchProjectDetail(cur.id);
+    set({
+      currentProject: p,
+      projects: patchProjectInList(get().projects, p),
+    });
   },
 
   resetItem: async (itemId: string) => {
@@ -281,8 +336,11 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
       method: "DELETE",
     });
     if (!r.ok) throw new Error(await readErr(r));
-    await get().loadProject(cur.id);
-    await get().loadProjects();
+    const p = await fetchProjectDetail(cur.id);
+    set({
+      currentProject: p,
+      projects: patchProjectInList(get().projects, p),
+    });
   },
 
   updateMargins: async (margins) => {
@@ -295,7 +353,9 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
     });
     if (!r.ok) throw new Error(await readErr(r));
     const p = normalizeProject(await r.json());
-    set({ currentProject: p });
-    await get().loadProjects();
+    set({
+      currentProject: p,
+      projects: patchProjectInList(get().projects, p),
+    });
   },
 }));

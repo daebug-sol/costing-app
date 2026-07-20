@@ -47,10 +47,7 @@ export async function GET(request: Request) {
           updatedAt: true,
           segments: {
             select: {
-              id: true,
               type: true,
-              title: true,
-              subtotal: true,
               sections: {
                 select: {
                   category: true,

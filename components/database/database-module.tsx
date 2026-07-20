@@ -42,12 +42,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/empty-state";
 import { TableLoadingSkeleton } from "@/components/table-loading-skeleton";
 import { FIXED_UOMS } from "@/lib/custom-db";
-import {
-  exportDatabaseSheet,
-  exportTemplateSheet,
-  parseXlsxFirstSheet,
-  validateRequiredColumns,
-} from "@/lib/database-xlsx";
 import { formatIDR, formatNumber } from "@/lib/utils/format";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
 import { CustomDatabasePanel } from "./custom-database-panel";
@@ -334,6 +328,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
       r.unit,
       r.notes ?? "",
     ]);
+    const { exportDatabaseSheet } = await import("@/lib/database-xlsx");
     await exportDatabaseSheet("materials_export.xlsx", header, data);
     show("success", "Excel diekspor");
   };
@@ -349,6 +344,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
       "unit",
       "notes",
     ];
+    const { exportTemplateSheet } = await import("@/lib/database-xlsx");
     await exportTemplateSheet("materials_template.xlsx", header);
     show("success", "Template diunduh");
   };
@@ -371,6 +367,9 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
       "unit",
     ] as const;
     try {
+      const { parseXlsxFirstSheet, validateRequiredColumns } = await import(
+        "@/lib/database-xlsx"
+      );
       const { headers, rows: parsed } = await parseXlsxFirstSheet(file);
       const missing = validateRequiredColumns(new Set(headers), REQUIRED);
       if (missing.length) {
@@ -871,6 +870,7 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
       r.panelThick != null ? r.panelThick : "",
       r.notes ?? "",
     ]);
+    const { exportDatabaseSheet } = await import("@/lib/database-xlsx");
     await exportDatabaseSheet("profiles_export.xlsx", header, data);
     show("success", "Excel diekspor");
   };
@@ -885,6 +885,7 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
       "panelThick",
       "notes",
     ];
+    const { exportTemplateSheet } = await import("@/lib/database-xlsx");
     await exportTemplateSheet("profiles_template.xlsx", header);
     show("success", "Template diunduh");
   };
@@ -906,6 +907,9 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
       "panelThick",
     ] as const;
     try {
+      const { parseXlsxFirstSheet, validateRequiredColumns } = await import(
+        "@/lib/database-xlsx"
+      );
       const { headers, rows: parsed } = await parseXlsxFirstSheet(file);
       const missing = validateRequiredColumns(new Set(headers), REQUIRED);
       if (missing.length) {
@@ -1440,6 +1444,7 @@ function ComponentsPanel({
       r.supplier ?? "",
       r.notes ?? "",
     ]);
+    const { exportDatabaseSheet } = await import("@/lib/database-xlsx");
     await exportDatabaseSheet("components_export.xlsx", header, data);
     show("success", "Excel diekspor");
   };
@@ -1461,6 +1466,7 @@ function ComponentsPanel({
       "supplier",
       "notes",
     ];
+    const { exportTemplateSheet } = await import("@/lib/database-xlsx");
     await exportTemplateSheet("components_template.xlsx", header);
     show("success", "Template diunduh");
   };
@@ -1482,6 +1488,9 @@ function ComponentsPanel({
       "unit",
     ] as const;
     try {
+      const { parseXlsxFirstSheet, validateRequiredColumns } = await import(
+        "@/lib/database-xlsx"
+      );
       const { headers, rows: parsed } = await parseXlsxFirstSheet(file);
       const missing = validateRequiredColumns(new Set(headers), REQUIRED);
       if (missing.length) {
@@ -1948,13 +1957,13 @@ export function DatabaseModule() {
                 Component Catalog
               </PillTabsTrigger>
             </PillTabsList>
-            <TabsContent value="materials" forceMount className={AHU_TAB_CONTENT_CLASS}>
+            <TabsContent value="materials" className={AHU_TAB_CONTENT_CLASS}>
               <MaterialsPanel show={show} />
             </TabsContent>
-            <TabsContent value="profiles" forceMount className={AHU_TAB_CONTENT_CLASS}>
+            <TabsContent value="profiles" className={AHU_TAB_CONTENT_CLASS}>
               <ProfilesPanel show={show} />
             </TabsContent>
-            <TabsContent value="components" forceMount className={AHU_TAB_CONTENT_CLASS}>
+            <TabsContent value="components" className={AHU_TAB_CONTENT_CLASS}>
               <ComponentsPanel show={show} />
             </TabsContent>
           </Tabs>

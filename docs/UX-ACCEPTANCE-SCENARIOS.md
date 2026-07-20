@@ -10,7 +10,7 @@ the *user intent* the unit/visual tests cannot.
 > Conventions:
 > - "U" = the user. "A" = the app.
 > - Routes use the existing App Router structure: `/`, `/costing`,
->   `/database`, `/documentation`, `/settings`.
+>   `/database`, `/documentation`, `/help`, `/settings`.
 > - Indonesian copy is used because the production audience is Indonesian.
 
 ---
@@ -182,18 +182,70 @@ mobile (we are not mobile-first, but we are mobile-survivable).
 
 ---
 
+## Scenario 9 — Change device theme (Settings → Tampilan)
+
+**Trigger.** U opens `/settings`.
+
+1. A renders the **Tampilan** card near the top with two choice groups:
+   **Profesional / Hangat** (palette) and **Terang / Gelap / Sistem**
+   (appearance). New users see **Profesional** + **Sistem** selected.
+2. U selects **Hangat**. A immediately updates the palette (`data-palette="warm"`)
+   across the shell without a full reload.
+3. U selects **Gelap**. A adds the `.dark` class on `<html>` and all semantic
+   surfaces follow the Warm dark token set.
+4. U selects **Sistem**. A follows the OS/browser color scheme; when the system
+   prefers dark, appearance matches step 3; when light, matches step 2 without
+   dark class.
+5. U reloads the page. A restores the last palette and appearance from
+   `localStorage` (`costing-appearance`) with no visible flash of the wrong theme
+   on first paint.
+6. No server save button appears — preferences are device-local only.
+
+**Done when:** keyboard `Tab` reaches both toggle groups, each option is
+operable with `Space`/`Enter`, focus rings are visible, and the chosen theme
+persists after reload on the same browser profile.
+
+---
+
+## Scenario 10 — Open Help, complete a lesson, deep-link, persist progress
+
+**Trigger.** U opens `/help` (Navbar label **Help**).
+
+1. A renders `<h1>Help</h1>`, search, track cards (Mulai cepat, Database,
+   Costing, Quotation, Dashboard, Pengaturan), and **Mulai dari sini**.
+   If U previously opened a lesson, **Lanjutkan** appears with that title.
+2. U opens a lesson (e.g. Mulai cepat → Orientasi aplikasi). A shows step
+   TOC, step cards, optional motion demo (static when
+   `prefers-reduced-motion`), **Tandai selesai**, Prev/Next, and
+   **Buka di aplikasi**.
+3. U activates **Buka di aplikasi**. A navigates to the related module route
+   (e.g. `/` or `/settings`) without a product tour overlay.
+4. U returns to the lesson and activates **Tandai selesai**. The button
+   becomes **Sudah selesai** (disabled). Progress is stored under
+   `localStorage` key `costing-help-progress`.
+5. U reloads the lesson. A still shows the lesson as complete and restores
+   **Lanjutkan** on the hub from `lastOpenedKey`.
+
+**Done when:** keyboard can reach search → track/lesson links → mark
+complete → deep link; no video embed; no interactive tour; copy is
+Indonesian sentence case in lesson body.
+
+---
+
 ## Coverage matrix
 
-| Scenario | Dashboard | Costing | Database | Quotation | Settings |
-|----------|-----------|---------|----------|-----------|----------|
-| 1 Orient | x | | | | |
-| 2 Drill | x | x | | | |
-| 3 Edit + recalc | | x | | | |
-| 4 Create | | x | x | | |
-| 5 Export | | | | x | |
-| 6 Search | | | x | | |
-| 7 Error recovery | x | x | x | x | x |
-| 8 Mobile | x | x | x | x | x |
+| Scenario | Dashboard | Costing | Database | Quotation | Settings | Help |
+|----------|-----------|---------|----------|-----------|----------|------|
+| 1 Orient | x | | | | | |
+| 2 Drill | x | x | | | | |
+| 3 Edit + recalc | | x | | | | |
+| 4 Create | | x | x | | | |
+| 5 Export | | | | x | | |
+| 6 Search | | | x | | | |
+| 7 Error recovery | x | x | x | x | x | x |
+| 8 Mobile | x | x | x | x | x | x |
+| 9 Theme | x | x | x | x | x | |
+| 10 Help | | | | | | x |
 
 When a PR adds a new flow, append a scenario here and add a row to the
 matrix. When deleting a flow, remove the scenario rather than letting it

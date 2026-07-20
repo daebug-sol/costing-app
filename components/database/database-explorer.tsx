@@ -3,11 +3,13 @@
 import {
   Folder,
   FolderOpen,
+  MoreHorizontal,
   Pencil,
   Plus,
   Search,
   Trash2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -19,6 +21,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { AhuDatasetKind, DatabaseScope, FolderSummary } from "@/lib/database-folders";
@@ -73,6 +82,7 @@ export function DatabaseExplorer({
   onCreateFile,
   createFileLabel = "Buat file",
 }: DatabaseExplorerProps) {
+  const router = useRouter();
   const [folders, setFolders] = useState<FolderSummary[]>([]);
   const [files, setFiles] = useState<FileRow[]>([]);
   const [loadingFolders, setLoadingFolders] = useState(true);
@@ -90,6 +100,11 @@ export function DatabaseExplorer({
   const [renameFile, setRenameFile] = useState<FileRow | null>(null);
   const [renameFileName, setRenameFileName] = useState("");
   const [deleteFileTarget, setDeleteFileTarget] = useState<FileRow | null>(null);
+
+  const activeFolder = useMemo(
+    () => folders.find((f) => f.id === activeFolderId) ?? null,
+    [folders, activeFolderId]
+  );
 
   const loadFolders = useCallback(async () => {
     setLoadingFolders(true);
@@ -280,7 +295,7 @@ export function DatabaseExplorer({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="relative max-w-md flex-1">
           <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -289,23 +304,12 @@ export function DatabaseExplorer({
             onChange={(e) => setSearch(e.target.value)}
             className="bg-card pl-8"
             aria-label="Cari file"
+            disabled={!activeFolderId}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {toolbarExtra}
-          <Button type="button" variant="outline" onClick={() => setNewFolderOpen(true)}>
-            <Plus className="size-4" />
-            Folder baru
-          </Button>
-          <Button
-            type="button"
-            onClick={() => setNewFileOpen(true)}
-            disabled={!activeFolderId}
-          >
-            <Plus className="size-4" />
-            File baru
-          </Button>
-        </div>
+        {toolbarExtra ? (
+          <div className="flex flex-wrap items-center gap-2">{toolbarExtra}</div>
+        ) : null}
       </div>
 
       <div className="grid min-h-[24rem] gap-4 lg:grid-cols-[minmax(11rem,16rem)_1fr]">
@@ -313,70 +317,103 @@ export function DatabaseExplorer({
           className="overflow-hidden rounded-lg border border-border bg-card"
           aria-label="Daftar folder"
         >
-          <div className="border-b bg-muted/50 px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Folder
+          <div className="flex items-center justify-between gap-2 border-b bg-muted/50 px-2 py-1.5">
+            <span className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Folder
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 px-2 text-xs"
+              onClick={() => setNewFolderOpen(true)}
+            >
+              <Plus className="size-3.5" />
+              Folder baru
+            </Button>
           </div>
           <div className="h-[22rem] overflow-y-auto">
-            <ul className="p-1" role="listbox" aria-label="Folder database">
-              {folders.map((f) => {
-                const selected = f.id === activeFolderId;
-                return (
-                  <li key={f.id}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={selected}
-                      className={cn(
-                        "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors",
-                        selected
-                          ? "bg-primary/10 text-foreground"
-                          : "hover:bg-muted/60"
-                      )}
-                      onClick={() => onFolderSelect(f.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          onFolderSelect(f.id);
-                        }
-                      }}
-                    >
-                      {selected ? (
-                        <FolderOpen className="size-4 shrink-0 text-primary" aria-hidden />
-                      ) : (
-                        <Folder className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                      )}
-                      <span className="min-w-0 flex-1 truncate">{f.name}</span>
-                      <span className="text-xs text-muted-foreground">{f.filesCount}</span>
-                    </button>
-                    <div className="flex justify-end gap-0.5 px-1 pb-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-7"
-                        aria-label={`Ubah nama folder ${f.name}`}
-                        onClick={() => {
-                          setRenameFolder(f);
-                          setRenameFolderName(f.name);
-                        }}
+            {folders.length === 0 ? (
+              <div className="p-3 text-sm text-muted-foreground">
+                Belum ada folder. Buat folder untuk mulai.
+              </div>
+            ) : (
+              <ul className="p-1" role="listbox" aria-label="Folder database">
+                {folders.map((f) => {
+                  const selected = f.id === activeFolderId;
+                  return (
+                    <li key={f.id} className="group relative">
+                      <div
+                        className={cn(
+                          "flex w-full items-center gap-1 rounded-md transition-colors",
+                          selected
+                            ? "bg-primary/10 text-foreground"
+                            : "hover:bg-muted/60"
+                        )}
                       >
-                        <Pencil className="size-3.5" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        aria-label={`Hapus folder ${f.name}`}
-                        onClick={() => setDeleteFolderTarget(f)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={selected}
+                          className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-left text-sm"
+                          onClick={() => onFolderSelect(f.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onFolderSelect(f.id);
+                            }
+                          }}
+                        >
+                          {selected ? (
+                            <FolderOpen className="size-4 shrink-0 text-primary" aria-hidden />
+                          ) : (
+                            <Folder className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                          )}
+                          <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                          <span className="text-xs text-muted-foreground">{f.filesCount}</span>
+                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className={cn(
+                                "size-7 shrink-0 opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 data-[state=open]:opacity-100",
+                                selected && "opacity-70"
+                              )}
+                              aria-label={`Aksi folder ${f.name}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="size-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-36">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setRenameFolder(f);
+                                setRenameFolderName(f.name);
+                              }}
+                            >
+                              <Pencil className="size-3.5" />
+                              Ubah nama
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => setDeleteFolderTarget(f)}
+                            >
+                              <Trash2 className="size-3.5" />
+                              Hapus
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </nav>
 
@@ -384,6 +421,21 @@ export function DatabaseExplorer({
           className="overflow-hidden rounded-lg border border-border bg-card"
           aria-label="Daftar file dalam folder"
         >
+          <div className="flex items-center justify-between gap-2 border-b bg-muted/50 px-3 py-1.5">
+            <span className="truncate text-xs font-medium text-muted-foreground">
+              {activeFolder ? `File · ${activeFolder.name}` : "File"}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              className="h-7 gap-1 px-2 text-xs"
+              onClick={() => setNewFileOpen(true)}
+              disabled={!activeFolderId}
+            >
+              <Plus className="size-3.5" />
+              File baru
+            </Button>
+          </div>
           {loadingFiles ? (
             <div className="p-4 text-sm text-muted-foreground">Memuat file…</div>
           ) : !activeFolderId ? (
@@ -391,6 +443,10 @@ export function DatabaseExplorer({
               icon={Folder}
               title="Pilih folder"
               description="Pilih folder di panel kiri untuk melihat file di dalamnya."
+              secondaryActionLabel="Bantuan"
+              onSecondaryAction={() =>
+                router.push("/help/database/folder-dan-file")
+              }
             />
           ) : filteredFiles.length === 0 ? (
             <EmptyState
@@ -399,6 +455,10 @@ export function DatabaseExplorer({
               description={emptyFileDescription}
               actionLabel={createFileLabel}
               onAction={() => setNewFileOpen(true)}
+              secondaryActionLabel="Bantuan"
+              onSecondaryAction={() =>
+                router.push("/help/database/folder-dan-file")
+              }
             />
           ) : (
             <table className="min-w-full text-sm">

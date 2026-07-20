@@ -1,3 +1,4 @@
+import { ContextualHelpLink } from "@/components/help/contextual-help-link";
 import { DatabaseModule } from "@/components/database/database-module";
 import { PageShell } from "@/components/page-shell";
 
@@ -7,6 +8,7 @@ export default function DatabasePage() {
       eyebrow="Master data"
       title="Database"
       description="Basis data AHU terstruktur dan custom dynamic grid untuk kebutuhan costing."
+      actions={<ContextualHelpLink pathname="/database" />}
     >
       <DatabaseModule />
     </PageShell>

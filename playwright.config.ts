@@ -55,6 +55,7 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
     locale: "id-ID",
     timezoneId: "Asia/Jakarta",
+    colorScheme: "light",
   },
   projects: [
     {
@@ -72,8 +73,14 @@ export default defineConfig({
       : `npm run dev -- -p ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !isCI,
-    timeout: 120_000,
+    timeout: 180_000,
     stdout: "pipe",
     stderr: "pipe",
+    env: {
+      ...process.env,
+      AUTH_BYPASS: "true",
+      TEST_USER_ID: process.env.TEST_USER_ID ?? "test-user",
+      TEST_ORG_ID: process.env.TEST_ORG_ID ?? "test-org",
+    },
   },
 });

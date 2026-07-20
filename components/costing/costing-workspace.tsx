@@ -36,7 +36,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -52,6 +52,7 @@ import {
   CostingLevelHeading,
   CostingShell,
 } from "@/components/costing/costing-shell";
+import { ContextualHelpLink } from "@/components/help/contextual-help-link";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -1532,27 +1533,26 @@ function AhuSegmentEditor({
 }
 
 export function CostingWorkspace() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const projectFromUrl = searchParams.get("project");
 
-  const {
-    projects,
-    currentProject,
-    isCalculating,
-    isLoading,
-    loadProjects,
-    loadProject,
-    createProject,
-    updateProject,
-    updateSegment,
-    addSegment,
-    deleteSegment,
-    reorderSegments,
-    recalculateSegment,
-    overrideItem,
-    resetItem,
-    updateMargins,
-  } = useCostingStore();
+  const projects = useCostingStore((s) => s.projects);
+  const currentProject = useCostingStore((s) => s.currentProject);
+  const isCalculating = useCostingStore((s) => s.isCalculating);
+  const isLoading = useCostingStore((s) => s.isLoading);
+  const loadProjects = useCostingStore((s) => s.loadProjects);
+  const loadProject = useCostingStore((s) => s.loadProject);
+  const createProject = useCostingStore((s) => s.createProject);
+  const updateProject = useCostingStore((s) => s.updateProject);
+  const updateSegment = useCostingStore((s) => s.updateSegment);
+  const addSegment = useCostingStore((s) => s.addSegment);
+  const deleteSegment = useCostingStore((s) => s.deleteSegment);
+  const reorderSegments = useCostingStore((s) => s.reorderSegments);
+  const recalculateSegment = useCostingStore((s) => s.recalculateSegment);
+  const overrideItem = useCostingStore((s) => s.overrideItem);
+  const resetItem = useCostingStore((s) => s.resetItem);
+  const updateMargins = useCostingStore((s) => s.updateMargins);
 
   const search = useUiWorkflowStore((s) => s.costing.sidebar.search);
   const statusFilter = useUiWorkflowStore((s) => s.costing.sidebar.statusFilter);
@@ -1877,7 +1877,6 @@ export function CostingWorkspace() {
         throw new Error(j.error || r.statusText);
       }
       await loadProject(currentProject.id);
-      await loadProjects();
       setAddOpen(false);
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Failed");
@@ -2022,6 +2021,7 @@ export function CostingWorkspace() {
         title="Costing"
         description="Kelola proyek, assembly, dan rincian biaya tanpa mengubah logika perhitungan."
         className="shrink-0"
+        actions={<ContextualHelpLink pathname="/costing" />}
       />
 
       <div className="app-page-gutter-wide min-h-0 flex-1 overflow-hidden py-4 sm:py-5 lg:py-6">
@@ -2168,6 +2168,10 @@ export function CostingWorkspace() {
               title="Belum ada proyek"
               description='Klik tombol "Tambah proyek" di atas untuk membuat proyek costing.'
               className="py-8"
+              secondaryActionLabel="Bantuan"
+              onSecondaryAction={() =>
+                router.push("/help/costing/proyek-dan-segment")
+              }
             />
           ) : filteredProjects.length === 0 ? (
             <p className="p-4 text-center text-xs text-muted-foreground">
@@ -2270,6 +2274,10 @@ export function CostingWorkspace() {
               "h-[min(480px,calc(100vh-8rem))]",
               sidebarCollapsed && "pt-10"
             )}
+            secondaryActionLabel="Bantuan"
+            onSecondaryAction={() =>
+              router.push("/help/costing/proyek-dan-segment")
+            }
           />
         ) : (
           <div

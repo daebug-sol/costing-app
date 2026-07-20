@@ -8,6 +8,7 @@ export type PageRouteSkeletonVariant =
   | "costing"
   | "documentation"
   | "settings"
+  | "help"
   | "default";
 
 function PageHeaderSkeleton({
@@ -25,23 +26,22 @@ function PageHeaderSkeleton({
         : "max-w-[1400px]";
 
   return (
-    <header className="w-full border-b border-border/80 bg-gradient-to-b from-card via-card to-muted/25 shadow-sm">
+    <header className="w-full border-b border-border bg-card">
       <div
         className={cn(
-          "mx-auto flex w-full flex-col items-center gap-6 px-4 py-7 pb-8 sm:px-6 sm:py-9 sm:pb-10 lg:px-8",
+          "mx-auto flex w-full flex-col gap-3 px-4 py-5 sm:px-6 sm:py-6 lg:px-8",
           maxW
         )}
       >
-        <div className="flex w-full max-w-3xl flex-col items-center gap-3">
-          <Skeleton className="h-3 w-28 rounded-full" />
-          <Skeleton className="h-1 w-14 rounded-full" />
-          <Skeleton className="h-10 w-56 max-w-full rounded-md sm:h-12 sm:w-72" />
-          <Skeleton className="h-4 w-full max-w-md rounded-md" />
-          <Skeleton className="h-4 w-[85%] max-w-sm rounded-md" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-8 w-48 max-w-full rounded-md" />
+            <Skeleton className="h-4 w-full max-w-md rounded-md" />
+          </div>
+          {hasToolbar ? (
+            <Skeleton className="h-9 w-40 shrink-0 rounded-md sm:w-48" />
+          ) : null}
         </div>
-        {hasToolbar ? (
-          <Skeleton className="h-[4.75rem] w-full max-w-3xl rounded-lg" />
-        ) : null}
       </div>
     </header>
   );
@@ -64,7 +64,7 @@ function ContentShell({
   return (
     <div
       className={cn(
-        "mx-auto flex w-full min-h-[calc(100vh-3.5rem)] flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10 lg:px-8",
+        "mx-auto flex w-full min-h-[calc(100vh-3.5rem)] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8",
         maxW
       )}
     >
@@ -172,6 +172,20 @@ export function PageRouteSkeleton({
         <>
           <PageHeaderSkeleton width="narrow" />
           <SettingsBodySkeleton />
+        </>
+      );
+    case "help":
+      return (
+        <>
+          <PageHeaderSkeleton />
+          <ContentShell>
+            <Skeleton className="h-10 w-full max-w-xl rounded-md" />
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }, (_, i) => (
+                <Skeleton key={i} className="h-40 w-full rounded-lg" />
+              ))}
+            </div>
+          </ContentShell>
         </>
       );
     default:

@@ -18,6 +18,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ContextualHelpLink } from "@/components/help/contextual-help-link";
 import { PageShell } from "@/components/page-shell";
 import { formatIDR } from "@/lib/utils/format";
 import { groupByMonthAndDay } from "@/lib/group-by-month-day";
@@ -102,19 +103,22 @@ export function DocumentationListView({
       description="Daftar dokumen penawaran — grup per bulan & tanggal."
       contentClassName="py-8"
       actions={
-        <Button
-          type="button"
-          className="shrink-0 gap-2"
-          disabled={creating}
-          onClick={onCreate}
-        >
-          {creating ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Plus className="size-4" />
-          )}
-          Create quotation
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <ContextualHelpLink pathname="/documentation" />
+          <Button
+            type="button"
+            className="shrink-0 gap-2"
+            disabled={creating}
+            onClick={onCreate}
+          >
+            {creating ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Plus className="size-4" />
+            )}
+            Create quotation
+          </Button>
+        </div>
       }
     >
       <div className="bg-card rounded-lg border border-border p-4 shadow-sm sm:p-5">

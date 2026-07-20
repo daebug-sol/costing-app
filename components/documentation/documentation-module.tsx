@@ -32,16 +32,6 @@ import {
 import { DEFAULT_QUOTATION_INTRO, mergeQuotationDoc } from "@/lib/merge-quotation-doc";
 import type { AppSettingsDoc } from "@/lib/generators/document-types";
 import {
-  generateDetailedCosting,
-  generateInternalDraft,
-  generateQuotation,
-} from "@/lib/generators/pdfGenerator";
-import {
-  generateDetailedCostingExcel,
-  generateInternalDraftExcel,
-  generateQuotationExcel,
-} from "@/lib/generators/excelGenerator";
-import {
   costingProjectToProjectDoc,
   costingProjectToSectionDocs,
   quotationSubAssemblyLineItemsFromProjects,
@@ -55,6 +45,21 @@ import { toastError, toastSuccess } from "@/store/toastStore";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
 
 const SPEC_MAX_CHARS = 4000;
+
+/** Session cache for project detail fetches (preview / export / addProject). */
+const projectDetailCache = new Map<string, CostingProjectApi>();
+
+async function fetchProjectDetailCached(
+  pid: string
+): Promise<CostingProjectApi | null> {
+  const hit = projectDetailCache.get(pid);
+  if (hit) return hit;
+  const r = await fetch(`/api/projects/${pid}`);
+  if (!r.ok) return null;
+  const raw = (await r.json()) as CostingProjectApi;
+  projectDetailCache.set(pid, raw);
+  return raw;
+}
 
 async function readErr(res: Response): Promise<string> {
   try {
@@ -529,19 +534,20 @@ export function DocumentationModule() {
       const created = (await r.json()) as QuotationApi;
       const proj =
         available.find((p) => p.id === fromProject) ??
-        (await fetch(`/api/projects/${fromProject}`).then((x) =>
-          x.ok ? x.json() : null
-        )) as AvailableProject | null;
+        (await fetch(`/api/projects/available`)
+          .then(async (x) => {
+            if (!x.ok) return null;
+            const list = (await x.json()) as AvailableProject[];
+            return list.find((p) => p.id === fromProject) ?? null;
+          })
+          .catch(() => null));
       if (!proj || cancelled) {
         router.replace(`/documentation?id=${created.id}`);
         setDocumentationUi({ screen: "editor" });
         await loadQuotation(created.id);
         return;
       }
-      const detailRes = await fetch(`/api/projects/${fromProject}`);
-      const fullDetail = detailRes.ok
-        ? ((await detailRes.json()) as CostingProjectApi)
-        : null;
+      const fullDetail = await fetchProjectDetailCached(fromProject);
       const autoSpec = fullDetail
         ? segmentTitlesSpecFromProject(fullDetail)
         : "";
@@ -769,9 +775,8 @@ export function DocumentationModule() {
     void (async () => {
       let spec = defaultSpec(p);
       try {
-        const r = await fetch(`/api/projects/${p.id}`);
-        if (r.ok) {
-          const full = (await r.json()) as CostingProjectApi;
+        const full = await fetchProjectDetailCached(p.id);
+        if (full) {
           const auto = segmentTitlesSpecFromProject(full);
           if (auto) spec = auto.slice(0, SPEC_MAX_CHARS);
         }
@@ -847,12 +852,13 @@ export function DocumentationModule() {
     projectsById: Map<string, CostingProjectApi>;
   }> => {
     const ids = [...new Set(form.items.map((i) => i.projectId))];
+    const results = await Promise.all(ids.map((pid) => fetchProjectDetailCached(pid)));
     const out: CostingBreakdown[] = [];
     const projectsById = new Map<string, CostingProjectApi>();
-    for (const pid of ids) {
-      const r = await fetch(`/api/projects/${pid}`);
-      if (!r.ok) continue;
-      const raw = (await r.json()) as CostingProjectApi;
+    for (let i = 0; i < ids.length; i++) {
+      const raw = results[i];
+      const pid = ids[i];
+      if (!raw || !pid) continue;
       projectsById.set(pid, raw);
       out.push({
         project: costingProjectToProjectDoc(raw),
@@ -862,6 +868,10 @@ export function DocumentationModule() {
     return { breakdowns: out, projectsById };
   };
 
+  const formProjectIdsKey = [...new Set(form.items.map((i) => i.projectId))]
+    .sort()
+    .join("\0");
+
   useEffect(() => {
     if (screen !== "editor" || previewMode === "quotation") {
       setPreviewBreakdowns([]);
@@ -869,23 +879,23 @@ export function DocumentationModule() {
     }
     let cancelled = false;
     void (async () => {
-      const ids = [...new Set(form.items.map((i) => i.projectId))];
+      const ids = formProjectIdsKey ? formProjectIdsKey.split("\0") : [];
+      const results = await Promise.all(ids.map((pid) => fetchProjectDetailCached(pid)));
+      if (cancelled) return;
       const out: CostingBreakdown[] = [];
-      for (const pid of ids) {
-        const r = await fetch(`/api/projects/${pid}`);
-        if (!r.ok) continue;
-        const raw = (await r.json()) as CostingProjectApi;
+      for (const raw of results) {
+        if (!raw) continue;
         out.push({
           project: costingProjectToProjectDoc(raw),
           sections: costingProjectToSectionDocs(raw),
         });
       }
-      if (!cancelled) setPreviewBreakdowns(out);
+      setPreviewBreakdowns(out);
     })();
     return () => {
       cancelled = true;
     };
-  }, [screen, previewMode, form.items]);
+  }, [screen, previewMode, formProjectIdsKey]);
 
   const runExport = async (
     kind: "pdf" | "excel",
@@ -913,6 +923,11 @@ export function DocumentationModule() {
     let blob: Blob;
     let name: string;
     if (kind === "pdf") {
+      const {
+        generateDetailedCosting,
+        generateInternalDraft,
+        generateQuotation,
+      } = await import("@/lib/generators/pdfGenerator");
       if (variant === "quotation") {
         blob = generateQuotation(qDoc, sDoc);
         name = "quotation.pdf";
@@ -924,6 +939,11 @@ export function DocumentationModule() {
         name = "detailed-costing.pdf";
       }
     } else {
+      const {
+        generateDetailedCostingExcel,
+        generateInternalDraftExcel,
+        generateQuotationExcel,
+      } = await import("@/lib/generators/excelGenerator");
       if (variant === "quotation") {
         blob = await generateQuotationExcel(qDoc, sDoc);
         name = "quotation.xlsx";

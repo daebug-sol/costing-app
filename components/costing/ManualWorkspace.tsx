@@ -223,12 +223,10 @@ export function ManualWorkspace({
   collapseAllManualSignal = 0,
   expandAllManualSignal = 0,
 }: ManualWorkspaceProps) {
-  const {
-    currentProject,
-    loadProject,
-    updateProject,
-    updateMargins,
-  } = useCostingStore();
+  const currentProject = useCostingStore((s) => s.currentProject);
+  const loadProject = useCostingStore((s) => s.loadProject);
+  const updateProject = useCostingStore((s) => s.updateProject);
+  const updateMargins = useCostingStore((s) => s.updateMargins);
 
   const [groups, setGroups] = useState<ManualGroup[]>([]);
   const [loading, setLoading] = useState(true);

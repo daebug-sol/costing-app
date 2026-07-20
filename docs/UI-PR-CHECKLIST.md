@@ -67,7 +67,7 @@ If `npm run ui:test` produced diffs you intend to accept:
 - [ ] Reviewed every diff in `playwright-report/` before re-baselining
 - [ ] Ran `npm run ui:test:update` and committed the new PNGs under `tests/ui/__screenshots__/`
 - [ ] Listed which baselines changed and why in this PR description
-- [ ] Route coverage still includes: `/`, `/costing`, `/database`, `/documentation`, `/settings`
+- [ ] Route coverage still includes: `/`, `/costing`, `/database`, `/documentation`, `/help`, `/settings`
 ```
 
 ---

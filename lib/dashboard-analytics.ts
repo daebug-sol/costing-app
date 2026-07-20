@@ -29,10 +29,7 @@ type DashboardProjectInput = {
   margin: number;
   updatedAt: Date;
   segments: Array<{
-    id: string;
     type: string;
-    title: string;
-    subtotal: number;
     sections: Array<{
       category: string;
       subtotal: number;

@@ -1,12 +1,11 @@
 ﻿"use client";
 
 import { ChevronDown, RefreshCw, Wallet } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CashflowTimelineChart } from "@/components/dashboard/cashflow-timeline-chart";
 import { ChartInsightBlock } from "@/components/dashboard/chart-insight-block";
-import { CostBreakdownChart } from "@/components/dashboard/cost-breakdown-chart";
 import { DashboardStickyToolbar } from "@/components/dashboard/dashboard-sticky-toolbar";
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
 import {
@@ -18,10 +17,8 @@ import {
 } from "@/components/dashboard/dashboard-surface-styles";
 import { useDashboardToolbarStuck } from "@/hooks/use-dashboard-toolbar-stuck";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
-import { ProfitBridgeChart } from "@/components/dashboard/profit-bridge-chart";
 import { QuotationAgingTable } from "@/components/dashboard/quotation-aging-table";
 import { QuotationFunnel } from "@/components/dashboard/quotation-funnel";
-import { RevenueTrendChart } from "@/components/dashboard/revenue-trend-chart";
 import { SalesLeaderboard } from "@/components/dashboard/sales-leaderboard";
 import { StatusDistribution } from "@/components/dashboard/status-distribution";
 import { EmptyState } from "@/components/empty-state";
@@ -46,6 +43,41 @@ import type { DashboardApiResponse, DashboardRange } from "@/lib/dashboard-contr
 import { buildMtdBookedDelta, buildTrendDelta, buildYtdBookedDelta } from "@/lib/dashboard-ui-mappers";
 import { cn } from "@/lib/utils";
 import { formatIDR, formatPercent } from "@/lib/utils/format";
+
+const chartPaneFallback = (
+  <div className="flex min-h-[180px] items-center justify-center">
+    <TableLoadingSkeleton columns={3} rows={3} />
+  </div>
+);
+
+const CashflowTimelineChart = dynamic(
+  () =>
+    import("@/components/dashboard/cashflow-timeline-chart").then((m) => ({
+      default: m.CashflowTimelineChart,
+    })),
+  { ssr: false, loading: () => chartPaneFallback }
+);
+const CostBreakdownChart = dynamic(
+  () =>
+    import("@/components/dashboard/cost-breakdown-chart").then((m) => ({
+      default: m.CostBreakdownChart,
+    })),
+  { ssr: false, loading: () => chartPaneFallback }
+);
+const ProfitBridgeChart = dynamic(
+  () =>
+    import("@/components/dashboard/profit-bridge-chart").then((m) => ({
+      default: m.ProfitBridgeChart,
+    })),
+  { ssr: false, loading: () => chartPaneFallback }
+);
+const RevenueTrendChart = dynamic(
+  () =>
+    import("@/components/dashboard/revenue-trend-chart").then((m) => ({
+      default: m.RevenueTrendChart,
+    })),
+  { ssr: false, loading: () => chartPaneFallback }
+);
 
 function SecondaryKpiTile({
   label,

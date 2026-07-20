@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, RefreshCw } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { formatPhoneDash } from "@/lib/phone-format";
 import { formatNumber } from "@/lib/utils/format";
 import { PageShell } from "@/components/page-shell";
+import { ThemeSettingsCard } from "@/components/settings/theme-settings-card";
 import { toastError, toastSuccess } from "@/store/toastStore";
 
 type Settings = {
@@ -104,21 +106,39 @@ export function SettingsPage() {
 
   if (error && !row) {
     return (
-      <div className="mx-auto max-w-[720px] px-4 py-16 text-center">
-        <p className="text-foreground">{error}</p>
-        <Button type="button" className="mt-4 gap-2" onClick={() => void load()}>
-          <RefreshCw className="size-4" />
-          Coba lagi
-        </Button>
-      </div>
+      <PageShell
+        width="narrow"
+        eyebrow="Konfigurasi"
+        title="Pengaturan"
+        description="Profil perusahaan, default costing, forex, dan syarat penawaran"
+        contentClassName="flex flex-col gap-6 lg:py-8"
+      >
+        <ThemeSettingsCard />
+        <div className="rounded-lg border border-border bg-card p-6 text-center">
+          <p className="text-foreground">{error}</p>
+          <Button type="button" className="mt-4 gap-2" onClick={() => void load()}>
+            <RefreshCw className="size-4" />
+            Coba lagi
+          </Button>
+        </div>
+      </PageShell>
     );
   }
 
   if (loading && !row) {
     return (
-      <div className="flex justify-center py-24">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
+      <PageShell
+        width="narrow"
+        eyebrow="Konfigurasi"
+        title="Pengaturan"
+        description="Profil perusahaan, default costing, forex, dan syarat penawaran"
+        contentClassName="flex flex-col gap-6 lg:py-8"
+      >
+        <ThemeSettingsCard />
+        <div className="flex justify-center py-12">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
+      </PageShell>
     );
   }
 
@@ -144,26 +164,36 @@ export function SettingsPage() {
           <CardHeader>
             <CardTitle className="text-lg">Selamat datang — setup organisasi</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
             <p>
               Lengkapi nama perusahaan dan kurs forex default di bawah. Data ini
               dipakai untuk quotation dan database harga organisasi Anda.
             </p>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => void put({ onboardingComplete: true }, "onboarding")}
-              disabled={saving === "onboarding"}
-            >
-              {saving === "onboarding" ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                "Tandai setup selesai"
-              )}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => void put({ onboardingComplete: true }, "onboarding")}
+                disabled={saving === "onboarding"}
+              >
+                {saving === "onboarding" ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  "Tandai setup selesai"
+                )}
+              </Button>
+              <Button type="button" size="sm" variant="outline" asChild>
+                <Link href="/help/mulai-cepat/orientasi-aplikasi">
+                  Buka panduan Help
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : null}
+
+      <ThemeSettingsCard />
+
       <Card size="sm" className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">Profil perusahaan</CardTitle>
@@ -615,6 +645,24 @@ export function SettingsPage() {
           </Button>
         </CardFooter>
       </Card>
+
+      <footer className="border-t border-border pt-4 text-center text-xs text-muted-foreground">
+        <Link
+          href="/legal/privacy"
+          className="hover:text-foreground transition-colors"
+        >
+          Kebijakan Privasi
+        </Link>
+        <span aria-hidden className="mx-2 text-border">
+          ·
+        </span>
+        <Link
+          href="/legal/terms"
+          className="hover:text-foreground transition-colors"
+        >
+          Syarat &amp; Ketentuan
+        </Link>
+      </footer>
     </PageShell>
   );
 }
