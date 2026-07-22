@@ -72,6 +72,8 @@ function summaryFromProject(project: ProjectDoc) {
       asuransi: project.asuransi,
       mobilisasi: project.mobilisasi,
       margin: project.margin,
+      priceAdjustmentPct: project.priceAdjustmentPct ?? 0,
+      priceAdjustmentAmt: project.priceAdjustmentAmt ?? 0,
     },
     marginTogglesFromProject(project)
   );
@@ -219,6 +221,14 @@ function addSummarySheetInternal(
     [`Mobilisasi (${formatNumber(project.mobilisasi, 2)}%)`, formatIDR(s.mob)],
     ["Total biaya", formatIDR(s.totalCost)],
     [`Margin (${formatNumber(project.margin, 2)}%)`, formatIDR(s.marginAmt)],
+    [
+      `Penyesuaian harga (${formatNumber(project.priceAdjustmentPct ?? 0, 2)}%)`,
+      formatIDR(s.adjPctAmt),
+    ],
+    [
+      "Penyesuaian harga (Rp)",
+      formatIDR(s.adjFlatAmt),
+    ],
     ["Harga jual (est.)", formatIDR(s.selling)],
   ];
   for (const [a, b] of rows) {

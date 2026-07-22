@@ -70,6 +70,10 @@ export async function PUT(request: Request, context: Ctx) {
     if (body.asuransi !== undefined) data.asuransi = num(body.asuransi);
     if (body.mobilisasi !== undefined) data.mobilisasi = num(body.mobilisasi);
     if (body.margin !== undefined) data.margin = num(body.margin);
+    if (body.priceAdjustmentPct !== undefined)
+      data.priceAdjustmentPct = num(body.priceAdjustmentPct);
+    if (body.priceAdjustmentAmt !== undefined)
+      data.priceAdjustmentAmt = num(body.priceAdjustmentAmt);
     if (body.totalHPP !== undefined) data.totalHPP = num(body.totalHPP);
     if (body.totalSelling !== undefined)
       data.totalSelling = num(body.totalSelling);

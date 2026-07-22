@@ -87,6 +87,8 @@ export async function rollupProjectFinancials(projectId: string): Promise<void> 
       asuransi: project.asuransi,
       mobilisasi: project.mobilisasi,
       margin: project.margin,
+      priceAdjustmentPct: project.priceAdjustmentPct,
+      priceAdjustmentAmt: project.priceAdjustmentAmt,
     },
     marginTogglesFromProject(project)
   );

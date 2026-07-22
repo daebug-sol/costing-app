@@ -190,6 +190,10 @@ model CostingProject {
   asuransi       Float            @default(0.0)
   mobilisasi     Float            @default(0.0)
   margin         Float            @default(20.0)
+  /** Extra markup % applied after margin stack (pct first, then Amt). */
+  priceAdjustmentPct Float        @default(0.0)
+  /** Extra absolute IDR bump after margin + pct adjustment. */
+  priceAdjustmentAmt Float        @default(0.0)
   totalHPP       Float            @default(0.0)
   totalSelling   Float            @default(0.0)
   notes          String?

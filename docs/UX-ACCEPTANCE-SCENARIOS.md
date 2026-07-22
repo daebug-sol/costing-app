@@ -224,6 +224,31 @@ mobile (we are not mobile-first, but we are mobile-survivable).
 
 ---
 
+## Scenario 9 — Penyesuaian harga proyek (markup setelah margin)
+
+**Trigger.** U is on `/costing` with a project that has HPP and the project
+summary (margin stack) open.
+
+1. U melihat baris **Penyesuaian harga (%)** dan **Penyesuaian harga (Rp)**
+   setelah baris Margin, sebelum SELLING PRICE.
+2. U mengisi penyesuaian **+5%** lalu blur/tab keluar input.
+3. A menyimpan via `PUT /api/projects/:id` (fields
+   `priceAdjustmentPct` / `priceAdjustmentAmt`) dan **SELLING PRICE** naik
+   sesuai `selling × (1 + pct/100) + amt` (pct dulu, lalu Rp).
+4. U menambah **+Rp 1.000.000** pada penyesuaian Rp; blur → total selling
+   bertambah lagi sebesar Rp1jt di atas hasil langkah 3.
+5. U membuka / membuat quotation dari proyek ini; setelah save margins,
+   `totalSelling` yang tersinkron ke quotation item mencerminkan selling
+   **setelah** penyesuaian (bukan selling sebelum adjustment).
+6. Helper copy di bawah input % menjelaskan bahwa penyesuaian ditambahkan
+   setelah margin, tanpa mengubah OH/margin.
+
+**Done when:** zero/empty adjustment leaves selling unchanged vs margin-only
+stack; pct-only, amt-only, and both combine correctly; reload project
+restores the saved adjustment values.
+
+---
+
 ## Coverage matrix
 
 | Scenario | Dashboard | Costing | Database | Quotation | Settings |
@@ -237,6 +262,7 @@ mobile (we are not mobile-first, but we are mobile-survivable).
 | 6 Search | | | x | | |
 | 7 Error recovery | x | x | x | x | x |
 | 8 Mobile | x | x | x | x | x |
+| 9 Penyesuaian harga | | x | | x | |
 
 When a PR adds a new flow, append a scenario here and add a row to the
 matrix. When deleting a flow, remove the scenario rather than letting it

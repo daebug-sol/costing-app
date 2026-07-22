@@ -57,6 +57,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatIDR } from "@/lib/utils/format";
+import { computeCostSummary, finite } from "@/lib/cost-summary";
 import { cn } from "@/lib/utils";
 import { useCostingStore } from "@/store/costingStore";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
@@ -85,37 +86,6 @@ type ManualGroup = {
   subtotal: number;
   items: ManualItem[];
 };
-
-function finite(n: number, fallback = 0) {
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function computeCostSummary(
-  hppIn: number,
-  qtyIn: number,
-  m: {
-    overhead: number;
-    contingency: number;
-    eskalasi: number;
-    asuransi: number;
-    mobilisasi: number;
-    margin: number;
-  },
-  t: { esk: boolean; asu: boolean; mob: boolean }
-) {
-  const hpp = finite(hppIn, 0);
-  const oh = hpp * (finite(m.overhead, 0) / 100);
-  const cont = hpp * (finite(m.contingency, 0) / 100);
-  const esk = t.esk ? hpp * (finite(m.eskalasi, 0) / 100) : 0;
-  const asu = t.asu ? hpp * (finite(m.asuransi, 0) / 100) : 0;
-  const mob = t.mob ? hpp * (finite(m.mobilisasi, 0) / 100) : 0;
-  const totalCost = hpp + oh + cont + esk + asu + mob;
-  const marginAmt = totalCost * (finite(m.margin, 0) / 100);
-  const selling = totalCost + marginAmt;
-  const q = Math.max(1, Math.floor(finite(qtyIn, 1)));
-  const perUnit = selling / q;
-  return { hpp, oh, cont, esk, asu, mob, totalCost, marginAmt, selling, perUnit };
-}
 
 function rowKey(sourceType: string, sourceId: string) {
   return `${sourceType}:${sourceId}`;
@@ -253,6 +223,8 @@ export function ManualWorkspace({
     asuransi: 0,
     mobilisasi: 0,
     margin: 20,
+    priceAdjustmentPct: 0,
+    priceAdjustmentAmt: 0,
   });
   const marginPctRef = useRef(marginPct);
   const togglesRef = useRef({ esk: true, asu: true, mob: true });
@@ -355,6 +327,8 @@ export function ManualWorkspace({
         asuransi: finite(currentProject.asuransi, 0),
         mobilisasi: finite(currentProject.mobilisasi, 0),
         margin: finite(currentProject.margin, 0),
+        priceAdjustmentPct: finite(currentProject.priceAdjustmentPct, 0),
+        priceAdjustmentAmt: finite(currentProject.priceAdjustmentAmt, 0),
       });
     });
   }, [currentProject]);
@@ -370,6 +344,9 @@ export function ManualWorkspace({
         mob: 0,
         totalCost: 0,
         marginAmt: 0,
+        sellingBeforeAdjustment: 0,
+        adjPctAmt: 0,
+        adjFlatAmt: 0,
         selling: 0,
         perUnit: 0,
       };
@@ -400,6 +377,8 @@ export function ManualWorkspace({
         asuransi: m.asuransi,
         mobilisasi: m.mobilisasi,
         margin: m.margin,
+        priceAdjustmentPct: m.priceAdjustmentPct,
+        priceAdjustmentAmt: m.priceAdjustmentAmt,
         totalSelling: selling,
       } as never);
     } catch (e) {
@@ -429,6 +408,8 @@ export function ManualWorkspace({
         asuransi: m.asuransi,
         mobilisasi: m.mobilisasi,
         margin: m.margin,
+        priceAdjustmentPct: m.priceAdjustmentPct,
+        priceAdjustmentAmt: m.priceAdjustmentAmt,
         totalSelling: selling,
       } as never);
     } catch (e) {
@@ -1159,6 +1140,65 @@ export function ManualWorkspace({
                 </TableCell>
                 <TableCell className="tabular-money text-right">
                   {formatIDR(totals.marginAmt)}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="min-w-[5rem]">Penyesuaian harga</span>
+                      <Input
+                        className="h-8 w-16 text-right"
+                        type="number"
+                        value={marginPct.priceAdjustmentPct}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          if (Number.isFinite(v))
+                            setMarginPct((p) => ({
+                              ...p,
+                              priceAdjustmentPct: v,
+                            }));
+                        }}
+                        onBlur={() => void persistMargins()}
+                        aria-label="Penyesuaian harga persen"
+                      />
+                      <span className="text-muted-foreground text-xs">%</span>
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      Ditambahkan setelah margin; untuk naikkan harga proyek
+                      tanpa ubah OH/margin
+                    </p>
+                  </div>
+                </TableCell>
+                <TableCell className="tabular-money text-right">
+                  {formatIDR(totals.adjPctAmt)}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="min-w-[5rem]">
+                      Penyesuaian harga (Rp)
+                    </span>
+                    <Input
+                      className="h-8 w-28 text-right"
+                      type="number"
+                      value={marginPct.priceAdjustmentAmt}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        if (Number.isFinite(v))
+                          setMarginPct((p) => ({
+                            ...p,
+                            priceAdjustmentAmt: v,
+                          }));
+                      }}
+                      onBlur={() => void persistMargins()}
+                      aria-label="Penyesuaian harga rupiah"
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="tabular-money text-right">
+                  {formatIDR(totals.adjFlatAmt)}
                 </TableCell>
               </TableRow>
               <TableRow className="bg-muted/50 border-t-2 text-base font-bold">

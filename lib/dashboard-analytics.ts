@@ -27,6 +27,8 @@ type DashboardProjectInput = {
   asuransi: number;
   mobilisasi: number;
   margin: number;
+  priceAdjustmentPct: number;
+  priceAdjustmentAmt: number;
   updatedAt: Date;
   segments: Array<{
     id: string;
@@ -336,6 +338,8 @@ function sankeyFromData(input: DashboardAnalyticsInput, now: Date): DashboardApi
         asuransi: project.asuransi,
         mobilisasi: project.mobilisasi,
         margin: project.margin,
+        priceAdjustmentPct: project.priceAdjustmentPct,
+        priceAdjustmentAmt: project.priceAdjustmentAmt,
       },
       marginTogglesFromProject(project)
     );
@@ -436,6 +440,8 @@ function costingDataFromData(input: DashboardAnalyticsInput): DashboardApiRespon
         asuransi: project.asuransi,
         mobilisasi: project.mobilisasi,
         margin: project.margin,
+        priceAdjustmentPct: project.priceAdjustmentPct,
+        priceAdjustmentAmt: project.priceAdjustmentAmt,
       },
       marginTogglesFromProject(project)
     );

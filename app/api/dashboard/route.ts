@@ -44,6 +44,8 @@ export async function GET(request: Request) {
           asuransi: true,
           mobilisasi: true,
           margin: true,
+          priceAdjustmentPct: true,
+          priceAdjustmentAmt: true,
           updatedAt: true,
           segments: {
             select: {
