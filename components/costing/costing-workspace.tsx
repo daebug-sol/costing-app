@@ -117,6 +117,7 @@ import {
 } from "@/components/ui/table";
 import type { AhuRecalcParams } from "@/lib/ahu-recalc-params";
 import {
+  normalizeSectionLayout,
   parseAhuRecalcParams,
   resolveDamperModes,
 } from "@/lib/ahu-recalc-params";
@@ -344,6 +345,14 @@ function AhuSegmentEditor({
     initialAhuFromSegment(seg.ahuRecalcParams)
   );
 
+  const nSec =
+    ahu.nSections != null
+      ? Math.min(8, Math.max(1, Math.floor(ahu.nSections)))
+      : 1;
+  const sectionLayout = normalizeSectionLayout(ahu.sectionLayout);
+  const dimLabel = (v: number | null | undefined) =>
+    v != null ? String(v) : "—";
+
   const setCoil = (patch: Partial<NonNullable<AhuRecalcParams["coil"]>>) => {
     setAhu((p) => ({ ...p, coil: { ...p.coil, ...patch } }));
   };
@@ -454,6 +463,98 @@ function AhuSegmentEditor({
           <CostingLevelHeading level="segment" as="h4">
             Parameter unit AHU
           </CostingLevelHeading>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Label htmlFor={`nsec-${seg.id}`} className="text-xs">
+                  Jumlah section
+                </Label>
+                <Input
+                  id={`nsec-${seg.id}`}
+                  type="number"
+                  min={1}
+                  max={8}
+                  className="h-8 w-24"
+                  value={nSec}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setAhu((p) => ({
+                      ...p,
+                      nSections:
+                        v === ""
+                          ? undefined
+                          : Math.min(
+                              8,
+                              Math.max(1, Math.floor(Number(v) || 1))
+                            ),
+                    }));
+                  }}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Label htmlFor={`seclayout-${seg.id}`} className="text-xs">
+                  Tata letak section
+                </Label>
+                <Select
+                  value={sectionLayout}
+                  onValueChange={(v) => {
+                    setAhu((p) => ({
+                      ...p,
+                      sectionLayout: normalizeSectionLayout(v),
+                    }));
+                  }}
+                >
+                  <SelectTrigger
+                    id={`seclayout-${seg.id}`}
+                    className="h-8 w-[11.5rem] text-xs"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="horizontal">
+                      Horizontal (samping)
+                    </SelectItem>
+                    <SelectItem value="vertical">
+                      Vertical (atas-bawah)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {nSec > 1 && (
+              <div className="flex flex-col gap-2">
+                <ul className="divide-y divide-border rounded-md border border-border">
+                  {Array.from({ length: nSec }, (_, i) => (
+                    <li
+                      key={`sec-row-${i + 1}`}
+                      className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-sm"
+                    >
+                      <span className="min-w-[5.5rem] font-medium">
+                        Section {i + 1}
+                      </span>
+                      <span className="text-muted-foreground tabular-nums">
+                        H {dimLabel(seg.dimH)} mm
+                      </span>
+                      <span className="text-muted-foreground tabular-nums">
+                        W {dimLabel(seg.dimW)} mm
+                      </span>
+                      <span className="text-muted-foreground tabular-nums">
+                        D {dimLabel(seg.dimD)} mm
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-muted-foreground text-xs">
+                  Frame &amp; Panel, Skid, dan Structure dihitung × jumlah
+                  section; modul lain tetap satu unit.
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  Formula skid belum dibedakan per tata letak; nilai tersimpan
+                  untuk perhitungan nanti.
+                </p>
+              </div>
+            )}
+          </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <div className="space-y-1">
               <Label className="text-xs">AHU model</Label>
@@ -661,41 +762,6 @@ function AhuSegmentEditor({
               Parameter modul
             </CostingLevelHeading>
             <Accordion type="multiple" className="w-full rounded-md border border-border px-4 sm:px-5">
-                  <AccordionItem value="general-ahu">
-                    <AccordionTrigger className="hover:no-underline">
-                      <span className="font-medium">General AHU</span>
-                      <span className="text-muted-foreground text-xs font-normal normal-case tracking-normal">
-                        Selalu aktif
-                      </span>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="flex flex-col gap-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Label className="text-xs">Jumlah section</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          className="h-8 w-24"
-                          value={ahu.nSections != null ? ahu.nSections : 1}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setAhu((p) => ({
-                              ...p,
-                              nSections:
-                                v === ""
-                                  ? undefined
-                                  : Math.max(1, Math.floor(Number(v) || 1)),
-                            }));
-                          }}
-                        />
-                      </div>
-                      <p className="text-muted-foreground text-xs">
-                        Dimensi default mengambil dari H/W/D segmen.
-                      </p>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
                   <AccordionItem value="access-door">
                     <AccordionTrigger className="hover:no-underline">
                       <span className="font-medium">Access Door</span>
@@ -735,11 +801,17 @@ function AhuSegmentEditor({
                           className="h-8 w-24"
                           value={ahu.accessDoor?.height ?? ""}
                           placeholder={String(seg.dimH ?? "")}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            const n = v === "" ? NaN : Number(v);
                             setAccessDoor({
-                              height: e.target.value === "" ? undefined : Number(e.target.value),
-                            })
-                          }
+                              // 0 must not persist — finite(0, dimH) does not fall back.
+                              height:
+                                v === "" || !Number.isFinite(n) || n <= 0
+                                  ? undefined
+                                  : n,
+                            });
+                          }}
                         />
                         <Label className="text-xs">W</Label>
                         <Input
@@ -747,11 +819,16 @@ function AhuSegmentEditor({
                           className="h-8 w-24"
                           value={ahu.accessDoor?.width ?? ""}
                           placeholder={String(seg.dimW ?? "")}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            const n = v === "" ? NaN : Number(v);
                             setAccessDoor({
-                              width: e.target.value === "" ? undefined : Number(e.target.value),
-                            })
-                          }
+                              width:
+                                v === "" || !Number.isFinite(n) || n <= 0
+                                  ? undefined
+                                  : n,
+                            });
+                          }}
                         />
                       </div>
                       <label className="flex items-center gap-2 text-xs">

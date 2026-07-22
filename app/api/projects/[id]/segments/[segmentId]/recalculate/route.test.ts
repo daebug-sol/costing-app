@@ -102,7 +102,8 @@ describe("POST /api/projects/[id]/segments/[segmentId]/recalculate", () => {
     const req = new Request("http://localhost", {
       method: "POST",
       body: JSON.stringify({
-        nSections: 2,
+        // Dump/workbook structure parity is defined for a single section.
+        nSections: 1,
         costingScope: {
           isFullAhu: false,
           includeStructure: true,

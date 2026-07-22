@@ -66,5 +66,19 @@ describe("calculateStructure parity baseline", () => {
       expect(item.qtyFormula).toContain("*7860*");
     }
   });
+
+  it("preserves parity at nSections=1 and doubles qty at nSections=2", () => {
+    const H = 1420;
+    const W = 1930;
+    const D = 1625;
+    const baseline = calculateStructure({ H, W, D, nSections: 1, materials });
+    const doubled = calculateStructure({ H, W, D, nSections: 2, materials });
+    expect(baseline).toHaveLength(5);
+    expect(doubled).toHaveLength(5);
+    for (let i = 0; i < baseline.length; i++) {
+      expect(Math.abs(doubled[i]!.qty - baseline[i]!.qty * 2)).toBeLessThan(1e-9);
+      expect(Math.abs(doubled[i]!.subtotal - baseline[i]!.subtotal * 2)).toBeLessThan(1e-6);
+    }
+  });
 });
 

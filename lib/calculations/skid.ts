@@ -32,44 +32,51 @@ function line(
 export function calculateSkid(params: {
   W: number;
   D: number;
+  /** Section count; scales every line qty. Default 1 preserves Excel parity. */
+  nSections?: number;
   materials: MaterialPrice[];
 }): CalcLineItem[] {
   const W = finite(params.W, 0);
   const D = finite(params.D, 0);
+  const nSec = Math.max(1, Math.floor(finite(params.nSections, 1)));
   const mat = findMaterial(params.materials, UNP_CODE);
   const pricePerKg = mat ? finite(mat.pricePerKg, 0) : 0;
+  const sectionNote = nSec > 1 ? `nSections=${nSec}` : null;
 
   const kgLR =
-    0.003 * 0.1 * (D / 1000) * STEEL_D * 1.15 * 2;
+    0.003 * 0.1 * (D / 1000) * STEEL_D * 1.15 * 2 * nSec;
   const kgFB =
-    0.003 * 0.1 * (W / 1000) * STEEL_D * 1.15 * 2;
+    0.003 * 0.1 * (W / 1000) * STEEL_D * 1.15 * 2 * nSec;
   const kgCenter =
-    0.002 * 0.08 * (W / 1000) * STEEL_D * 1.15 * 2;
+    0.002 * 0.08 * (W / 1000) * STEEL_D * 1.15 * 2 * nSec;
 
   const items: CalcLineItem[] = [
     line({
       description: "UNP100 L/R skid (D direction)",
       uom: "kg",
       qty: finite(kgLR, 0),
-      qtyFormula: `0.003*0.1*(${D}/1000)*${STEEL_D}*1.15*2`,
+      qtyFormula: `0.003*0.1*(${D}/1000)*${STEEL_D}*1.15*2*${nSec}`,
       unitPrice: pricePerKg,
       componentRef: UNP_CODE,
+      notes: sectionNote,
     }),
     line({
       description: "UNP100 F/B skid (W direction)",
       uom: "kg",
       qty: finite(kgFB, 0),
-      qtyFormula: `0.003*0.1*(${W}/1000)*${STEEL_D}*1.15*2`,
+      qtyFormula: `0.003*0.1*(${W}/1000)*${STEEL_D}*1.15*2*${nSec}`,
       unitPrice: pricePerKg,
       componentRef: UNP_CODE,
+      notes: sectionNote,
     }),
     line({
       description: "Center support (W)",
       uom: "kg",
       qty: finite(kgCenter, 0),
-      qtyFormula: `0.002*0.08*(${W}/1000)*${STEEL_D}*1.15*2`,
+      qtyFormula: `0.002*0.08*(${W}/1000)*${STEEL_D}*1.15*2*${nSec}`,
       unitPrice: pricePerKg,
       componentRef: UNP_CODE,
+      notes: sectionNote,
     }),
   ];
 

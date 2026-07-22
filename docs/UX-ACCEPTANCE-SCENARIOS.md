@@ -82,6 +82,48 @@ or duplicate POSTs (debounced or in-flight guarded).
 
 ---
 
+## Scenario 3b — Set Jumlah section on AHU Unit tab
+
+**Trigger.** U is on `/costing` with an AHU segment open on tab **Unit & hitung**.
+
+1. A shows **Jumlah section** directly under “Parameter unit AHU” (before the
+   model/ref/flow grid). Accordion **General AHU** is absent on tab
+   **Parameter modul**.
+2. U sets Jumlah section to `2` (allowed range 1–8).
+3. A renders two read-only rows **Section 1** and **Section 2** with H/W/D from
+   the segment (or “—” if null), plus muted helper copy that Frame & Panel,
+   Skid, and Structure scale × jumlah section.
+4. U sets Jumlah section back to `1`. The Section rows disappear.
+5. U presses **Hitung ulang**. Recalculate completes without error; with
+   nSections = 2, FP/Skid/Structure subtotals are approximately 2× the n=1
+   baseline (Phase 1 scaling).
+
+**Done when:** Jumlah section is discoverable at the top of the Unit tab and
+dynamic rows match the count without editing per-section dimensions.
+
+---
+
+## Scenario 3c — Set Tata letak section (metadata only)
+
+**Trigger.** U is on `/costing` with an AHU segment open on tab **Unit & hitung**.
+
+1. A shows **Tata letak section** next to **Jumlah section**, default
+   **Horizontal (samping)** when missing/invalid.
+2. U sets Tata letak to **Vertical (atas-bawah)**.
+3. U presses **Simpan parameter**. Toast confirms save.
+4. U reloads the page (or reopens the same segment). A still shows
+   **Vertical (atas-bawah)**.
+5. With `nSections > 1`, A shows muted hint that the skid formula is not yet
+   differentiated by layout; the value is stored for a later calculation.
+6. U presses **Hitung ulang**. Recalculate succeeds. Skid (and FP/Structure)
+   subtotals match the same dims/`nSections` run with Horizontal — layout does
+   not change math in Phase 3a.
+
+**Done when:** Vertical persists across save/reload; Hitung ulang does not
+change skid math vs Horizontal for identical dims and section count.
+
+---
+
 ## Scenario 4 — Add a new project / segment
 
 **Trigger.** U opens the costing workspace with no project.
@@ -189,6 +231,7 @@ mobile (we are not mobile-first, but we are mobile-survivable).
 | 1 Orient | x | | | | |
 | 2 Drill | x | x | | | |
 | 3 Edit + recalc | | x | | | |
+| 3b Jumlah section | | x | | | |
 | 4 Create | | x | x | | |
 | 5 Export | | | | x | |
 | 6 Search | | | x | | |
