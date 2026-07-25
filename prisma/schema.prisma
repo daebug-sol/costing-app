@@ -7,11 +7,13 @@ datasource db {
 }
 
 model Organization {
-  id         String   @id @default(cuid())
-  clerkOrgId String?  @unique
-  name       String
-  slug       String   @unique
-  createdAt  DateTime @default(now())
+  id                String   @id @default(cuid())
+  clerkOrgId        String?  @unique
+  name              String
+  slug              String   @unique
+  /** Operator-managed: special clients keep AHU; new orgs default off. */
+  ahuModuleEnabled  Boolean  @default(false)
+  createdAt         DateTime @default(now())
 
   members          OrganizationMember[]
   settings         AppSettings?

@@ -304,6 +304,8 @@ type AhuEditorProps = {
   ) => Promise<void>;
   /** True saat proyek belum termuat — cegah PUT/recalc tanpa currentProject */
   segmentActionsDisabled: boolean;
+  /** When false, existing AHU is viewable but recalculate CTA is hidden. */
+  ahuModuleEnabled: boolean;
   isCalculating: boolean;
   openAddItem: (sectionId: string) => void;
   toggleCat: (segmentId: string, cat: string) => void;
@@ -323,6 +325,7 @@ function AhuSegmentEditor({
   saveAhuParams,
   saveAhuParamsAndRecalculate,
   segmentActionsDisabled,
+  ahuModuleEnabled,
   isCalculating,
   openAddItem,
   toggleCat,
@@ -584,21 +587,23 @@ function AhuSegmentEditor({
               >
                 Simpan parameter
               </Button>
-              <Button
-                type="button"
-                className="gap-2"
-                disabled={isCalculating || segmentActionsDisabled}
-                onClick={() =>
-                  saveAhuParamsAndRecalculate(seg.id, ahu).catch((e) =>
-                    showToast(String(e))
-                  )
-                }
-              >
-                {isCalculating ? (
-                  <Loader2 className="size-4 animate-spin" data-icon="inline-start" />
-                ) : null}
-                Hitung ulang
-              </Button>
+              {ahuModuleEnabled ? (
+                <Button
+                  type="button"
+                  className="gap-2"
+                  disabled={isCalculating || segmentActionsDisabled}
+                  onClick={() =>
+                    saveAhuParamsAndRecalculate(seg.id, ahu).catch((e) =>
+                      showToast(String(e))
+                    )
+                  }
+                >
+                  {isCalculating ? (
+                    <Loader2 className="size-4 animate-spin" data-icon="inline-start" />
+                  ) : null}
+                  Hitung ulang
+                </Button>
+              ) : null}
             </div>
           </div>
 
@@ -1538,6 +1543,7 @@ export function CostingWorkspace() {
   const {
     projects,
     currentProject,
+    modules,
     isCalculating,
     isLoading,
     loadProjects,
@@ -1553,6 +1559,7 @@ export function CostingWorkspace() {
     resetItem,
     updateMargins,
   } = useCostingStore();
+  const ahuModuleEnabled = modules.ahu;
 
   const search = useUiWorkflowStore((s) => s.costing.sidebar.search);
   const statusFilter = useUiWorkflowStore((s) => s.costing.sidebar.statusFilter);
@@ -2330,13 +2337,15 @@ export function CostingWorkspace() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() =>
-                        addSegment("ahu").catch((e) => showToast(String(e)))
-                      }
-                    >
-                      + AHU costing
-                    </DropdownMenuItem>
+                    {ahuModuleEnabled ? (
+                      <DropdownMenuItem
+                        onClick={() =>
+                          addSegment("ahu").catch((e) => showToast(String(e)))
+                        }
+                      >
+                        + AHU costing
+                      </DropdownMenuItem>
+                    ) : null}
                     <DropdownMenuItem
                       onClick={() =>
                         addSegment("manual").catch((e) => showToast(String(e)))
@@ -2519,6 +2528,7 @@ export function CostingWorkspace() {
                                         segmentActionsDisabled={
                                           isLoading || !currentProject
                                         }
+                                        ahuModuleEnabled={ahuModuleEnabled}
                                         isCalculating={isCalculating}
                                         openAddItem={openAddItem}
                                         toggleCat={toggleCat}

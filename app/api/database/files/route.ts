@@ -10,6 +10,7 @@ import {
   type AhuDatasetKind,
   type CustomFileSummary,
 } from "@/lib/database-folders";
+import { requireAhuModule } from "@/lib/org-modules";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_COLUMNS = [
@@ -35,6 +36,10 @@ export async function GET(request: Request) {
         { error: "Parameter scope wajib: custom atau ahu" },
         { status: 400 }
       );
+    }
+    if (scopeParam === "ahu") {
+      const ahuGate = await requireAhuModule(orgId);
+      if (!ahuGate.ok) return ahuGate.response;
     }
     if (!folderId) {
       return NextResponse.json({ error: "Parameter folderId wajib" }, { status: 400 });
@@ -118,6 +123,10 @@ export async function POST(request: Request) {
 
     if (!isDatabaseScope(scope)) {
       return NextResponse.json({ error: "Scope tidak valid" }, { status: 400 });
+    }
+    if (scope === "ahu") {
+      const ahuGate = await requireAhuModule(orgId);
+      if (!ahuGate.ok) return ahuGate.response;
     }
     if (!folderId) {
       return NextResponse.json({ error: "folderId wajib" }, { status: 400 });

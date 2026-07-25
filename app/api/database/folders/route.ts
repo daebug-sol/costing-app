@@ -7,6 +7,7 @@ import {
   type DatabaseScope,
   type FolderSummary,
 } from "@/lib/database-folders";
+import { requireAhuModule } from "@/lib/org-modules";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
@@ -21,6 +22,10 @@ export async function GET(request: Request) {
         { error: "Parameter scope wajib: custom atau ahu" },
         { status: 400 }
       );
+    }
+    if (scopeParam === "ahu") {
+      const ahuGate = await requireAhuModule(orgId);
+      if (!ahuGate.ok) return ahuGate.response;
     }
     await ensureDefaultFolders(orgId);
     const folders = await prisma.databaseFolder.findMany({
@@ -59,6 +64,10 @@ export async function POST(request: Request) {
     const name = String(body.name ?? "").trim();
     if (!isDatabaseScope(scope)) {
       return NextResponse.json({ error: "Scope tidak valid" }, { status: 400 });
+    }
+    if (scope === "ahu") {
+      const ahuGate = await requireAhuModule(orgId);
+      if (!ahuGate.ok) return ahuGate.response;
     }
     if (!name) {
       return NextResponse.json({ error: "Nama folder wajib diisi" }, { status: 400 });

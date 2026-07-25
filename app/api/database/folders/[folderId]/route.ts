@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isDefaultFolderId } from "@/lib/database-folders";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requireAhuModule } from "@/lib/org-modules";
 import { requireFolderInOrg } from "@/lib/tenant-context";
 import { tenantWhere } from "@/lib/tenant-queries";
 
@@ -16,6 +17,15 @@ export async function PATCH(request: Request, { params }: Params) {
     const { folderId } = await params;
     const check = await requireFolderInOrg(folderId, orgId);
     if (!check.ok) return check.response;
+
+    const existing = await prisma.databaseFolder.findFirst({
+      where: tenantWhere.folder(orgId, folderId),
+      select: { scope: true },
+    });
+    if (existing?.scope === "ahu") {
+      const ahuGate = await requireAhuModule(orgId);
+      if (!ahuGate.ok) return ahuGate.response;
+    }
 
     const body = (await request.json()) as { name?: string };
     const name = String(body.name ?? "").trim();
@@ -57,6 +67,10 @@ export async function DELETE(_request: Request, { params }: Params) {
     });
     if (!folder) {
       return NextResponse.json({ error: "Folder tidak ditemukan" }, { status: 404 });
+    }
+    if (folder.scope === "ahu") {
+      const ahuGate = await requireAhuModule(orgId);
+      if (!ahuGate.ok) return ahuGate.response;
     }
     if (isDefaultFolderId(folderId)) {
       return NextResponse.json(

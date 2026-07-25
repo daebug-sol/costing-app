@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { getOrgModules } from "@/lib/org-modules";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateSettings } from "@/lib/tenant-queries";
 
@@ -9,8 +10,11 @@ export async function GET() {
   const { orgId } = guard;
 
   try {
-    const settings = await getOrCreateSettings(orgId);
-    return NextResponse.json(settings);
+    const [settings, modules] = await Promise.all([
+      getOrCreateSettings(orgId),
+      getOrgModules(orgId),
+    ]);
+    return NextResponse.json({ ...settings, modules });
   } catch (e) {
     console.error(e);
     return NextResponse.json(
@@ -27,6 +31,7 @@ export async function PUT(request: Request) {
 
   try {
     const body = await request.json();
+    // `modules` (e.g. ahu) is operator-managed — never accept from client PUT.
     const settings = await getOrCreateSettings(orgId);
 
     const data: {
@@ -148,7 +153,8 @@ export async function PUT(request: Request) {
       where: { id: settings.id },
       data,
     });
-    return NextResponse.json(updated);
+    const modules = await getOrgModules(orgId);
+    return NextResponse.json({ ...updated, modules });
   } catch (e) {
     console.error(e);
     return NextResponse.json(
