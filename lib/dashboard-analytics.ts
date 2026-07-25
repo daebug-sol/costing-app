@@ -7,6 +7,7 @@ import { EMPTY_DASHBOARD_RESPONSE } from "@/lib/dashboard-contract";
 import { getDashboardRangeStart } from "@/lib/dashboard-range";
 import { finite } from "@/lib/calculations";
 import { computeCostSummary, marginTogglesFromProject } from "@/lib/cost-summary";
+import { effectiveSectionSubtotal } from "@/lib/section-subtotal";
 import {
   isBookedQuotationStatus,
   isPotentialQuotationStatus,
@@ -38,6 +39,7 @@ type DashboardProjectInput = {
     sections: Array<{
       category: string;
       subtotal: number;
+      overrideSubtotal?: number | null;
       lineItems: Array<{
         description: string;
         subtotal: number;
@@ -462,7 +464,11 @@ function costingDataFromData(input: DashboardAnalyticsInput): DashboardApiRespon
               addRaw(classifyRawCategory(line.description), subAssembly, line.subtotal);
             }
           } else {
-            addRaw("Other Materials", subAssembly, section.subtotal);
+            addRaw(
+              "Other Materials",
+              subAssembly,
+              effectiveSectionSubtotal(section)
+            );
           }
         }
       } else {

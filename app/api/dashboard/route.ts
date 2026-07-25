@@ -57,6 +57,7 @@ export async function GET(request: Request) {
                 select: {
                   category: true,
                   subtotal: true,
+                  overrideSubtotal: true,
                   lineItems: {
                     select: {
                       description: true,

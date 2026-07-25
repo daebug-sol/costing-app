@@ -81,6 +81,7 @@ describe("POST /api/projects/[id]/segments/[segmentId]/recalculate", () => {
     mockedPrisma.$transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
       const tx = {
         costingSection: {
+          findMany: jest.fn().mockResolvedValue([]),
           deleteMany: jest.fn(),
           create: jest.fn(({ data }: { data: { category: string; subtotal: number } }) => {
             createdSections.push({ category: data.category, subtotal: data.subtotal });

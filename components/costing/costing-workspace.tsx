@@ -125,7 +125,11 @@ import type { CostingScope } from "@/lib/costing-scope";
 import { DEFAULT_COSTING_SCOPE, normalizeCostingScope } from "@/lib/costing-scope";
 import { computeCostSummary, finite } from "@/lib/cost-summary";
 import { groupByMonthAndDay } from "@/lib/group-by-month-day";
-import { formatIDR, formatNumber } from "@/lib/utils/format";
+import {
+  effectiveSectionSubtotal,
+  sectionHasPriceOverride,
+} from "@/lib/section-subtotal";
+import { formatIDR, formatNumber, parseIDR } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 import { AssemblyTypeBadge } from "@/components/costing/assembly-type-badge";
 import { ManualWorkspace } from "@/components/costing/ManualWorkspace";
@@ -285,6 +289,11 @@ type AhuEditorProps = {
   setQtyDraft: Dispatch<SetStateAction<Record<string, string>>>;
   overrideItem: (itemId: string, qty: number) => Promise<void>;
   resetItem: (itemId: string) => Promise<void>;
+  setSectionOverride: (
+    sectionId: string,
+    overrideSubtotal: number | null
+  ) => Promise<void>;
+  resetSegmentMarkup: (segmentId: string) => Promise<void>;
   showToast: (m: string) => void;
 };
 
@@ -304,12 +313,39 @@ function AhuSegmentEditor({
   setQtyDraft,
   overrideItem,
   resetItem,
+  setSectionOverride,
+  resetSegmentMarkup,
   showToast,
 }: AhuEditorProps) {
   const sortedSections = useMemo(
     () => sortSections(seg.sections ?? []),
     [seg.sections]
   );
+
+  const [priceEditId, setPriceEditId] = useState<string | null>(null);
+  const [priceDraft, setPriceDraft] = useState("");
+  const [resettingMarkup, setResettingMarkup] = useState(false);
+  const skipPriceBlurRef = useRef(false);
+
+  const hasAnyOverride = useMemo(
+    () => sortedSections.some((s) => sectionHasPriceOverride(s)),
+    [sortedSections]
+  );
+
+  const commitSectionPrice = (sec: CostingSectionWithLines, raw: string) => {
+    const v = parseIDR(raw);
+    if (v === null) {
+      setSectionOverride(sec.id, null).catch((e) => showToast(String(e)));
+      setPriceEditId(null);
+      return;
+    }
+    if (!Number.isFinite(v)) {
+      showToast("Harga kategori harus berupa angka");
+      return;
+    }
+    setSectionOverride(sec.id, v).catch((e) => showToast(String(e)));
+    setPriceEditId(null);
+  };
 
   const [ahu, setAhu] = useState<AhuRecalcParams>(() =>
     initialAhuFromSegment(seg.ahuRecalcParams)
@@ -1369,23 +1405,120 @@ function AhuSegmentEditor({
           </TabsContent>
 
           <TabsContent value="summary" className="flex flex-col gap-3">
-            <CostingLevelHeading level="segment" as="h4">
-              Ringkasan kategori
-            </CostingLevelHeading>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CostingLevelHeading level="segment" as="h4">
+                Ringkasan kategori
+              </CostingLevelHeading>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={
+                  segmentActionsDisabled ||
+                  isCalculating ||
+                  resettingMarkup ||
+                  !hasAnyOverride
+                }
+                aria-busy={resettingMarkup}
+                aria-label="Reset markup — hapus semua override harga kategori"
+                onClick={() => {
+                  setResettingMarkup(true);
+                  resetSegmentMarkup(seg.id)
+                    .catch((e) => showToast(String(e)))
+                    .finally(() => setResettingMarkup(false));
+                }}
+              >
+                {resettingMarkup ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Reset markup…
+                  </>
+                ) : (
+                  "Reset markup"
+                )}
+              </Button>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Double-klik harga untuk override. Kosongkan field lalu Enter/blur
+              untuk kembali ke harga hitungan.
+            </p>
             <div className="flex flex-col gap-2">
-              {sortedSections.map((sec) => (
-                <div
-                  key={sec.id}
-                  className="bg-muted/30 flex items-center justify-between gap-3 rounded-md border border-border px-4 py-2.5"
-                >
-                  <span className="text-sm font-medium text-foreground">
-                    {categoryTitle(sec.category)}
-                  </span>
-                  <span className="tabular-money text-sm font-semibold text-foreground">
-                    {formatIDR(sec.subtotal)}
-                  </span>
-                </div>
-              ))}
+              {sortedSections.map((sec) => {
+                const effective = effectiveSectionSubtotal(sec);
+                const overridden = sectionHasPriceOverride(sec);
+                const editing = priceEditId === sec.id;
+                return (
+                  <div
+                    key={sec.id}
+                    className={cn(
+                      "bg-muted/30 flex items-center justify-between gap-3 rounded-md border border-border px-4 py-2.5",
+                      overridden && "border-amber-300/80 bg-amber-50/50"
+                    )}
+                  >
+                    <span className="text-sm font-medium text-foreground">
+                      {categoryTitle(sec.category)}
+                    </span>
+                    <div className="flex min-w-0 flex-col items-end gap-0.5">
+                      {editing ? (
+                        <Input
+                          autoFocus
+                          className="tabular-money h-8 w-44 text-right"
+                          value={priceDraft}
+                          aria-label={`Override harga ${categoryTitle(sec.category)}`}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            if (next.trim() === "") {
+                              setPriceDraft("");
+                              return;
+                            }
+                            const digits = next.replace(/\D/g, "");
+                            if (digits === "") {
+                              setPriceDraft("");
+                              return;
+                            }
+                            setPriceDraft(formatIDR(Number(digits)));
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              skipPriceBlurRef.current = true;
+                              commitSectionPrice(sec, priceDraft);
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              skipPriceBlurRef.current = true;
+                              setPriceEditId(null);
+                            }
+                          }}
+                          onBlur={() => {
+                            if (skipPriceBlurRef.current) {
+                              skipPriceBlurRef.current = false;
+                              return;
+                            }
+                            commitSectionPrice(sec, priceDraft);
+                          }}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          className={cn(
+                            "tabular-money text-sm font-semibold text-foreground",
+                            "rounded-sm px-1 py-0.5 text-right hover:bg-muted/80",
+                            "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                          )}
+                          title="Double-klik untuk ubah harga kategori"
+                          aria-label={`Harga ${categoryTitle(sec.category)}: ${formatIDR(effective)}. Double-klik untuk edit.`}
+                          onDoubleClick={() => {
+                            setPriceEditId(sec.id);
+                            setPriceDraft(formatIDR(Math.round(effective)));
+                          }}
+                        >
+                          {formatIDR(effective)}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <Button
               type="button"
@@ -1410,6 +1543,7 @@ function AhuSegmentEditor({
           <div className="flex flex-col gap-3 pb-2">
         {sortedSections.map((sec) => {
           const open = openCats[catKey(seg.id, sec.category)] ?? false;
+          const effective = effectiveSectionSubtotal(sec);
           return (
             <Card
               key={sec.id}
@@ -1425,7 +1559,7 @@ function AhuSegmentEditor({
                 </span>
                 <span className="flex items-center gap-3">
                   <span className="tabular-money text-sm font-semibold text-foreground">
-                    {formatIDR(sec.subtotal)}
+                    {formatIDR(effective)}
                   </span>
                   {open ? (
                     <ChevronDown className="size-4 text-muted-foreground" />
@@ -1598,6 +1732,8 @@ export function CostingWorkspace() {
     recalculateSegment,
     overrideItem,
     resetItem,
+    setSectionOverride,
+    resetSegmentMarkup,
     updateMargins,
   } = useCostingStore();
 
@@ -1661,8 +1797,6 @@ export function CostingWorkspace() {
     asuransi: 0,
     mobilisasi: 0,
     margin: 20,
-    priceAdjustmentPct: 0,
-    priceAdjustmentAmt: 0,
   });
 
   const mainScrollRef = useRef<HTMLElement>(null);
@@ -1722,8 +1856,6 @@ export function CostingWorkspace() {
       asuransi: finite(currentProject.asuransi, 0),
       mobilisasi: finite(currentProject.mobilisasi, 0),
       margin: finite(currentProject.margin, 0),
-      priceAdjustmentPct: finite(currentProject.priceAdjustmentPct, 0),
-      priceAdjustmentAmt: finite(currentProject.priceAdjustmentAmt, 0),
     });
   }, [currentProject?.id]);
 
@@ -1832,8 +1964,9 @@ export function CostingWorkspace() {
         asuransi: m.asuransi,
         mobilisasi: m.mobilisasi,
         margin: m.margin,
-        priceAdjustmentPct: m.priceAdjustmentPct,
-        priceAdjustmentAmt: m.priceAdjustmentAmt,
+        // Project-level price adjustment UI removed; keep DB at 0.
+        priceAdjustmentPct: 0,
+        priceAdjustmentAmt: 0,
         totalSelling: selling,
       } as never);
     } catch (e) {
@@ -1863,8 +1996,8 @@ export function CostingWorkspace() {
         asuransi: m.asuransi,
         mobilisasi: m.mobilisasi,
         margin: m.margin,
-        priceAdjustmentPct: m.priceAdjustmentPct,
-        priceAdjustmentAmt: m.priceAdjustmentAmt,
+        priceAdjustmentPct: 0,
+        priceAdjustmentAmt: 0,
         totalSelling: selling,
       } as never);
     } catch (e) {
@@ -2587,6 +2720,8 @@ export function CostingWorkspace() {
                                         setQtyDraft={setQtyDraft}
                                         overrideItem={overrideItem}
                                         resetItem={resetItem}
+                                        setSectionOverride={setSectionOverride}
+                                        resetSegmentMarkup={resetSegmentMarkup}
                                         showToast={showToast}
                                       />
                                     )}
@@ -2856,67 +2991,6 @@ export function CostingWorkspace() {
                       </TableCell>
                       <TableCell className="tabular-money text-right">
                         {formatIDR(totals.marginAmt)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="min-w-[5rem]">
-                              Penyesuaian harga
-                            </span>
-                            <Input
-                              className="h-8 w-16 text-right"
-                              type="number"
-                              value={marginPct.priceAdjustmentPct}
-                              onChange={(e) => {
-                                const v = Number(e.target.value);
-                                if (Number.isFinite(v))
-                                  setMarginPct((p) => ({
-                                    ...p,
-                                    priceAdjustmentPct: v,
-                                  }));
-                              }}
-                              onBlur={() => void persistMargins()}
-                              aria-label="Penyesuaian harga persen"
-                            />
-                            <span className="text-muted-foreground text-xs">%</span>
-                          </div>
-                          <p className="text-muted-foreground text-xs">
-                            Ditambahkan setelah margin; untuk naikkan harga
-                            proyek tanpa ubah OH/margin
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="tabular-money text-right">
-                        {formatIDR(totals.adjPctAmt)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="min-w-[5rem]">
-                            Penyesuaian harga (Rp)
-                          </span>
-                          <Input
-                            className="h-8 w-28 text-right"
-                            type="number"
-                            value={marginPct.priceAdjustmentAmt}
-                            onChange={(e) => {
-                              const v = Number(e.target.value);
-                              if (Number.isFinite(v))
-                                setMarginPct((p) => ({
-                                  ...p,
-                                  priceAdjustmentAmt: v,
-                                }));
-                            }}
-                            onBlur={() => void persistMargins()}
-                            aria-label="Penyesuaian harga rupiah"
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell className="tabular-money text-right">
-                        {formatIDR(totals.adjFlatAmt)}
                       </TableCell>
                     </TableRow>
                     <TableRow className="bg-muted/50 border-t-2 text-base font-bold">

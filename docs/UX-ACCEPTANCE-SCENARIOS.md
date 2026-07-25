@@ -224,28 +224,30 @@ mobile (we are not mobile-first, but we are mobile-survivable).
 
 ---
 
-## Scenario 9 — Penyesuaian harga proyek (markup setelah margin)
+## Scenario 9 — Override harga kategori (AHU Ringkasan)
 
-**Trigger.** U is on `/costing` with a project that has HPP and the project
-summary (margin stack) open.
+**Trigger.** U is on `/costing` with an AHU segment that has been calculated
+(Ringkasan kategori shows Frame & Panel, Skid, dll.).
 
-1. U melihat baris **Penyesuaian harga (%)** dan **Penyesuaian harga (Rp)**
-   setelah baris Margin, sebelum SELLING PRICE.
-2. U mengisi penyesuaian **+5%** lalu blur/tab keluar input.
-3. A menyimpan via `PUT /api/projects/:id` (fields
-   `priceAdjustmentPct` / `priceAdjustmentAmt`) dan **SELLING PRICE** naik
-   sesuai `selling × (1 + pct/100) + amt` (pct dulu, lalu Rp).
-4. U menambah **+Rp 1.000.000** pada penyesuaian Rp; blur → total selling
-   bertambah lagi sebesar Rp1jt di atas hasil langkah 3.
-5. U membuka / membuat quotation dari proyek ini; setelah save margins,
-   `totalSelling` yang tersinkron ke quotation item mencerminkan selling
-   **setelah** penyesuaian (bukan selling sebelum adjustment).
-6. Helper copy di bawah input % menjelaskan bahwa penyesuaian ditambahkan
-   setelah margin, tanpa mengubah OH/margin.
+1. U membuka tab **Ringkasan** pada segmen AHU.
+2. U melihat tombol **Reset markup** di atas daftar kategori (disabled jika
+   belum ada override).
+3. U **double-klik** harga suatu kategori (mis. Frame & Panel Rp5.000.000),
+   mengubah menjadi **5100000**, lalu Enter/blur.
+4. A menyimpan via `PUT /api/projects/:id/sections/:sectionId`
+   (`overrideSubtotal`) dan menampilkan harga baru; tipografi/amber cue +
+   teks **asli: Rp…** menunjukkan nilai hitungan.
+5. Subtotal HPP segmen / proyek naik sesuai selisih override (rollup memakai
+   `overrideSubtotal ?? subtotal`).
+6. U mengosongkan field harga lalu commit → override dihapus, harga kembali
+   ke nilai hitungan.
+7. U menekan **Reset markup** → semua override kategori segmen dihapus
+   (`POST …/reset-markup`); harga kembali ke hitungan.
+8. Setelah **Hitung ulang**, override per nama kategori **tetap** (bukan
+   terhapus), kecuali U sudah Reset markup.
 
-**Done when:** zero/empty adjustment leaves selling unchanged vs margin-only
-stack; pct-only, amt-only, and both combine correctly; reload project
-restores the saved adjustment values.
+**Done when:** empty commit resets one category; Reset markup clears all;
+reload restores overrides; selling/HPP reflect effective category prices.
 
 ---
 
@@ -260,9 +262,9 @@ restores the saved adjustment values.
 | 4 Create | | x | x | | |
 | 5 Export | | | | x | |
 | 6 Search | | | x | | |
-| 7 Error recovery | x | x | x | x | x |
+| 7 Error recovery | x | x | | x | x |
 | 8 Mobile | x | x | x | x | x |
-| 9 Penyesuaian harga | | x | | x | |
+| 9 Override harga kategori | | x | | x | |
 
 When a PR adds a new flow, append a scenario here and add a row to the
 matrix. When deleting a flow, remove the scenario rather than letting it

@@ -337,7 +337,10 @@ model CostingSection {
   segment   CostingSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
   category  String
   sortOrder Int            @default(0)
+  /** Calculated from line items (Hitung ulang / qty override). */
   subtotal  Float          @default(0.0)
+  /** Optional category selling override (IDR). Null = use calculated `subtotal`. */
+  overrideSubtotal Float?
   lineItems CostingLineItem[]
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt

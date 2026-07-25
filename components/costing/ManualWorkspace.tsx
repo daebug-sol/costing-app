@@ -223,8 +223,6 @@ export function ManualWorkspace({
     asuransi: 0,
     mobilisasi: 0,
     margin: 20,
-    priceAdjustmentPct: 0,
-    priceAdjustmentAmt: 0,
   });
   const marginPctRef = useRef(marginPct);
   const togglesRef = useRef({ esk: true, asu: true, mob: true });
@@ -327,8 +325,6 @@ export function ManualWorkspace({
         asuransi: finite(currentProject.asuransi, 0),
         mobilisasi: finite(currentProject.mobilisasi, 0),
         margin: finite(currentProject.margin, 0),
-        priceAdjustmentPct: finite(currentProject.priceAdjustmentPct, 0),
-        priceAdjustmentAmt: finite(currentProject.priceAdjustmentAmt, 0),
       });
     });
   }, [currentProject]);
@@ -377,8 +373,8 @@ export function ManualWorkspace({
         asuransi: m.asuransi,
         mobilisasi: m.mobilisasi,
         margin: m.margin,
-        priceAdjustmentPct: m.priceAdjustmentPct,
-        priceAdjustmentAmt: m.priceAdjustmentAmt,
+        priceAdjustmentPct: 0,
+        priceAdjustmentAmt: 0,
         totalSelling: selling,
       } as never);
     } catch (e) {
@@ -408,8 +404,8 @@ export function ManualWorkspace({
         asuransi: m.asuransi,
         mobilisasi: m.mobilisasi,
         margin: m.margin,
-        priceAdjustmentPct: m.priceAdjustmentPct,
-        priceAdjustmentAmt: m.priceAdjustmentAmt,
+        priceAdjustmentPct: 0,
+        priceAdjustmentAmt: 0,
         totalSelling: selling,
       } as never);
     } catch (e) {
@@ -1140,65 +1136,6 @@ export function ManualWorkspace({
                 </TableCell>
                 <TableCell className="tabular-money text-right">
                   {formatIDR(totals.marginAmt)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="min-w-[5rem]">Penyesuaian harga</span>
-                      <Input
-                        className="h-8 w-16 text-right"
-                        type="number"
-                        value={marginPct.priceAdjustmentPct}
-                        onChange={(e) => {
-                          const v = Number(e.target.value);
-                          if (Number.isFinite(v))
-                            setMarginPct((p) => ({
-                              ...p,
-                              priceAdjustmentPct: v,
-                            }));
-                        }}
-                        onBlur={() => void persistMargins()}
-                        aria-label="Penyesuaian harga persen"
-                      />
-                      <span className="text-muted-foreground text-xs">%</span>
-                    </div>
-                    <p className="text-muted-foreground text-xs">
-                      Ditambahkan setelah margin; untuk naikkan harga proyek
-                      tanpa ubah OH/margin
-                    </p>
-                  </div>
-                </TableCell>
-                <TableCell className="tabular-money text-right">
-                  {formatIDR(totals.adjPctAmt)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="min-w-[5rem]">
-                      Penyesuaian harga (Rp)
-                    </span>
-                    <Input
-                      className="h-8 w-28 text-right"
-                      type="number"
-                      value={marginPct.priceAdjustmentAmt}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        if (Number.isFinite(v))
-                          setMarginPct((p) => ({
-                            ...p,
-                            priceAdjustmentAmt: v,
-                          }));
-                      }}
-                      onBlur={() => void persistMargins()}
-                      aria-label="Penyesuaian harga rupiah"
-                    />
-                  </div>
-                </TableCell>
-                <TableCell className="tabular-money text-right">
-                  {formatIDR(totals.adjFlatAmt)}
                 </TableCell>
               </TableRow>
               <TableRow className="bg-muted/50 border-t-2 text-base font-bold">

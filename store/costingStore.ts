@@ -97,6 +97,13 @@ export interface CostingStore {
   ) => Promise<void>;
   overrideItem: (itemId: string, qty: number) => Promise<void>;
   resetItem: (itemId: string) => Promise<void>;
+  /** Set category price override; pass null to restore calculated subtotal. */
+  setSectionOverride: (
+    sectionId: string,
+    overrideSubtotal: number | null
+  ) => Promise<void>;
+  /** Clear all category overrides on an AHU segment ("Reset markup"). */
+  resetSegmentMarkup: (segmentId: string) => Promise<void>;
   updateMargins: (margins: Partial<CostingProject>) => Promise<void>;
 }
 
@@ -282,6 +289,32 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
     });
     if (!r.ok) throw new Error(await readErr(r));
     await get().loadProject(cur.id);
+    await get().loadProjects();
+  },
+
+  setSectionOverride: async (sectionId, overrideSubtotal) => {
+    const cur = get().currentProject;
+    if (!cur) return;
+    const r = await fetch(`/api/projects/${cur.id}/sections/${sectionId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ overrideSubtotal }),
+    });
+    if (!r.ok) throw new Error(await readErr(r));
+    await get().loadProject(cur.id);
+    await get().loadProjects();
+  },
+
+  resetSegmentMarkup: async (segmentId) => {
+    const cur = get().currentProject;
+    if (!cur) return;
+    const r = await fetch(
+      `/api/projects/${cur.id}/segments/${segmentId}/reset-markup`,
+      { method: "POST" }
+    );
+    if (!r.ok) throw new Error(await readErr(r));
+    const p = normalizeProject(await r.json());
+    set({ currentProject: p });
     await get().loadProjects();
   },
 
