@@ -101,4 +101,30 @@ describe("help-progress", () => {
   it("marks opened and complete in localStorage", () => {
     const localStorage = installMemoryLocalStorage();
 
-    const opened = markOpened("mulai-cepat
+    const opened = markOpened("mulai-cepat/orientasi-aplikasi");
+    expect(opened.lastOpenedKey).toBe("mulai-cepat/orientasi-aplikasi");
+    expect(opened.completedLessonKeys).toEqual([]);
+    expect(localStorage.getItem(HELP_PROGRESS_STORAGE_KEY)).toContain(
+      "mulai-cepat/orientasi-aplikasi"
+    );
+
+    const completed = markComplete("mulai-cepat/orientasi-aplikasi");
+    expect(completed.completedLessonKeys).toEqual([
+      "mulai-cepat/orientasi-aplikasi",
+    ]);
+    expect(
+      isLessonComplete(completed, "mulai-cepat/orientasi-aplikasi")
+    ).toBe(true);
+    expect(isLessonComplete(completed, "costing/proyek-dan-segment")).toBe(
+      false
+    );
+
+    const stored = readProgressFromStorage(
+      localStorage.getItem(HELP_PROGRESS_STORAGE_KEY)
+    );
+    expect(stored.completedLessonKeys).toEqual([
+      "mulai-cepat/orientasi-aplikasi",
+    ]);
+    expect(stored.lastOpenedKey).toBe("mulai-cepat/orientasi-aplikasi");
+  });
+});
