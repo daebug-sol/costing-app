@@ -6,6 +6,7 @@ import { guardApiRoute } from "@/lib/api-guard";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { finite } from "@/lib/calculations";
 import { normalizeCostingScope } from "@/lib/costing-scope";
+import { requireAhuModule } from "@/lib/org-modules";
 import { prisma } from "@/lib/prisma";
 import { rollupProjectFinancials } from "@/lib/project-rollup";
 import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
@@ -17,6 +18,9 @@ export async function POST(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
   const { orgId } = guard;
+
+  const ahuGate = await requireAhuModule(orgId);
+  if (!ahuGate.ok) return ahuGate.response;
 
   const rate = checkRateLimit(rateLimitKey([orgId, "recalculate"]), 20, 60_000);
   if (!rate.ok) {

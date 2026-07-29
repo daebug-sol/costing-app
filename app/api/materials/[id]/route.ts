@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requireAhuModule } from "@/lib/org-modules";
 import { prisma } from "@/lib/prisma";
 import { tenantWhere } from "@/lib/tenant-queries";
 
@@ -15,6 +16,9 @@ export async function PUT(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
   const { orgId } = guard;
+
+  const ahuGate = await requireAhuModule(orgId);
+  if (!ahuGate.ok) return ahuGate.response;
 
   try {
     const { id } = await context.params;
@@ -115,6 +119,9 @@ export async function DELETE(_request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
   const { orgId } = guard;
+
+  const ahuGate = await requireAhuModule(orgId);
+  if (!ahuGate.ok) return ahuGate.response;
 
   try {
     const { id } = await context.params;

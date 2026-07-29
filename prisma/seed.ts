@@ -23,11 +23,12 @@ async function seedOrg(
       id,
       slug,
       name,
+      ahuModuleEnabled: true,
       settings: {
         create: { companyName, onboardingComplete: true },
       },
     },
-    update: { name },
+    update: { name, ahuModuleEnabled: true },
   });
 
   await ensureDefaultFolders(id);
