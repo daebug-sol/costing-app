@@ -42,6 +42,8 @@ type Settings = {
   validityDays: number;
   termsConditions: string;
   onboardingComplete?: boolean;
+  /** Read-only product modules; ignored on PUT. */
+  modules?: { ahu: boolean };
   updatedAt: string;
 };
 

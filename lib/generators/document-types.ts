@@ -36,6 +36,8 @@ export type ProjectDoc = {
   asuransi: number;
   mobilisasi: number;
   margin: number;
+  priceAdjustmentPct?: number;
+  priceAdjustmentAmt?: number;
 };
 
 export type QuotationLineItemDoc = {

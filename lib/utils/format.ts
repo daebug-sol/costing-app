@@ -9,6 +9,28 @@ export function formatIDR(value: number): string {
   }).format(value);
 }
 
+/**
+ * Parse an Indonesian Rupiah display string (e.g. "Rp 43.469.116") to a number.
+ * Empty / whitespace-only → `null` (caller may treat as reset).
+ * Non-numeric → `NaN`.
+ */
+export function parseIDR(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (trimmed === "") return null;
+
+  const cleaned = trimmed
+    .replace(/Rp\.?/gi, "")
+    .replace(/\u00a0/g, "")
+    .replace(/\s/g, "")
+    .replace(/\./g, "")
+    .replace(/,/g, ".");
+
+  if (cleaned === "" || cleaned === "-" || cleaned === "+") return null;
+
+  const v = Number(cleaned);
+  return Number.isFinite(v) ? v : NaN;
+}
+
 /** Compact axis labels for narrow chart containers (split-screen friendly). */
 export function formatIDRCompact(value: number): string {
   if (!Number.isFinite(value)) return "—";

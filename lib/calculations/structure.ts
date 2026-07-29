@@ -33,11 +33,15 @@ export function calculateStructure(params: {
   H: number;
   W: number;
   D: number;
+  /** Section count; scales every line qty. Default 1 preserves Excel parity. */
+  nSections?: number;
   materials: MaterialPrice[];
 }): CalcLineItem[] {
   const H = finite(params.H, 0);
   const W = finite(params.W, 0);
   finite(params.D, 0);
+  const nSec = Math.max(1, Math.floor(finite(params.nSections, 1)));
+  const sectionNote = nSec > 1 ? `nSections=${nSec}` : null;
 
   const giMat =
     findMaterial(params.materials, "SGCC-1.5") ??
@@ -48,56 +52,61 @@ export function calculateStructure(params: {
   const hM = H / 1000;
 
   const kgSupFlangeW =
-    0.0015 * 0.1 * wM * GI_DENSITY * 1.15 * 2;
+    0.0015 * 0.1 * wM * GI_DENSITY * 1.15 * 2 * nSec;
   const kgSupFlangeH =
-    0.0015 * 0.1 * hM * GI_DENSITY * 1.15 * 2;
+    0.0015 * 0.1 * hM * GI_DENSITY * 1.15 * 2 * nSec;
   const kgFanPart =
-    0.0015 * hM * wM * GI_DENSITY * 1.15;
+    0.0015 * hM * wM * GI_DENSITY * 1.15 * nSec;
   const kgFilterH =
-    0.0015 * 0.1 * hM * GI_DENSITY * 1.15 * 4;
+    0.0015 * 0.1 * hM * GI_DENSITY * 1.15 * 4 * nSec;
   const kgFilterW =
-    0.0015 * 0.1 * wM * GI_DENSITY * 1.15 * 4;
+    0.0015 * 0.1 * wM * GI_DENSITY * 1.15 * 4 * nSec;
 
   return [
     line({
       description: "Supply flange W (GI)",
       uom: "kg",
       qty: finite(kgSupFlangeW, 0),
-      qtyFormula: `0.0015*0.1*(${W}/1000)*${GI_DENSITY}*1.15*2`,
+      qtyFormula: `0.0015*0.1*(${W}/1000)*${GI_DENSITY}*1.15*2*${nSec}`,
       unitPrice: giPrice,
       componentRef: giMat?.code ?? "SGCC",
+      notes: sectionNote,
     }),
     line({
       description: "Supply flange H (GI)",
       uom: "kg",
       qty: finite(kgSupFlangeH, 0),
-      qtyFormula: `0.0015*0.1*(${H}/1000)*${GI_DENSITY}*1.15*2`,
+      qtyFormula: `0.0015*0.1*(${H}/1000)*${GI_DENSITY}*1.15*2*${nSec}`,
       unitPrice: giPrice,
       componentRef: giMat?.code ?? "SGCC",
+      notes: sectionNote,
     }),
     line({
       description: "Fan partition (GI)",
       uom: "kg",
       qty: finite(kgFanPart, 0),
-      qtyFormula: `0.0015*(${H}/1000)*(${W}/1000)*${GI_DENSITY}*1.15`,
+      qtyFormula: `0.0015*(${H}/1000)*(${W}/1000)*${GI_DENSITY}*1.15*${nSec}`,
       unitPrice: giPrice,
       componentRef: giMat?.code ?? "SGCC",
+      notes: sectionNote,
     }),
     line({
       description: "Filter rail H (GI)",
       uom: "kg",
       qty: finite(kgFilterH, 0),
-      qtyFormula: `0.0015*0.1*(${H}/1000)*${GI_DENSITY}*1.15*4`,
+      qtyFormula: `0.0015*0.1*(${H}/1000)*${GI_DENSITY}*1.15*4*${nSec}`,
       unitPrice: giPrice,
       componentRef: giMat?.code ?? "SGCC",
+      notes: sectionNote,
     }),
     line({
       description: "Filter rail W (GI)",
       uom: "kg",
       qty: finite(kgFilterW, 0),
-      qtyFormula: `0.0015*0.1*(${W}/1000)*${GI_DENSITY}*1.15*4`,
+      qtyFormula: `0.0015*0.1*(${W}/1000)*${GI_DENSITY}*1.15*4*${nSec}`,
       unitPrice: giPrice,
       componentRef: giMat?.code ?? "SGCC",
+      notes: sectionNote,
     }),
   ];
 }

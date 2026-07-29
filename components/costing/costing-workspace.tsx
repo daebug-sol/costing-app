@@ -118,13 +118,19 @@ import {
 } from "@/components/ui/table";
 import type { AhuRecalcParams } from "@/lib/ahu-recalc-params";
 import {
+  normalizeSectionLayout,
   parseAhuRecalcParams,
   resolveDamperModes,
 } from "@/lib/ahu-recalc-params";
 import type { CostingScope } from "@/lib/costing-scope";
 import { DEFAULT_COSTING_SCOPE, normalizeCostingScope } from "@/lib/costing-scope";
+import { computeCostSummary, finite } from "@/lib/cost-summary";
 import { groupByMonthAndDay } from "@/lib/group-by-month-day";
-import { formatIDR, formatNumber } from "@/lib/utils/format";
+import {
+  effectiveSectionSubtotal,
+  sectionHasPriceOverride,
+} from "@/lib/section-subtotal";
+import { formatIDR, formatNumber, parseIDR } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 import { AssemblyTypeBadge } from "@/components/costing/assembly-type-badge";
 import { ManualWorkspace } from "@/components/costing/ManualWorkspace";
@@ -255,37 +261,6 @@ function SortableCostingSegment({
   return <>{children({ setNodeRef, style, dragProps })}</>;
 }
 
-function finite(n: number, fallback = 0) {
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function computeCostSummary(
-  hppIn: number,
-  qtyIn: number,
-  m: {
-    overhead: number;
-    contingency: number;
-    eskalasi: number;
-    asuransi: number;
-    mobilisasi: number;
-    margin: number;
-  },
-  t: { esk: boolean; asu: boolean; mob: boolean }
-) {
-  const hpp = finite(hppIn, 0);
-  const oh = hpp * (finite(m.overhead, 0) / 100);
-  const cont = hpp * (finite(m.contingency, 0) / 100);
-  const esk = t.esk ? hpp * (finite(m.eskalasi, 0) / 100) : 0;
-  const asu = t.asu ? hpp * (finite(m.asuransi, 0) / 100) : 0;
-  const mob = t.mob ? hpp * (finite(m.mobilisasi, 0) / 100) : 0;
-  const totalCost = hpp + oh + cont + esk + asu + mob;
-  const marginAmt = totalCost * (finite(m.margin, 0) / 100);
-  const selling = totalCost + marginAmt;
-  const q = Math.max(1, Math.floor(finite(qtyIn, 1)));
-  const perUnit = selling / q;
-  return { hpp, oh, cont, esk, asu, mob, totalCost, marginAmt, selling, perUnit };
-}
-
 const PROFILE_OPTIONS = [
   { label: "DS15", value: "1540T-NA06" },
   { label: "DS25", value: "2540Y-NA06" },
@@ -305,6 +280,8 @@ type AhuEditorProps = {
   ) => Promise<void>;
   /** True saat proyek belum termuat — cegah PUT/recalc tanpa currentProject */
   segmentActionsDisabled: boolean;
+  /** When false, existing AHU is viewable but recalculate CTA is hidden. */
+  ahuModuleEnabled: boolean;
   isCalculating: boolean;
   openAddItem: (sectionId: string) => void;
   toggleCat: (segmentId: string, cat: string) => void;
@@ -315,6 +292,11 @@ type AhuEditorProps = {
   setQtyDraft: Dispatch<SetStateAction<Record<string, string>>>;
   overrideItem: (itemId: string, qty: number) => Promise<void>;
   resetItem: (itemId: string) => Promise<void>;
+  setSectionOverride: (
+    sectionId: string,
+    overrideSubtotal: number | null
+  ) => Promise<void>;
+  resetSegmentMarkup: (segmentId: string) => Promise<void>;
   showToast: (m: string) => void;
 };
 
@@ -324,6 +306,7 @@ function AhuSegmentEditor({
   saveAhuParams,
   saveAhuParamsAndRecalculate,
   segmentActionsDisabled,
+  ahuModuleEnabled,
   isCalculating,
   openAddItem,
   toggleCat,
@@ -334,6 +317,8 @@ function AhuSegmentEditor({
   setQtyDraft,
   overrideItem,
   resetItem,
+  setSectionOverride,
+  resetSegmentMarkup,
   showToast,
 }: AhuEditorProps) {
   const sortedSections = useMemo(
@@ -341,9 +326,42 @@ function AhuSegmentEditor({
     [seg.sections]
   );
 
+  const [priceEditId, setPriceEditId] = useState<string | null>(null);
+  const [priceDraft, setPriceDraft] = useState("");
+  const [resettingMarkup, setResettingMarkup] = useState(false);
+  const skipPriceBlurRef = useRef(false);
+
+  const hasAnyOverride = useMemo(
+    () => sortedSections.some((s) => sectionHasPriceOverride(s)),
+    [sortedSections]
+  );
+
+  const commitSectionPrice = (sec: CostingSectionWithLines, raw: string) => {
+    const v = parseIDR(raw);
+    if (v === null) {
+      setSectionOverride(sec.id, null).catch((e) => showToast(String(e)));
+      setPriceEditId(null);
+      return;
+    }
+    if (!Number.isFinite(v)) {
+      showToast("Harga kategori harus berupa angka");
+      return;
+    }
+    setSectionOverride(sec.id, v).catch((e) => showToast(String(e)));
+    setPriceEditId(null);
+  };
+
   const [ahu, setAhu] = useState<AhuRecalcParams>(() =>
     initialAhuFromSegment(seg.ahuRecalcParams)
   );
+
+  const nSec =
+    ahu.nSections != null
+      ? Math.min(8, Math.max(1, Math.floor(ahu.nSections)))
+      : 1;
+  const sectionLayout = normalizeSectionLayout(ahu.sectionLayout);
+  const dimLabel = (v: number | null | undefined) =>
+    v != null ? String(v) : "—";
 
   const setCoil = (patch: Partial<NonNullable<AhuRecalcParams["coil"]>>) => {
     setAhu((p) => ({ ...p, coil: { ...p.coil, ...patch } }));
@@ -455,6 +473,98 @@ function AhuSegmentEditor({
           <CostingLevelHeading level="segment" as="h4">
             Parameter unit AHU
           </CostingLevelHeading>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Label htmlFor={`nsec-${seg.id}`} className="text-xs">
+                  Jumlah section
+                </Label>
+                <Input
+                  id={`nsec-${seg.id}`}
+                  type="number"
+                  min={1}
+                  max={8}
+                  className="h-8 w-24"
+                  value={nSec}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setAhu((p) => ({
+                      ...p,
+                      nSections:
+                        v === ""
+                          ? undefined
+                          : Math.min(
+                              8,
+                              Math.max(1, Math.floor(Number(v) || 1))
+                            ),
+                    }));
+                  }}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Label htmlFor={`seclayout-${seg.id}`} className="text-xs">
+                  Tata letak section
+                </Label>
+                <Select
+                  value={sectionLayout}
+                  onValueChange={(v) => {
+                    setAhu((p) => ({
+                      ...p,
+                      sectionLayout: normalizeSectionLayout(v),
+                    }));
+                  }}
+                >
+                  <SelectTrigger
+                    id={`seclayout-${seg.id}`}
+                    className="h-8 w-[11.5rem] text-xs"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="horizontal">
+                      Horizontal (samping)
+                    </SelectItem>
+                    <SelectItem value="vertical">
+                      Vertical (atas-bawah)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {nSec > 1 && (
+              <div className="flex flex-col gap-2">
+                <ul className="divide-y divide-border rounded-md border border-border">
+                  {Array.from({ length: nSec }, (_, i) => (
+                    <li
+                      key={`sec-row-${i + 1}`}
+                      className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-sm"
+                    >
+                      <span className="min-w-[5.5rem] font-medium">
+                        Section {i + 1}
+                      </span>
+                      <span className="text-muted-foreground tabular-nums">
+                        H {dimLabel(seg.dimH)} mm
+                      </span>
+                      <span className="text-muted-foreground tabular-nums">
+                        W {dimLabel(seg.dimW)} mm
+                      </span>
+                      <span className="text-muted-foreground tabular-nums">
+                        D {dimLabel(seg.dimD)} mm
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-muted-foreground text-xs">
+                  Frame &amp; Panel, Skid, dan Structure dihitung × jumlah
+                  section; modul lain tetap satu unit.
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  Formula skid belum dibedakan per tata letak; nilai tersimpan
+                  untuk perhitungan nanti.
+                </p>
+              </div>
+            )}
+          </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <div className="space-y-1">
               <Label className="text-xs">AHU model</Label>
@@ -585,21 +695,23 @@ function AhuSegmentEditor({
               >
                 Simpan parameter
               </Button>
-              <Button
-                type="button"
-                className="gap-2"
-                disabled={isCalculating || segmentActionsDisabled}
-                onClick={() =>
-                  saveAhuParamsAndRecalculate(seg.id, ahu).catch((e) =>
-                    showToast(String(e))
-                  )
-                }
-              >
-                {isCalculating ? (
-                  <Loader2 className="size-4 animate-spin" data-icon="inline-start" />
-                ) : null}
-                Hitung ulang
-              </Button>
+              {ahuModuleEnabled ? (
+                <Button
+                  type="button"
+                  className="gap-2"
+                  disabled={isCalculating || segmentActionsDisabled}
+                  onClick={() =>
+                    saveAhuParamsAndRecalculate(seg.id, ahu).catch((e) =>
+                      showToast(String(e))
+                    )
+                  }
+                >
+                  {isCalculating ? (
+                    <Loader2 className="size-4 animate-spin" data-icon="inline-start" />
+                  ) : null}
+                  Hitung ulang
+                </Button>
+              ) : null}
             </div>
           </div>
 
@@ -662,41 +774,6 @@ function AhuSegmentEditor({
               Parameter modul
             </CostingLevelHeading>
             <Accordion type="multiple" className="w-full rounded-md border border-border px-4 sm:px-5">
-                  <AccordionItem value="general-ahu">
-                    <AccordionTrigger className="hover:no-underline">
-                      <span className="font-medium">General AHU</span>
-                      <span className="text-muted-foreground text-xs font-normal normal-case tracking-normal">
-                        Selalu aktif
-                      </span>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="flex flex-col gap-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Label className="text-xs">Jumlah section</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          className="h-8 w-24"
-                          value={ahu.nSections != null ? ahu.nSections : 1}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setAhu((p) => ({
-                              ...p,
-                              nSections:
-                                v === ""
-                                  ? undefined
-                                  : Math.max(1, Math.floor(Number(v) || 1)),
-                            }));
-                          }}
-                        />
-                      </div>
-                      <p className="text-muted-foreground text-xs">
-                        Dimensi default mengambil dari H/W/D segmen.
-                      </p>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
                   <AccordionItem value="access-door">
                     <AccordionTrigger className="hover:no-underline">
                       <span className="font-medium">Access Door</span>
@@ -736,11 +813,17 @@ function AhuSegmentEditor({
                           className="h-8 w-24"
                           value={ahu.accessDoor?.height ?? ""}
                           placeholder={String(seg.dimH ?? "")}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            const n = v === "" ? NaN : Number(v);
                             setAccessDoor({
-                              height: e.target.value === "" ? undefined : Number(e.target.value),
-                            })
-                          }
+                              // 0 must not persist — finite(0, dimH) does not fall back.
+                              height:
+                                v === "" || !Number.isFinite(n) || n <= 0
+                                  ? undefined
+                                  : n,
+                            });
+                          }}
                         />
                         <Label className="text-xs">W</Label>
                         <Input
@@ -748,11 +831,16 @@ function AhuSegmentEditor({
                           className="h-8 w-24"
                           value={ahu.accessDoor?.width ?? ""}
                           placeholder={String(seg.dimW ?? "")}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            const n = v === "" ? NaN : Number(v);
                             setAccessDoor({
-                              width: e.target.value === "" ? undefined : Number(e.target.value),
-                            })
-                          }
+                              width:
+                                v === "" || !Number.isFinite(n) || n <= 0
+                                  ? undefined
+                                  : n,
+                            });
+                          }}
                         />
                       </div>
                       <label className="flex items-center gap-2 text-xs">
@@ -1323,23 +1411,120 @@ function AhuSegmentEditor({
           </TabsContent>
 
           <TabsContent value="summary" className="flex flex-col gap-3">
-            <CostingLevelHeading level="segment" as="h4">
-              Ringkasan kategori
-            </CostingLevelHeading>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CostingLevelHeading level="segment" as="h4">
+                Ringkasan kategori
+              </CostingLevelHeading>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={
+                  segmentActionsDisabled ||
+                  isCalculating ||
+                  resettingMarkup ||
+                  !hasAnyOverride
+                }
+                aria-busy={resettingMarkup}
+                aria-label="Reset markup — hapus semua override harga kategori"
+                onClick={() => {
+                  setResettingMarkup(true);
+                  resetSegmentMarkup(seg.id)
+                    .catch((e) => showToast(String(e)))
+                    .finally(() => setResettingMarkup(false));
+                }}
+              >
+                {resettingMarkup ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Reset markup…
+                  </>
+                ) : (
+                  "Reset markup"
+                )}
+              </Button>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Double-klik harga untuk override. Kosongkan field lalu Enter/blur
+              untuk kembali ke harga hitungan.
+            </p>
             <div className="flex flex-col gap-2">
-              {sortedSections.map((sec) => (
-                <div
-                  key={sec.id}
-                  className="bg-muted/30 flex items-center justify-between gap-3 rounded-md border border-border px-4 py-2.5"
-                >
-                  <span className="text-sm font-medium text-foreground">
-                    {categoryTitle(sec.category)}
-                  </span>
-                  <span className="tabular-money text-sm font-semibold text-foreground">
-                    {formatIDR(sec.subtotal)}
-                  </span>
-                </div>
-              ))}
+              {sortedSections.map((sec) => {
+                const effective = effectiveSectionSubtotal(sec);
+                const overridden = sectionHasPriceOverride(sec);
+                const editing = priceEditId === sec.id;
+                return (
+                  <div
+                    key={sec.id}
+                    className={cn(
+                      "bg-muted/30 flex items-center justify-between gap-3 rounded-md border border-border px-4 py-2.5",
+                      overridden && "border-amber-300/80 bg-amber-50/50"
+                    )}
+                  >
+                    <span className="text-sm font-medium text-foreground">
+                      {categoryTitle(sec.category)}
+                    </span>
+                    <div className="flex min-w-0 flex-col items-end gap-0.5">
+                      {editing ? (
+                        <Input
+                          autoFocus
+                          className="tabular-money h-8 w-44 text-right"
+                          value={priceDraft}
+                          aria-label={`Override harga ${categoryTitle(sec.category)}`}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            if (next.trim() === "") {
+                              setPriceDraft("");
+                              return;
+                            }
+                            const digits = next.replace(/\D/g, "");
+                            if (digits === "") {
+                              setPriceDraft("");
+                              return;
+                            }
+                            setPriceDraft(formatIDR(Number(digits)));
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              skipPriceBlurRef.current = true;
+                              commitSectionPrice(sec, priceDraft);
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              skipPriceBlurRef.current = true;
+                              setPriceEditId(null);
+                            }
+                          }}
+                          onBlur={() => {
+                            if (skipPriceBlurRef.current) {
+                              skipPriceBlurRef.current = false;
+                              return;
+                            }
+                            commitSectionPrice(sec, priceDraft);
+                          }}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          className={cn(
+                            "tabular-money text-sm font-semibold text-foreground",
+                            "rounded-sm px-1 py-0.5 text-right hover:bg-muted/80",
+                            "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                          )}
+                          title="Double-klik untuk ubah harga kategori"
+                          aria-label={`Harga ${categoryTitle(sec.category)}: ${formatIDR(effective)}. Double-klik untuk edit.`}
+                          onDoubleClick={() => {
+                            setPriceEditId(sec.id);
+                            setPriceDraft(formatIDR(Math.round(effective)));
+                          }}
+                        >
+                          {formatIDR(effective)}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <Button
               type="button"
@@ -1364,6 +1549,7 @@ function AhuSegmentEditor({
           <div className="flex flex-col gap-3 pb-2">
         {sortedSections.map((sec) => {
           const open = openCats[catKey(seg.id, sec.category)] ?? false;
+          const effective = effectiveSectionSubtotal(sec);
           return (
             <Card
               key={sec.id}
@@ -1379,7 +1565,7 @@ function AhuSegmentEditor({
                 </span>
                 <span className="flex items-center gap-3">
                   <span className="tabular-money text-sm font-semibold text-foreground">
-                    {formatIDR(sec.subtotal)}
+                    {formatIDR(effective)}
                   </span>
                   {open ? (
                     <ChevronDown className="size-4 text-muted-foreground" />
@@ -1539,6 +1725,7 @@ export function CostingWorkspace() {
 
   const projects = useCostingStore((s) => s.projects);
   const currentProject = useCostingStore((s) => s.currentProject);
+  const modules = useCostingStore((s) => s.modules);
   const isCalculating = useCostingStore((s) => s.isCalculating);
   const isLoading = useCostingStore((s) => s.isLoading);
   const loadProjects = useCostingStore((s) => s.loadProjects);
@@ -1552,7 +1739,10 @@ export function CostingWorkspace() {
   const recalculateSegment = useCostingStore((s) => s.recalculateSegment);
   const overrideItem = useCostingStore((s) => s.overrideItem);
   const resetItem = useCostingStore((s) => s.resetItem);
+  const setSectionOverride = useCostingStore((s) => s.setSectionOverride);
+  const resetSegmentMarkup = useCostingStore((s) => s.resetSegmentMarkup);
   const updateMargins = useCostingStore((s) => s.updateMargins);
+  const ahuModuleEnabled = modules.ahu;
 
   const search = useUiWorkflowStore((s) => s.costing.sidebar.search);
   const statusFilter = useUiWorkflowStore((s) => s.costing.sidebar.statusFilter);
@@ -1743,6 +1933,9 @@ export function CostingWorkspace() {
         mob: 0,
         totalCost: 0,
         marginAmt: 0,
+        sellingBeforeAdjustment: 0,
+        adjPctAmt: 0,
+        adjFlatAmt: 0,
         selling: 0,
         perUnit: 0,
       };
@@ -1778,6 +1971,9 @@ export function CostingWorkspace() {
         asuransi: m.asuransi,
         mobilisasi: m.mobilisasi,
         margin: m.margin,
+        // Project-level price adjustment UI removed; keep DB at 0.
+        priceAdjustmentPct: 0,
+        priceAdjustmentAmt: 0,
         totalSelling: selling,
       } as never);
     } catch (e) {
@@ -1807,6 +2003,8 @@ export function CostingWorkspace() {
         asuransi: m.asuransi,
         mobilisasi: m.mobilisasi,
         margin: m.margin,
+        priceAdjustmentPct: 0,
+        priceAdjustmentAmt: 0,
         totalSelling: selling,
       } as never);
     } catch (e) {
@@ -2338,13 +2536,15 @@ export function CostingWorkspace() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() =>
-                        addSegment("ahu").catch((e) => showToast(String(e)))
-                      }
-                    >
-                      + AHU costing
-                    </DropdownMenuItem>
+                    {ahuModuleEnabled ? (
+                      <DropdownMenuItem
+                        onClick={() =>
+                          addSegment("ahu").catch((e) => showToast(String(e)))
+                        }
+                      >
+                        + AHU costing
+                      </DropdownMenuItem>
+                    ) : null}
                     <DropdownMenuItem
                       onClick={() =>
                         addSegment("manual").catch((e) => showToast(String(e)))
@@ -2527,6 +2727,7 @@ export function CostingWorkspace() {
                                         segmentActionsDisabled={
                                           isLoading || !currentProject
                                         }
+                                        ahuModuleEnabled={ahuModuleEnabled}
                                         isCalculating={isCalculating}
                                         openAddItem={openAddItem}
                                         toggleCat={toggleCat}
@@ -2537,6 +2738,8 @@ export function CostingWorkspace() {
                                         setQtyDraft={setQtyDraft}
                                         overrideItem={overrideItem}
                                         resetItem={resetItem}
+                                        setSectionOverride={setSectionOverride}
+                                        resetSegmentMarkup={resetSegmentMarkup}
                                         showToast={showToast}
                                       />
                                     )}

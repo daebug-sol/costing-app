@@ -4,9 +4,11 @@ import {
   computeCostSummary,
   marginTogglesFromProject,
 } from "@/lib/cost-summary";
+import { effectiveSectionSubtotal } from "@/lib/section-subtotal";
 import { syncQuotationItemsFromProject } from "@/lib/sync-quotation-items-from-project";
 
-/** Sum line subtotals → section.subtotal → segment.subtotal → project HPP + selling. */
+/** Sum line subtotals → section.subtotal → segment.subtotal → project HPP + selling.
+ * Segment / project money uses `overrideSubtotal ?? calculated subtotal`. */
 export async function rollupSectionAndProject(
   sectionId: string,
   projectId: string
@@ -44,22 +46,38 @@ export async function rollupAhuSegmentFinancials(segmentId: string): Promise<voi
 
   let segmentSub = 0;
   for (const sec of seg.sections) {
-    const sub = sec.lineItems.reduce(
+    const calculated = sec.lineItems.reduce(
       (s, it) => s + finite(it.subtotal, 0),
       0
     );
-    segmentSub += sub;
-    if (finite(sec.subtotal, 0) !== sub) {
+    if (finite(sec.subtotal, 0) !== calculated) {
       await prisma.costingSection.update({
         where: { id: sec.id },
-        data: { subtotal: sub },
+        data: { subtotal: calculated },
       });
     }
+    segmentSub += effectiveSectionSubtotal({
+      subtotal: calculated,
+      overrideSubtotal: sec.overrideSubtotal,
+    });
   }
   await prisma.costingSegment.update({
     where: { id: segmentId },
     data: { subtotal: segmentSub },
   });
+}
+
+/** Clear all category price overrides on an AHU segment, then roll up. */
+export async function clearAhuSectionOverrides(
+  segmentId: string,
+  projectId: string
+): Promise<void> {
+  await prisma.costingSection.updateMany({
+    where: { segmentId, segment: { projectId } },
+    data: { overrideSubtotal: null },
+  });
+  await rollupAhuSegmentFinancials(segmentId);
+  await rollupProjectFinancials(projectId);
 }
 
 /** Sum all segment subtotals → project totalHPP + totalSelling. */
@@ -87,6 +105,8 @@ export async function rollupProjectFinancials(projectId: string): Promise<void> 
       asuransi: project.asuransi,
       mobilisasi: project.mobilisasi,
       margin: project.margin,
+      priceAdjustmentPct: project.priceAdjustmentPct,
+      priceAdjustmentAmt: project.priceAdjustmentAmt,
     },
     marginTogglesFromProject(project)
   );

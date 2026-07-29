@@ -9,6 +9,7 @@ import {
   normalizeCostingScope,
   resolveActiveModules,
 } from "@/lib/costing-scope";
+import { effectiveSectionSubtotal } from "@/lib/section-subtotal";
 import { formatNumber } from "@/lib/utils/format";
 
 type LineRow = {
@@ -22,6 +23,7 @@ type LineRow = {
 type SectionApi = {
   category: string;
   subtotal: number;
+  overrideSubtotal?: number | null;
   lineItems: LineRow[];
 };
 
@@ -54,6 +56,8 @@ export type CostingProjectApi = {
   asuransi: number;
   mobilisasi: number;
   margin: number;
+  priceAdjustmentPct?: number;
+  priceAdjustmentAmt?: number;
   segments?: {
     type: string;
     title: string;
@@ -102,6 +106,8 @@ export function costingProjectToProjectDoc(p: CostingProjectApi): ProjectDoc {
     asuransi: p.asuransi,
     mobilisasi: p.mobilisasi,
     margin: p.margin,
+    priceAdjustmentPct: p.priceAdjustmentPct ?? 0,
+    priceAdjustmentAmt: p.priceAdjustmentAmt ?? 0,
   };
 }
 
@@ -124,7 +130,7 @@ export function costingProjectToSectionDocs(p: CostingProjectApi): SectionDoc[] 
       for (const sec of seg.sections) {
         out.push({
           category: multi ? `${label}: ${sec.category}` : sec.category,
-          subtotal: sec.subtotal,
+          subtotal: effectiveSectionSubtotal(sec),
           lineItems: sec.lineItems.map((li) => ({
             description: li.description,
             uom: li.uom,
@@ -409,7 +415,7 @@ function buildSubAssemblyRollupMeta(p: CostingProjectApi): SectionRollupMeta[] {
         const spec = ahuSegmentSpecForCategory(seg, sec.category);
         out.push({
           category: multi ? `${label}: ${sec.category}` : sec.category,
-          weight: Math.max(0, sec.subtotal),
+          weight: Math.max(0, effectiveSectionSubtotal(sec)),
           spec,
         });
       }

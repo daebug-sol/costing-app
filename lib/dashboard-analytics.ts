@@ -7,6 +7,7 @@ import { EMPTY_DASHBOARD_RESPONSE } from "@/lib/dashboard-contract";
 import { getDashboardRangeStart } from "@/lib/dashboard-range";
 import { finite } from "@/lib/calculations";
 import { computeCostSummary, marginTogglesFromProject } from "@/lib/cost-summary";
+import { effectiveSectionSubtotal } from "@/lib/section-subtotal";
 import {
   isBookedQuotationStatus,
   isPotentialQuotationStatus,
@@ -27,12 +28,15 @@ type DashboardProjectInput = {
   asuransi: number;
   mobilisasi: number;
   margin: number;
+  priceAdjustmentPct: number;
+  priceAdjustmentAmt: number;
   updatedAt: Date;
   segments: Array<{
     type: string;
     sections: Array<{
       category: string;
       subtotal: number;
+      overrideSubtotal?: number | null;
       lineItems: Array<{
         description: string;
         subtotal: number;
@@ -333,6 +337,8 @@ function sankeyFromData(input: DashboardAnalyticsInput, now: Date): DashboardApi
         asuransi: project.asuransi,
         mobilisasi: project.mobilisasi,
         margin: project.margin,
+        priceAdjustmentPct: project.priceAdjustmentPct,
+        priceAdjustmentAmt: project.priceAdjustmentAmt,
       },
       marginTogglesFromProject(project)
     );
@@ -433,6 +439,8 @@ function costingDataFromData(input: DashboardAnalyticsInput): DashboardApiRespon
         asuransi: project.asuransi,
         mobilisasi: project.mobilisasi,
         margin: project.margin,
+        priceAdjustmentPct: project.priceAdjustmentPct,
+        priceAdjustmentAmt: project.priceAdjustmentAmt,
       },
       marginTogglesFromProject(project)
     );
@@ -453,7 +461,11 @@ function costingDataFromData(input: DashboardAnalyticsInput): DashboardApiRespon
               addRaw(classifyRawCategory(line.description), subAssembly, line.subtotal);
             }
           } else {
-            addRaw("Other Materials", subAssembly, section.subtotal);
+            addRaw(
+              "Other Materials",
+              subAssembly,
+              effectiveSectionSubtotal(section)
+            );
           }
         }
       } else {

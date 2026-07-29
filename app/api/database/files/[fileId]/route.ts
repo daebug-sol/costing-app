@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isDefaultAhuFileId } from "@/lib/database-folders";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requireAhuModule } from "@/lib/org-modules";
 import {
   requireAhuFileInOrg,
   requireCustomTableInOrg,
@@ -26,6 +27,8 @@ export async function PATCH(request: Request, { params }: Params) {
     if (scope === "ahu" || (scope !== "custom" && !scope)) {
       const ahu = await prisma.ahuDatasetFile.findUnique({ where: { id: fileId } });
       if (ahu) {
+        const ahuGate = await requireAhuModule(orgId);
+        if (!ahuGate.ok) return ahuGate.response;
         const check = await requireAhuFileInOrg(fileId, orgId);
         if (!check.ok) return check.response;
         const updated = await prisma.ahuDatasetFile.update({
@@ -78,6 +81,8 @@ export async function DELETE(request: Request, { params }: Params) {
     if (scope === "ahu" || !scope) {
       const ahu = await prisma.ahuDatasetFile.findUnique({ where: { id: fileId } });
       if (ahu) {
+        const ahuGate = await requireAhuModule(orgId);
+        if (!ahuGate.ok) return ahuGate.response;
         const check = await requireAhuFileInOrg(fileId, orgId);
         if (!check.ok) return check.response;
         if (isDefaultAhuFileId(fileId)) {

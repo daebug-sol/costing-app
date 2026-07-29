@@ -13,6 +13,8 @@ const baseProject = {
   asuransi: 0,
   mobilisasi: 0,
   margin: 20,
+  priceAdjustmentPct: 0,
+  priceAdjustmentAmt: 0,
   updatedAt: new Date("2026-05-01T00:00:00.000Z"),
   segments: [],
 };

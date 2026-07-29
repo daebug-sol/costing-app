@@ -103,24 +103,23 @@ export function calculateFramePanel(params: {
 
   if (interpost) {
     const r = ppRate(interpost);
-    const mult = nSec;
-    const qh = finite((H / 1000) * 1.05 * 2 * mult, 0);
-    const qw = finite((W / 1000) * 1.05 * 2 * mult, 0);
+    // Base Interpost qty only (*2); uniform nSec scale applied to all lines below.
+    const qh = finite((H / 1000) * 1.05 * 2, 0);
+    const qw = finite((W / 1000) * 1.05 * 2, 0);
     items.push(
       line({
-        description: `Interpost H (${interpost.code}) × nSections`,
+        description: `Interpost H (${interpost.code})`,
         uom: "m",
         qty: qh,
-        qtyFormula: `(${H}/1000)*1.05*2*${nSec}`,
+        qtyFormula: `(${H}/1000)*1.05*2`,
         unitPrice: r,
         componentRef: interpost.code,
-        notes: `nSections=${nSec}`,
       }),
       line({
-        description: `Interpost W (${interpost.code}) × nSections`,
+        description: `Interpost W (${interpost.code})`,
         uom: "m",
         qty: qw,
-        qtyFormula: `(${W}/1000)*1.05*2*${nSec}`,
+        qtyFormula: `(${W}/1000)*1.05*2`,
         unitPrice: r,
         componentRef: interpost.code,
       })
@@ -290,10 +289,20 @@ export function calculateFramePanel(params: {
     );
   }
 
-  return items.map((it) => ({
-    ...it,
-    qty: finite(it.qty, 0),
-    unitPrice: finite(it.unitPrice, 0),
-    subtotal: finite(it.subtotal, 0),
-  }));
+  // Uniform multi-section scale on every Frame & Panel line (avoids Interpost-only nSec²).
+  const sectionNote = nSec > 1 ? `nSections=${nSec}` : null;
+  return items.map((it) => {
+    const qty = finite(it.qty * nSec, 0);
+    const unitPrice = finite(it.unitPrice, 0);
+    const wasteFactor = finite(it.wasteFactor, 1);
+    return {
+      ...it,
+      qty,
+      qtyFormula: nSec === 1 ? it.qtyFormula : `(${it.qtyFormula})*${nSec}`,
+      unitPrice,
+      wasteFactor,
+      subtotal: finite(qty * unitPrice * wasteFactor, 0),
+      notes: it.notes ?? sectionNote,
+    };
+  });
 }

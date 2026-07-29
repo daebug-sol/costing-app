@@ -9,7 +9,7 @@ Dokumen ini mengikat perilaku server untuk recalculate AHU. **Fase B/C (UI + per
 | **Penyimpanan** | `PUT .../segments/:segmentId` dengan field `ahuRecalcParams` (objek JSON). Set `null` untuk menghapus. |
 | **Struktur JSON** | Tipe TypeScript: `lib/ahu-recalc-params.ts` (`AhuRecalcParams`). |
 | **Recalculate** | Server memanggil `mergeRecalcParams(parseAhuRecalcParams(segment.ahuRecalcParams), body)` — **nilai di body request menimpa** field yang sama dari DB. Jika body kosong `{}`, hanya nilai tersimpan yang dipakai. |
-| **UI** | Workspace costing: form “Parameter kalkulasi”, tombol **Simpan parameter** (hanya PUT) dan **Hitung ulang** (PUT lalu POST recalculate). |
+| **UI** | Workspace costing: form “Parameter kalkulasi”, tombol **Simpan parameter** (hanya PUT) dan **Hitung ulang** (PUT lalu POST recalculate). Field **Jumlah section** (`nSections`, cap UI 1–8) dan **Tata letak section** (`sectionLayout`) ada di tab **Unit & hitung** (bukan Modules); jika &gt; 1 menampilkan baris Section 1…N read-only dari H/W/D segmen. |
 
 ---
 
@@ -29,7 +29,8 @@ Dokumen ini mengikat perilaku server untuk recalculate AHU. **Fase B/C (UI + per
 
 | Field | Tipe | Default jika tidak dikirim | Keterangan |
 |-------|------|----------------------------|------------|
-| `nSections` | number | `1` | Dipakai hanya untuk `calculateFramePanel` (minimal 1, integer). |
+| `nSections` | number | `1` | Digunakan untuk `calculateFramePanel`, `calculateSkid`, dan `calculateStructure` (minimal 1, integer). Semua line qty modul tersebut dikalikan `nSections`. Modul lain (coil, drain, fan, dll.) tidak di-scale. |
+| `sectionLayout` | `"horizontal"` \| `"vertical"` | `horizontal` (UI) | **Metadata saja (Phase 3a).** Tata letak section samping vs atas-bawah. Disimpan di `ahuRecalcParams` dan digabung via `mergeRecalcParams`, tetapi **belum dipakai** di `calculateSkid` / Frame / Structure. Missing/invalid → UI menampilkan `horizontal`. |
 | `coil` | object | `{}` | Lihat tabel nested di bawah. |
 | `damper` | object | `{}` | Lihat tabel nested di bawah. |
 | `fanMotor` | object | `{}` | Lihat tabel nested di bawah. |

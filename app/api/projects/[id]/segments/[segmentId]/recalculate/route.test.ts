@@ -19,6 +19,10 @@ jest.mock("@/lib/api-guard", () => ({
   guardApiRoute: jest.fn(async () => ({ userId: "test-user", orgId: "org-a" })),
 }));
 
+jest.mock("@/lib/org-modules", () => ({
+  requireAhuModule: jest.fn(async () => ({ ok: true })),
+}));
+
 jest.mock("@/lib/ahu-recalc-params", () => ({
   parseAhuRecalcParams: jest.fn(() => ({})),
   mergeRecalcParams: jest.fn((stored: unknown, body: unknown) => ({ ...(stored as object), ...(body as object) })),
@@ -28,6 +32,8 @@ jest.mock("@/lib/ahu-recalc-params", () => ({
 jest.mock("@/lib/project-rollup", () => ({
   rollupProjectFinancials: jest.fn(async () => undefined),
 }));
+
+import { requireAhuModule } from "@/lib/org-modules";
 
 type DumpCell = { value?: unknown; calculatedResult?: unknown };
 
@@ -81,6 +87,7 @@ describe("POST /api/projects/[id]/segments/[segmentId]/recalculate", () => {
     mockedPrisma.$transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
       const tx = {
         costingSection: {
+          findMany: jest.fn().mockResolvedValue([]),
           deleteMany: jest.fn(),
           create: jest.fn(({ data }: { data: { category: string; subtotal: number } }) => {
             createdSections.push({ category: data.category, subtotal: data.subtotal });
@@ -102,7 +109,8 @@ describe("POST /api/projects/[id]/segments/[segmentId]/recalculate", () => {
     const req = new Request("http://localhost", {
       method: "POST",
       body: JSON.stringify({
-        nSections: 2,
+        // Dump/workbook structure parity is defined for a single section.
+        nSections: 1,
         costingScope: {
           isFullAhu: false,
           includeStructure: true,
@@ -139,5 +147,35 @@ describe("POST /api/projects/[id]/segments/[segmentId]/recalculate", () => {
     expect(Math.abs(createdSections[0].subtotal - expectedStructureSubtotal)).toBeLessThan(1e-6);
     expect(Math.abs(segmentUpdates[0].subtotal - expectedStructureSubtotal)).toBeLessThan(1e-6);
     expect(json).toEqual({ id: "proj-1", segments: [] });
+  });
+
+  it("returns 403 AHU_MODULE_DISABLED when AHU module is off", async () => {
+    const requireAhu = requireAhuModule as jest.MockedFunction<typeof requireAhuModule>;
+    requireAhu.mockResolvedValueOnce({
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error: "AHU module not enabled",
+          code: "AHU_MODULE_DISABLED",
+        }),
+        { status: 403, headers: { "content-type": "application/json" } }
+      ) as unknown as import("next/server").NextResponse,
+    });
+
+    const req = new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({}),
+      headers: { "content-type": "application/json" },
+    });
+    const response = await POST(req, {
+      params: Promise.resolve({ id: "proj-1", segmentId: "seg-1" }),
+    });
+    const json = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(json).toEqual({
+      error: "AHU module not enabled",
+      code: "AHU_MODULE_DISABLED",
+    });
   });
 });

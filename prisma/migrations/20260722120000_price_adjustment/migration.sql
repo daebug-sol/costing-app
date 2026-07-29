@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "CostingProject" ADD COLUMN "priceAdjustmentPct" DOUBLE PRECISION NOT NULL DEFAULT 0.0;
+ALTER TABLE "CostingProject" ADD COLUMN "priceAdjustmentAmt" DOUBLE PRECISION NOT NULL DEFAULT 0.0;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { ensureDefaultUmumGroup, rollupManualSegmentFinancials } from "@/lib/manual-costing-rollup";
+import { getOrgModules, requireAhuModule } from "@/lib/org-modules";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
 import { requireProjectInOrg } from "@/lib/tenant-context";
@@ -22,7 +23,19 @@ export async function POST(request: Request, context: Ctx) {
       type?: string;
       title?: string;
     };
-    const type = body.type === "manual" ? "manual" : "ahu";
+
+    const modules = await getOrgModules(orgId);
+    let type: "ahu" | "manual";
+    if (body.type === "manual") {
+      type = "manual";
+    } else if (body.type === "ahu") {
+      const ahuGate = await requireAhuModule(orgId);
+      if (!ahuGate.ok) return ahuGate.response;
+      type = "ahu";
+    } else {
+      // Omitted type: AHU when enabled (backward compat), else manual.
+      type = modules.ahu ? "ahu" : "manual";
+    }
 
     const maxOrder = await prisma.costingSegment.aggregate({
       where: { projectId },

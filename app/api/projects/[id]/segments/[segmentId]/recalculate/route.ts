@@ -6,6 +6,7 @@ import { guardApiRoute } from "@/lib/api-guard";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { finite } from "@/lib/calculations";
 import { normalizeCostingScope } from "@/lib/costing-scope";
+import { requireAhuModule } from "@/lib/org-modules";
 import { prisma } from "@/lib/prisma";
 import { rollupProjectFinancials } from "@/lib/project-rollup";
 import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
@@ -17,6 +18,9 @@ export async function POST(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
   const { orgId } = guard;
+
+  const ahuGate = await requireAhuModule(orgId);
+  if (!ahuGate.ok) return ahuGate.response;
 
   const rate = checkRateLimit(rateLimitKey([orgId, "recalculate"]), 20, 60_000);
   if (!rate.ok) {
@@ -105,6 +109,18 @@ export async function POST(request: Request, context: Ctx) {
       .map((b, idx) => ({ ...b, sortOrder: idx }));
 
     await prisma.$transaction(async (tx) => {
+      // Preserve category price overrides across rewrite (match by category name).
+      const priorSections = await tx.costingSection.findMany({
+        where: { segmentId },
+        select: { category: true, overrideSubtotal: true },
+      });
+      const overrideByCategory = new Map<string, number>();
+      for (const s of priorSections) {
+        if (s.overrideSubtotal != null && Number.isFinite(s.overrideSubtotal)) {
+          overrideByCategory.set(s.category, s.overrideSubtotal);
+        }
+      }
+
       await tx.costingSection.deleteMany({ where: { segmentId } });
 
       let segmentSub = 0;
@@ -113,7 +129,9 @@ export async function POST(request: Request, context: Ctx) {
           (s, it) => s + finite(it.subtotal, 0),
           0
         );
-        segmentSub += subtotal;
+        const overrideSubtotal = overrideByCategory.get(block.category) ?? null;
+        segmentSub +=
+          overrideSubtotal != null ? finite(overrideSubtotal, 0) : subtotal;
 
         await tx.costingSection.create({
           data: {
@@ -121,6 +139,7 @@ export async function POST(request: Request, context: Ctx) {
             category: block.category,
             sortOrder: block.sortOrder,
             subtotal,
+            overrideSubtotal,
             lineItems: {
               create: block.items.map((it, idx) => {
                 const q = finite(it.qty, 0);

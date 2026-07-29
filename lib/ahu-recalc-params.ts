@@ -11,8 +11,12 @@ export type { CostingScope } from "@/lib/costing-scope";
 /** Alias untuk payload input modular (UI + API) — sama dengan `AhuRecalcParams`. */
 export type AhuCostingInputPayload = AhuRecalcParams;
 
+export type AhuSectionLayout = "horizontal" | "vertical";
+
 export type AhuRecalcParams = {
   nSections?: number;
+  /** AHU section arrangement; metadata only until Phase 3b formula. */
+  sectionLayout?: AhuSectionLayout;
   /** Scope modular: full AHU vs sub-assembly terpilih. */
   costingScope?: CostingScope;
   accessDoor?: {
@@ -82,6 +86,13 @@ export function parseAhuRecalcParams(raw: unknown): AhuRecalcParams {
   if (raw === null || raw === undefined) return {};
   if (typeof raw !== "object" || Array.isArray(raw)) return {};
   return raw as AhuRecalcParams;
+}
+
+/** Missing / invalid → `"horizontal"` (UI + merge default). */
+export function normalizeSectionLayout(
+  value: unknown
+): AhuSectionLayout {
+  return value === "vertical" ? "vertical" : "horizontal";
 }
 
 /** Deep-merge request body over stored segment JSON (request wins per key). */
@@ -171,8 +182,16 @@ export function mergeRecalcParams(
     costingScope = normalizeCostingScope(stored.costingScope);
   }
 
+  const sectionLayoutRaw =
+    r.sectionLayout !== undefined ? r.sectionLayout : stored.sectionLayout;
+  const sectionLayout =
+    sectionLayoutRaw === undefined
+      ? undefined
+      : normalizeSectionLayout(sectionLayoutRaw);
+
   return {
     nSections: r.nSections ?? stored.nSections,
+    sectionLayout,
     costingScope,
     accessDoor: Object.keys(accessDoor).length ? accessDoor : undefined,
     mixingBox: Object.keys(mixingBox).length ? mixingBox : undefined,

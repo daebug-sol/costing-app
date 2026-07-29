@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveAhuDatasetFileId } from "@/lib/database-folders";
+import { requireAhuModule } from "@/lib/org-modules";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
 
@@ -7,6 +8,9 @@ export async function GET(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
   const { orgId } = guard;
+
+  const ahuGate = await requireAhuModule(orgId);
+  if (!ahuGate.ok) return ahuGate.response;
 
   try {
     const fileId = new URL(request.url).searchParams.get("fileId");
@@ -32,6 +36,9 @@ export async function POST(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
   const { orgId } = guard;
+
+  const ahuGate = await requireAhuModule(orgId);
+  if (!ahuGate.ok) return ahuGate.response;
 
   try {
     const body = await request.json();

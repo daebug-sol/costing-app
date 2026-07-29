@@ -182,10 +182,10 @@ describe("computeAhuSegmentCostingBlocks", () => {
           profiles,
         }).reduce((sum, item) => sum + item.subtotal, 0),
       ],
-      ["Skid", calculateSkid({ W: dimW, D: dimD, materials }).reduce((sum, item) => sum + item.subtotal, 0)],
+      ["Skid", calculateSkid({ W: dimW, D: dimD, nSections: 2, materials }).reduce((sum, item) => sum + item.subtotal, 0)],
       [
         "Structure",
-        calculateStructure({ H: dimH, W: dimW, D: dimD, materials }).reduce(
+        calculateStructure({ H: dimH, W: dimW, D: dimD, nSections: 2, materials }).reduce(
           (sum, item) => sum + item.subtotal,
           0
         ),
@@ -237,7 +237,8 @@ describe("computeAhuSegmentCostingBlocks", () => {
       dimD: d,
       profileType: "5060Y-NA06",
       segmentQty: 1,
-      nSections: 2,
+      // Dump/workbook parity is defined for a single section.
+      nSections: 1,
       scope: normalizeCostingScope({ isFullAhu: false, includeStructure: true }),
       mergedParams: {},
       materials,

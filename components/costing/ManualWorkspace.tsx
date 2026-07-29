@@ -57,6 +57,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatIDR } from "@/lib/utils/format";
+import { computeCostSummary, finite } from "@/lib/cost-summary";
 import { cn } from "@/lib/utils";
 import { useCostingStore } from "@/store/costingStore";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
@@ -85,37 +86,6 @@ type ManualGroup = {
   subtotal: number;
   items: ManualItem[];
 };
-
-function finite(n: number, fallback = 0) {
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function computeCostSummary(
-  hppIn: number,
-  qtyIn: number,
-  m: {
-    overhead: number;
-    contingency: number;
-    eskalasi: number;
-    asuransi: number;
-    mobilisasi: number;
-    margin: number;
-  },
-  t: { esk: boolean; asu: boolean; mob: boolean }
-) {
-  const hpp = finite(hppIn, 0);
-  const oh = hpp * (finite(m.overhead, 0) / 100);
-  const cont = hpp * (finite(m.contingency, 0) / 100);
-  const esk = t.esk ? hpp * (finite(m.eskalasi, 0) / 100) : 0;
-  const asu = t.asu ? hpp * (finite(m.asuransi, 0) / 100) : 0;
-  const mob = t.mob ? hpp * (finite(m.mobilisasi, 0) / 100) : 0;
-  const totalCost = hpp + oh + cont + esk + asu + mob;
-  const marginAmt = totalCost * (finite(m.margin, 0) / 100);
-  const selling = totalCost + marginAmt;
-  const q = Math.max(1, Math.floor(finite(qtyIn, 1)));
-  const perUnit = selling / q;
-  return { hpp, oh, cont, esk, asu, mob, totalCost, marginAmt, selling, perUnit };
-}
 
 function rowKey(sourceType: string, sourceId: string) {
   return `${sourceType}:${sourceId}`;
@@ -368,6 +338,9 @@ export function ManualWorkspace({
         mob: 0,
         totalCost: 0,
         marginAmt: 0,
+        sellingBeforeAdjustment: 0,
+        adjPctAmt: 0,
+        adjFlatAmt: 0,
         selling: 0,
         perUnit: 0,
       };
@@ -398,6 +371,8 @@ export function ManualWorkspace({
         asuransi: m.asuransi,
         mobilisasi: m.mobilisasi,
         margin: m.margin,
+        priceAdjustmentPct: 0,
+        priceAdjustmentAmt: 0,
         totalSelling: selling,
       } as never);
     } catch (e) {
@@ -427,6 +402,8 @@ export function ManualWorkspace({
         asuransi: m.asuransi,
         mobilisasi: m.mobilisasi,
         margin: m.margin,
+        priceAdjustmentPct: 0,
+        priceAdjustmentAmt: 0,
         totalSelling: selling,
       } as never);
     } catch (e) {

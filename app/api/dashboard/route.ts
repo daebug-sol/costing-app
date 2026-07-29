@@ -44,6 +44,8 @@ export async function GET(request: Request) {
           asuransi: true,
           mobilisasi: true,
           margin: true,
+          priceAdjustmentPct: true,
+          priceAdjustmentAmt: true,
           updatedAt: true,
           segments: {
             select: {
@@ -52,6 +54,7 @@ export async function GET(request: Request) {
                 select: {
                   category: true,
                   subtotal: true,
+                  overrideSubtotal: true,
                   lineItems: {
                     select: {
                       description: true,

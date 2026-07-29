@@ -7,7 +7,7 @@ import {
   resolveActiveModules,
   type CostingScope,
 } from "@/lib/costing-scope";
-import { finite } from "@/lib/calculations";
+import { finite, positiveOr } from "@/lib/calculations";
 
 const nullableNumber = z.union([z.number(), z.null()]);
 
@@ -37,6 +37,9 @@ export function buildSegmentDimensionsSchema(scope: CostingScope) {
 /**
  * Validasi konteks recalculate: scope, dimensi casing, coil-only punya FH×FL.
  * Dipanggil setelah `mergeRecalcParams`.
+ *
+ * Dimensi modul opsional memakai `positiveOr` agar `0` / kosong jatuh ke H/W casing
+ * (sama dengan engine). `finite(0, dimH)` tidak fallback — itu penyebab 400 "Access Door".
  */
 export function validateAhuRecalculateContext(input: {
   dimH: number | null;
@@ -67,6 +70,8 @@ export function validateAhuRecalculateContext(input: {
     };
   }
 
+  const casingH = positiveOr(input.dimH, 0);
+  const casingW = positiveOr(input.dimW, 0);
   const modules = resolveActiveModules(scope);
   if (
     modules.coil &&
@@ -100,8 +105,8 @@ export function validateAhuRecalculateContext(input: {
   if (modules.accessDoor) {
     const d = input.merged.accessDoor ?? {};
     const qty = Math.max(0, Math.floor(finite(d.qty, 1)));
-    const h = finite(d.height, input.dimH ?? 0);
-    const w = finite(d.width, input.dimW ?? 0);
+    const h = positiveOr(d.height, casingH);
+    const w = positiveOr(d.width, casingW);
     if (qty <= 0 || h <= 0 || w <= 0) {
       return {
         ok: false,
@@ -113,10 +118,11 @@ export function validateAhuRecalculateContext(input: {
 
   if (modules.mixingBox) {
     const m = input.merged.mixingBox ?? {};
-    const faW = finite(m.faDamperW, 0);
-    const faH = finite(m.faDamperH, 0);
-    const raW = finite(m.raDamperW, 0);
-    const raH = finite(m.raDamperH, 0);
+    // Match calculateMixingBox defaults: missing FA/RA damper dims → casing W×H.
+    const faW = positiveOr(m.faDamperW, casingW);
+    const faH = positiveOr(m.faDamperH, casingH);
+    const raW = positiveOr(m.raDamperW, casingW);
+    const raH = positiveOr(m.raDamperH, casingH);
     const hasFa = faW > 0 && faH > 0;
     const hasRa = raW > 0 && raH > 0;
     if (!hasFa && !hasRa) {
@@ -131,13 +137,22 @@ export function validateAhuRecalculateContext(input: {
   if (modules.electricHeater) {
     const e = input.merged.electricHeater ?? {};
     const load = finite(e.totalLoadKW, 0);
-    const h = finite(e.height, input.dimH ?? 0);
-    const w = finite(e.width, input.dimW ?? 0);
-    if (load <= 0 || h <= 0 || w <= 0) {
+    const h = positiveOr(e.height, casingH);
+    const w = positiveOr(e.width, casingW);
+    // Full AHU: heater load optional (engine may emit 0-cost lines).
+    // Partial scope with heater on: load + dims required.
+    if (!scope.isFullAhu && (load <= 0 || h <= 0 || w <= 0)) {
       return {
         ok: false,
         message:
           "Untuk modul Electric Heater: isi total load (kW) dan dimensi heater (H × W) > 0.",
+      };
+    }
+    if (scope.isFullAhu && (h <= 0 || w <= 0) && load > 0) {
+      return {
+        ok: false,
+        message:
+          "Untuk modul Electric Heater: isi dimensi heater (H × W) > 0.",
       };
     }
   }
@@ -145,8 +160,8 @@ export function validateAhuRecalculateContext(input: {
   if (modules.opening) {
     const o = input.merged.opening ?? {};
     const qty = Math.max(0, Math.floor(finite(o.qty, 1)));
-    const h = finite(o.height, input.dimH ?? 0);
-    const w = finite(o.width, input.dimW ?? 0);
+    const h = positiveOr(o.height, casingH);
+    const w = positiveOr(o.width, casingW);
     if (qty <= 0 || h <= 0 || w <= 0) {
       return {
         ok: false,

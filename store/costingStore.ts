@@ -7,6 +7,7 @@ import type {
   ManualCostingItem,
 } from "@prisma/client";
 import { create } from "zustand";
+import type { OrgModules } from "@/lib/org-modules";
 
 export type CostingSectionWithLines = CostingSection & {
   lineItems: CostingLineItem[];
@@ -33,6 +34,8 @@ export type CostingProjectListItem = Pick<
   previewAhuModel: string | null;
   previewFlowCMH: number | null;
 };
+
+export type AppSettingsModules = OrgModules;
 
 async function readErr(res: Response): Promise<string> {
   try {
@@ -120,11 +123,19 @@ async function fetchProjectDetail(id: string): Promise<CostingProjectDetail> {
   return normalizeProject(await r.json());
 }
 
+function parseModules(json: unknown): OrgModules {
+  const m = (json as { modules?: { ahu?: unknown } } | null)?.modules;
+  return { ahu: m?.ahu === true };
+}
+
 export interface CostingStore {
   projects: CostingProjectListItem[];
   currentProject: CostingProjectDetail | null;
+  /** Product modules for the active org (from GET /api/settings). */
+  modules: OrgModules;
   isCalculating: boolean;
   isLoading: boolean;
+  loadOrgModules: () => Promise<void>;
   loadProjects: () => Promise<void>;
   loadProject: (id: string) => Promise<void>;
   createProject: (name: string) => Promise<void>;
@@ -142,19 +153,37 @@ export interface CostingStore {
   ) => Promise<void>;
   overrideItem: (itemId: string, qty: number) => Promise<void>;
   resetItem: (itemId: string) => Promise<void>;
+  /** Set category price override; pass null to restore calculated subtotal. */
+  setSectionOverride: (
+    sectionId: string,
+    overrideSubtotal: number | null
+  ) => Promise<void>;
+  /** Clear all category overrides on an AHU segment ("Reset markup"). */
+  resetSegmentMarkup: (segmentId: string) => Promise<void>;
   updateMargins: (margins: Partial<CostingProject>) => Promise<void>;
 }
 
 export const useCostingStore = create<CostingStore>((set, get) => ({
   projects: [],
   currentProject: null,
+  modules: { ahu: false },
   isCalculating: false,
   isLoading: false,
+
+  loadOrgModules: async () => {
+    const rs = await fetch("/api/settings", { cache: "no-store" });
+    if (!rs.ok) throw new Error(await readErr(rs));
+    const json = await rs.json();
+    set({ modules: parseModules(json) });
+  },
 
   loadProjects: async () => {
     set({ isLoading: true });
     try {
-      const r = await fetch("/api/projects", { cache: "no-store" });
+      const [r] = await Promise.all([
+        fetch("/api/projects", { cache: "no-store" }),
+        get().loadOrgModules().catch(() => undefined),
+      ]);
       if (!r.ok) throw new Error(await readErr(r));
       const list = (await r.json()) as CostingProjectListItem[];
       set({ projects: list });
@@ -181,7 +210,9 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
       defaultEskalasi: number;
       defaultAsuransi: number;
       defaultMobilisasi: number;
+      modules?: OrgModules;
     };
+    set({ modules: parseModules(s) });
     const r = await fetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -337,6 +368,37 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
     });
     if (!r.ok) throw new Error(await readErr(r));
     const p = await fetchProjectDetail(cur.id);
+    set({
+      currentProject: p,
+      projects: patchProjectInList(get().projects, p),
+    });
+  },
+
+  setSectionOverride: async (sectionId, overrideSubtotal) => {
+    const cur = get().currentProject;
+    if (!cur) return;
+    const r = await fetch(`/api/projects/${cur.id}/sections/${sectionId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ overrideSubtotal }),
+    });
+    if (!r.ok) throw new Error(await readErr(r));
+    const p = await fetchProjectDetail(cur.id);
+    set({
+      currentProject: p,
+      projects: patchProjectInList(get().projects, p),
+    });
+  },
+
+  resetSegmentMarkup: async (segmentId) => {
+    const cur = get().currentProject;
+    if (!cur) return;
+    const r = await fetch(
+      `/api/projects/${cur.id}/segments/${segmentId}/reset-markup`,
+      { method: "POST" }
+    );
+    if (!r.ok) throw new Error(await readErr(r));
+    const p = normalizeProject(await r.json());
     set({
       currentProject: p,
       projects: patchProjectInList(get().projects, p),

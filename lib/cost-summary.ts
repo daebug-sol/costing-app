@@ -14,6 +14,8 @@ export function computeCostSummary(
     asuransi: number;
     mobilisasi: number;
     margin: number;
+    priceAdjustmentPct?: number;
+    priceAdjustmentAmt?: number;
   },
   t: { esk: boolean; asu: boolean; mob: boolean }
 ) {
@@ -25,10 +27,28 @@ export function computeCostSummary(
   const mob = t.mob ? hpp * (finite(m.mobilisasi, 0) / 100) : 0;
   const totalCost = hpp + oh + cont + esk + asu + mob;
   const marginAmt = totalCost * (finite(m.margin, 0) / 100);
-  const selling = totalCost + marginAmt;
+  const sellingBeforeAdjustment = totalCost + marginAmt;
+  const adjPct = finite(m.priceAdjustmentPct, 0);
+  const adjFlatAmt = finite(m.priceAdjustmentAmt, 0);
+  const adjPctAmt = sellingBeforeAdjustment * (adjPct / 100);
+  const selling = sellingBeforeAdjustment * (1 + adjPct / 100) + adjFlatAmt;
   const q = Math.max(1, Math.floor(finite(qtyIn, 1)));
   const perUnit = selling / q;
-  return { hpp, oh, cont, esk, asu, mob, totalCost, marginAmt, selling, perUnit };
+  return {
+    hpp,
+    oh,
+    cont,
+    esk,
+    asu,
+    mob,
+    totalCost,
+    marginAmt,
+    sellingBeforeAdjustment,
+    adjPctAmt,
+    adjFlatAmt,
+    selling,
+    perUnit,
+  };
 }
 
 export function marginTogglesFromProject(project: {

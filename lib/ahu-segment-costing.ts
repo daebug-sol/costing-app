@@ -16,6 +16,7 @@ import {
   calculateSkid,
   calculateStructure,
   finite,
+  positiveOr,
   type CalcLineItem,
 } from "@/lib/calculations";
 
@@ -82,11 +83,22 @@ export function computeAhuSegmentCostingBlocks(
     : [];
 
   const skidItems = modules.skid
-    ? calculateSkid({ W, D, materials: input.materials })
+    ? calculateSkid({
+        W,
+        D,
+        nSections: input.nSections,
+        materials: input.materials,
+      })
     : [];
 
   const structureItems = modules.structure
-    ? calculateStructure({ H, W, D, materials: input.materials })
+    ? calculateStructure({
+        H,
+        W,
+        D,
+        nSections: input.nSections,
+        materials: input.materials,
+      })
     : [];
 
   const drainPanItems = modules.drainPan
@@ -97,8 +109,8 @@ export function computeAhuSegmentCostingBlocks(
   const accessDoorItems = modules.accessDoor
     ? calculateAccessDoor({
         qty: Math.max(1, Math.floor(finite(adBody.qty, 1))),
-        height: finite(adBody.height, H),
-        width: finite(adBody.width, W),
+        height: positiveOr(adBody.height, H),
+        width: positiveOr(adBody.width, W),
         withWindow: adBody.withWindow === true,
         components: input.components,
       })
@@ -109,10 +121,10 @@ export function computeAhuSegmentCostingBlocks(
     ? calculateMixingBox({
         faFlowCMH: finite(mbBody.faFlowCMH, 0),
         raFlowCMH: finite(mbBody.raFlowCMH, 0),
-        faDamperW: finite(mbBody.faDamperW, W),
-        faDamperH: finite(mbBody.faDamperH, H),
-        raDamperW: finite(mbBody.raDamperW, W),
-        raDamperH: finite(mbBody.raDamperH, H),
+        faDamperW: positiveOr(mbBody.faDamperW, W),
+        faDamperH: positiveOr(mbBody.faDamperH, H),
+        raDamperW: positiveOr(mbBody.raDamperW, W),
+        raDamperH: positiveOr(mbBody.raDamperH, H),
         components: input.components,
       })
     : [];
@@ -143,9 +155,9 @@ export function computeAhuSegmentCostingBlocks(
   const ehBody = (merged.electricHeater ?? {}) as Record<string, unknown>;
   const electricHeaterItems = modules.electricHeater
     ? calculateElectricHeater({
-        width: finite(ehBody.width, W),
-        height: finite(ehBody.height, H),
-        depth: finite(ehBody.depth, 180),
+        width: positiveOr(ehBody.width, W),
+        height: positiveOr(ehBody.height, H),
+        depth: positiveOr(ehBody.depth, 180),
         steps: Math.max(1, Math.floor(finite(ehBody.steps, 2))),
         totalLoadKW: finite(ehBody.totalLoadKW, 0),
         components: input.components,
@@ -185,8 +197,8 @@ export function computeAhuSegmentCostingBlocks(
   const openingItems = modules.opening
     ? calculateOpenings({
         qty: Math.max(1, Math.floor(finite(opBody.qty, 1))),
-        width: finite(opBody.width, W),
-        height: finite(opBody.height, H),
+        width: positiveOr(opBody.width, W),
+        height: positiveOr(opBody.height, H),
         includeFlex: opBody.includeFlex === true,
         includeLouvre: opBody.includeLouvre === true,
         includeWireGauze: opBody.includeWireGauze === true,

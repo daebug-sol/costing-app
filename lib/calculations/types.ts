@@ -25,6 +25,15 @@ export function finite(n: unknown, fallback = 0): number {
   return Number.isFinite(x) ? x : fallback;
 }
 
+/**
+ * Like `finite`, but treats missing / non-positive values as absent so callers
+ * can fall back to casing dims. `finite(0, dimH)` wrongly returns 0.
+ */
+export function positiveOr(n: unknown, fallback: number): number {
+  const x = Number(n);
+  return Number.isFinite(x) && x > 0 ? x : fallback;
+}
+
 export function findMaterial(
   materials: MaterialPrice[],
   code: string

@@ -36,4 +36,4 @@ export {
 export { calculateSkid } from "./skid";
 export { calculateStructure } from "./structure";
 export type { CalcLineItem, MaterialPrice, ProfileData } from "./types";
-export { finite } from "./types";
+export { finite, positiveOr } from "./types";
