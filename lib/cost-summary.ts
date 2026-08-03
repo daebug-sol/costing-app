@@ -1,7 +1,7 @@
 /** Matches costing workspace margin / selling calculation. */
 
-export function finite(n: number, fallback = 0) {
-  return Number.isFinite(n) ? n : fallback;
+export function finite(n: number | undefined, fallback = 0) {
+  return typeof n === "number" && Number.isFinite(n) ? n : fallback;
 }
 
 export function computeCostSummary(

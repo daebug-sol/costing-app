@@ -11,8 +11,6 @@ const nextConfig: NextConfig = {
   serverExternalPackages: [
     "@prisma/client",
     "prisma",
-    "@prisma/adapter-better-sqlite3",
-    "better-sqlite3",
   ],
   turbopack: {
     resolveAlias: {

@@ -1,7 +1,7 @@
 "use client";
 
 import { ClerkProvider } from "@clerk/nextjs";
-import { shadcn } from "@clerk/ui/themes";
+import { dark, shadcn } from "@clerk/ui/themes";
 import { Navbar } from "@/components/Navbar";
 import { Toaster } from "@/components/Toast";
 import { ThemeProvider, useTheme } from "@/components/theme-provider";
@@ -24,10 +24,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <ClerkProvider
         appearance={{
-          theme: shadcn,
-          variables: {
-            colorScheme: resolvedAppearance,
-          },
+          // Clerk Variables has no colorScheme; stack dark theme when app is dark.
+          theme:
+            resolvedAppearance === "dark" ? [shadcn, dark] : shadcn,
         }}
       >
         {shell}
