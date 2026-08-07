@@ -27,7 +27,8 @@ export async function GET(request: Request) {
       ? { projectId: selectedProjectId, organizationId: orgId }
       : { organizationId: orgId };
 
-    const [projects, quotations, settings] = await Promise.all([
+    const [projects, quotations, settings, salesOrders, invoices] =
+      await Promise.all([
       prisma.costingProject.findMany({
         where: projectWhere,
         orderBy: { updatedAt: "desc" },
@@ -113,6 +114,29 @@ export async function GET(request: Request) {
         },
       }),
       getOrCreateSettings(orgId),
+      prisma.salesOrder.findMany({
+        where: { organizationId: orgId },
+        select: {
+          id: true,
+          status: true,
+          tanggal: true,
+          grandTotal: true,
+        },
+      }),
+      prisma.invoice.findMany({
+        where: { organizationId: orgId },
+        select: {
+          id: true,
+          invNumber: true,
+          customerId: true,
+          status: true,
+          dueDate: true,
+          tanggal: true,
+          grandTotal: true,
+          paidTotal: true,
+          customer: { select: { name: true, company: true } },
+        },
+      }),
     ]);
 
     if (selectedProjectId && projects.length === 0) {
@@ -128,6 +152,18 @@ export async function GET(request: Request) {
       defaultPaymentTerms: settings.paymentTerms ?? "DP 50%, balance CBD",
       selectedProjectId,
       range,
+      salesOrders,
+      invoices: invoices.map((inv) => ({
+        id: inv.id,
+        invNumber: inv.invNumber,
+        customerId: inv.customerId,
+        customerName: inv.customer.company || inv.customer.name,
+        status: inv.status,
+        dueDate: inv.dueDate,
+        tanggal: inv.tanggal,
+        grandTotal: inv.grandTotal,
+        paidTotal: inv.paidTotal,
+      })),
     });
     return NextResponse.json(payload);
   } catch (e) {

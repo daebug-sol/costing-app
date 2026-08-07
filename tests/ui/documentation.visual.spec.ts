@@ -4,7 +4,9 @@ test.describe("Documentation ('/documentation')", () => {
   test("renders quotation list heading", async ({ page }) => {
     await page.goto("/documentation");
     await expect(page.getByRole("heading", { level: 1, name: "Penawaran" })).toBeVisible();
-    await expect(page.getByText("Daftar dokumen penawaran", { exact: false })).toBeVisible();
+    await expect(
+      page.getByText("Folder per pelanggan", { exact: false })
+    ).toBeVisible();
   });
 
   test("matches visual baseline (documentation shell)", async ({ page }) => {

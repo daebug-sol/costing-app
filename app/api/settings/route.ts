@@ -63,6 +63,11 @@ export async function PUT(request: Request) {
       validityDays?: number;
       termsConditions?: string;
       onboardingComplete?: boolean;
+      quoPrefix?: string;
+      soPrefix?: string;
+      doPrefix?: string;
+      invPrefix?: string;
+      payPrefix?: string;
     } = {};
 
     const takeNum = (v: unknown): number | undefined => {
@@ -141,6 +146,22 @@ export async function PUT(request: Request) {
       data.termsConditions = String(body.termsConditions);
     if (body.onboardingComplete !== undefined)
       data.onboardingComplete = Boolean(body.onboardingComplete);
+
+    const takePrefix = (v: unknown): string | undefined => {
+      if (v === undefined) return undefined;
+      const s = String(v).trim().toUpperCase().slice(0, 8);
+      return s || undefined;
+    };
+    const qp = takePrefix(body.quoPrefix);
+    if (qp !== undefined) data.quoPrefix = qp;
+    const sp = takePrefix(body.soPrefix);
+    if (sp !== undefined) data.soPrefix = sp;
+    const dp = takePrefix(body.doPrefix);
+    if (dp !== undefined) data.doPrefix = dp;
+    const ip = takePrefix(body.invPrefix);
+    if (ip !== undefined) data.invPrefix = ip;
+    const pp = takePrefix(body.payPrefix);
+    if (pp !== undefined) data.payPrefix = pp;
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json(

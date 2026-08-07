@@ -10,12 +10,37 @@ export const tenantWhere = {
   customTables: (orgId: string) => ({ organizationId: orgId }),
   folders: (orgId: string) => ({ organizationId: orgId }),
   settings: (orgId: string) => ({ organizationId: orgId }),
+  customers: (orgId: string) => ({ organizationId: orgId }),
+  salesOrders: (orgId: string) => ({ organizationId: orgId }),
+  deliveryOrders: (orgId: string) => ({ organizationId: orgId }),
+  invoices: (orgId: string) => ({ organizationId: orgId }),
+  payments: (orgId: string) => ({ organizationId: orgId }),
   project: (orgId: string, projectId: string) => ({
     id: projectId,
     organizationId: orgId,
   }),
   quotation: (orgId: string, quotationId: string) => ({
     id: quotationId,
+    organizationId: orgId,
+  }),
+  customer: (orgId: string, customerId: string) => ({
+    id: customerId,
+    organizationId: orgId,
+  }),
+  salesOrder: (orgId: string, soId: string) => ({
+    id: soId,
+    organizationId: orgId,
+  }),
+  deliveryOrder: (orgId: string, doId: string) => ({
+    id: doId,
+    organizationId: orgId,
+  }),
+  invoice: (orgId: string, invId: string) => ({
+    id: invId,
+    organizationId: orgId,
+  }),
+  payment: (orgId: string, payId: string) => ({
+    id: payId,
     organizationId: orgId,
   }),
   material: (orgId: string, id: string) => ({

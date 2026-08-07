@@ -14,7 +14,11 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
-import { DocumentationListView } from "@/components/documentation/documentation-list-view";
+import {
+  DocumentationListView,
+  type CustomerFolder,
+  type QuotationListRow,
+} from "@/components/documentation/documentation-list-view";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -39,6 +43,11 @@ import {
   type CostingProjectApi,
 } from "@/lib/quotation-export-mappers";
 import type { ProjectDoc, SectionDoc } from "@/lib/generators/document-types";
+import {
+  computeProjectProgress,
+  documentationHref,
+  type QuotationProgressSalesOrder,
+} from "@/lib/o2c/project-progress";
 import { computeQuotationTotals } from "@/lib/quotation-financials";
 import { formatIDR } from "@/lib/utils/format";
 import { toastError, toastSuccess } from "@/store/toastStore";
@@ -103,21 +112,37 @@ type QuotationItemApi = {
   };
 };
 
+type CustomerOption = {
+  id: string;
+  name: string;
+  company: string;
+  address: string;
+  attn: string;
+  phone: string;
+};
+
 type QuotationApi = {
   id: string;
   projectId: string | null;
+  customerId?: string | null;
+  customer?: { id: string; name?: string | null; company?: string | null } | null;
   status: string;
   noSurat: string | null;
   tanggal: string;
   perihal: string | null;
   clientName: string | null;
   clientCompany: string | null;
+  salesman?: string | null;
   clientAddress: string | null;
   clientAttn: string | null;
   clientPhone: string | null;
   projectLocation: string | null;
   ourRef: string | null;
   yourRef: string | null;
+  revision?: number;
+  convertedSoId?: string | null;
+  convertedSo?: QuotationProgressSalesOrder | null;
+  updatedAt?: string;
   discount: number;
   discountEnabled?: boolean;
   ppn: number;
@@ -142,6 +167,36 @@ type QuotationApi = {
   stampPath: string | null;
   items?: QuotationItemApi[];
 };
+
+function toListRow(q: QuotationApi): QuotationListRow {
+  return {
+    id: q.id,
+    status: q.status,
+    noSurat: q.noSurat,
+    perihal: q.perihal,
+    tanggal: q.tanggal,
+    grandTotal: q.grandTotal,
+    updatedAt: q.updatedAt,
+    customerId: q.customerId,
+    customer: q.customer,
+    convertedSoId: q.convertedSoId,
+    convertedSo: q.convertedSo,
+  };
+}
+
+function folderNameFor(q: QuotationApi): string {
+  const company = q.customer?.company?.trim();
+  if (company) return company;
+  const name = q.customer?.name?.trim();
+  if (name) return name;
+  return "Tanpa pelanggan";
+}
+
+function folderKeyFor(q: QuotationApi): string {
+  if (q.customer?.id) return `cust:${q.customer.id}`;
+  if (q.customerId) return `cust:${q.customerId}`;
+  return "none";
+}
 
 type FormLine = {
   localId: string;
@@ -252,6 +307,9 @@ export function DocumentationModule() {
   const [projectQuery, setProjectQuery] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [o2cBusy, setO2cBusy] = useState(false);
+
   const [form, setForm] = useState({
     status: "draft",
     noSurat: "",
@@ -259,6 +317,8 @@ export function DocumentationModule() {
     perihal: "",
     ourRef: "",
     yourRef: "",
+    customerId: "",
+    salesman: "",
     clientName: "",
     clientCompany: "",
     clientAddress: "",
@@ -294,6 +354,7 @@ export function DocumentationModule() {
     () => new Set()
   );
   const [deletingBulk, setDeletingBulk] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const availableMonths = useMemo(() => {
     const map = new Map<string, string>();
@@ -317,7 +378,8 @@ export function DocumentationModule() {
     const s = listSearch.trim().toLowerCase();
     if (s) {
       rows = rows.filter((q) => {
-        const t = `${q.noSurat ?? ""} ${q.perihal ?? ""} ${q.id}`.toLowerCase();
+        const t =
+          `${q.noSurat ?? ""} ${q.perihal ?? ""} ${q.id} ${q.customer?.name ?? ""} ${q.customer?.company ?? ""}`.toLowerCase();
         return t.includes(s);
       });
     }
@@ -339,8 +401,53 @@ export function DocumentationModule() {
     return rows;
   }, [quotations, listSearch, listStatusFilter, listMonthFilter, listDateFilter]);
 
+  const customerFolders = useMemo((): CustomerFolder[] => {
+    type Acc = {
+      key: string;
+      name: string;
+      projects: QuotationApi[];
+      totalValue: number;
+      latestMs: number;
+    };
+    const map = new Map<string, Acc>();
+    for (const q of filteredListQuotations) {
+      const key = folderKeyFor(q);
+      const name = folderNameFor(q);
+      const updatedMs = q.updatedAt
+        ? new Date(q.updatedAt).getTime()
+        : new Date(q.tanggal).getTime();
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, {
+          key,
+          name,
+          projects: [q],
+          totalValue: q.grandTotal,
+          latestMs: updatedMs,
+        });
+      } else {
+        existing.projects.push(q);
+        existing.totalValue += q.grandTotal;
+        if (updatedMs > existing.latestMs) existing.latestMs = updatedMs;
+      }
+    }
+    return [...map.values()]
+      .sort((a, b) => b.latestMs - a.latestMs)
+      .map((folder) => ({
+        key: folder.key,
+        name: folder.name,
+        totalValue: folder.totalValue,
+        projects: [...folder.projects]
+          .sort(
+            (a, b) =>
+              new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
+          )
+          .map(toListRow),
+      }));
+  }, [filteredListQuotations]);
+
   const loadList = useCallback(async () => {
-    const r = await fetch("/api/quotations");
+    const r = await fetch("/api/quotations?view=documents");
     if (r.ok) setQuotations(await r.json());
   }, []);
 
@@ -359,6 +466,11 @@ export function DocumentationModule() {
     if (r.ok) setAvailable(await r.json());
   }, []);
 
+  const loadCustomers = useCallback(async () => {
+    const r = await fetch("/api/customers");
+    if (r.ok) setCustomers((await r.json()) as CustomerOption[]);
+  }, []);
+
   const loadQuotation = useCallback(async (id: string) => {
     const r = await fetch(`/api/quotations/${id}`);
     if (!r.ok) return;
@@ -372,6 +484,8 @@ export function DocumentationModule() {
       perihal: q.perihal ?? "",
       ourRef: q.ourRef ?? "",
       yourRef: q.yourRef ?? "",
+      customerId: q.customerId ?? "",
+      salesman: q.salesman ?? "",
       clientName: q.clientName ?? "",
       clientCompany: q.clientCompany ?? "",
       clientAddress: q.clientAddress ?? "",
@@ -403,13 +517,18 @@ export function DocumentationModule() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      await Promise.all([loadList(), loadSettings(), loadAvailable()]);
+      await Promise.all([
+        loadList(),
+        loadSettings(),
+        loadAvailable(),
+        loadCustomers(),
+      ]);
       if (!cancelled) setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [loadList, loadSettings, loadAvailable]);
+  }, [loadList, loadSettings, loadAvailable, loadCustomers]);
 
   useEffect(() => {
     const onVis = () => {
@@ -515,7 +634,30 @@ export function DocumentationModule() {
       setDocumentationUi({ screen: "editor" });
       void loadQuotation(id);
     },
-    [router, loadQuotation]
+    [router, loadQuotation, setDocumentationUi]
+  );
+
+  const handleToggleExpand = useCallback((id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }, []);
+
+  const openLatestStage = useCallback(
+    (id: string) => {
+      const q = quotations.find((row) => row.id === id);
+      if (!q) {
+        openQuotation(id);
+        return;
+      }
+      const progress = computeProjectProgress(q);
+      const stage = progress.stages.find((s) => s.stage === progress.latestStage);
+      const href = stage?.href ?? documentationHref(id);
+      if (progress.latestStage === "quotation" || href.startsWith("/documentation")) {
+        openQuotation(id);
+        return;
+      }
+      router.push(href);
+    },
+    [quotations, openQuotation, router]
   );
 
   const backToList = useCallback(() => {
@@ -698,6 +840,8 @@ export function DocumentationModule() {
         perihal: form.perihal || null,
         ourRef: form.ourRef || null,
         yourRef: form.yourRef || null,
+        customerId: form.customerId || null,
+        salesman: form.salesman || null,
         clientName: form.clientName || null,
         clientCompany: form.clientCompany || null,
         clientAddress: form.clientAddress || null,
@@ -1023,17 +1167,12 @@ export function DocumentationModule() {
     return (
       <div className="min-h-[calc(100vh-3.5rem)] bg-muted/40">
         <DocumentationListView
-          quotations={filteredListQuotations.map((q) => ({
-            id: q.id,
-            noSurat: q.noSurat,
-            perihal: q.perihal,
-            tanggal: q.tanggal,
-            status: q.status,
-            grandTotal: q.grandTotal,
-          }))}
+          folders={customerFolders}
+          expandedId={expandedId}
+          onToggleExpand={handleToggleExpand}
+          onOpenLatest={openLatestStage}
           onCreate={() => void handleCreate()}
           creating={creating}
-          onOpen={(id) => openQuotation(id)}
           selectMode={selectMode}
           onSelectModeChange={(v) => {
             setSelectMode(v);
@@ -1104,10 +1243,18 @@ export function DocumentationModule() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="final">Final</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="sent">Terkirim</SelectItem>
+              <SelectItem value="won">Menang</SelectItem>
+              <SelectItem value="lost">Kalah</SelectItem>
+              <SelectItem value="approved">Disetujui (lama)</SelectItem>
+              <SelectItem value="final">Final (lama)</SelectItem>
             </SelectContent>
           </Select>
+          {(quotation?.revision ?? 0) > 0 ? (
+            <span className="rounded-md bg-muted px-2 py-1 text-xs font-medium">
+              Rev {quotation?.revision}
+            </span>
+          ) : null}
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           <Button
@@ -1117,6 +1264,79 @@ export function DocumentationModule() {
             onClick={() => void save()}
           >
             {saving ? <Loader2 className="size-4 animate-spin" /> : "Simpan"}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={!quotation || o2cBusy}
+            onClick={() => {
+              void (async () => {
+                if (!quotation) return;
+                setO2cBusy(true);
+                try {
+                  const r = await fetch(`/api/quotations/${quotation.id}/revise`, {
+                    method: "POST",
+                  });
+                  if (!r.ok) throw new Error(await readErr(r));
+                  const created = (await r.json()) as QuotationApi;
+                  toastSuccess("Revisi quotation dibuat");
+                  await loadList();
+                  router.replace(`/documentation?id=${created.id}`);
+                  await loadQuotation(created.id);
+                } catch (e) {
+                  toastError(
+                    e instanceof Error ? e.message : "Gagal membuat revisi"
+                  );
+                } finally {
+                  setO2cBusy(false);
+                }
+              })();
+            }}
+          >
+            Buat revisi
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={
+              !quotation ||
+              o2cBusy ||
+              Boolean(quotation.convertedSoId) ||
+              !["won", "approved", "finalized", "final"].includes(
+                form.status.toLowerCase()
+              )
+            }
+            onClick={() => {
+              void (async () => {
+                if (!quotation) return;
+                setO2cBusy(true);
+                try {
+                  await save();
+                  const r = await fetch(
+                    `/api/quotations/${quotation.id}/convert-to-so`,
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({}),
+                    }
+                  );
+                  if (!r.ok) throw new Error(await readErr(r));
+                  const so = (await r.json()) as { id: string; soNumber: string };
+                  toastSuccess(`Sales Order ${so.soNumber} dibuat`);
+                  router.push(`/sales-orders?id=${so.id}`);
+                } catch (e) {
+                  toastError(
+                    e instanceof Error ? e.message : "Gagal konversi ke SO"
+                  );
+                } finally {
+                  setO2cBusy(false);
+                }
+              })();
+            }}
+          >
+            Ke Sales Order
           </Button>
           <Button
             type="button"
@@ -1223,6 +1443,92 @@ export function DocumentationModule() {
                 value="klien"
                 className="mt-0 min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5"
               >
+                <div className="grid gap-2">
+                  <Label>Pelanggan (master)</Label>
+                  <Select
+                    value={form.customerId || "__none__"}
+                    onValueChange={(v) => {
+                      if (v === "__none__") {
+                        setForm((f) => ({ ...f, customerId: "" }));
+                        return;
+                      }
+                      const c = customers.find((x) => x.id === v);
+                      setForm((f) => ({
+                        ...f,
+                        customerId: v,
+                        clientName: c?.name ?? f.clientName,
+                        clientCompany: c?.company ?? f.clientCompany,
+                        clientAddress: c?.address ?? f.clientAddress,
+                        clientAttn: c?.attn ?? f.clientAttn,
+                        clientPhone: c?.phone ?? f.clientPhone,
+                      }));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih pelanggan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— Manual —</SelectItem>
+                      {customers.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                          {c.company ? ` · ${c.company}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="w-fit"
+                    onClick={() => {
+                      void (async () => {
+                        if (!form.clientName.trim() && !form.clientCompany.trim()) {
+                          toastError("Isi nama atau perusahaan dulu");
+                          return;
+                        }
+                        try {
+                          const r = await fetch("/api/customers", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              name:
+                                form.clientName.trim() ||
+                                form.clientCompany.trim(),
+                              company: form.clientCompany.trim(),
+                              address: form.clientAddress.trim(),
+                              attn: form.clientAttn.trim(),
+                              phone: form.clientPhone.trim(),
+                            }),
+                          });
+                          if (!r.ok) throw new Error(await readErr(r));
+                          const created = (await r.json()) as CustomerOption;
+                          await loadCustomers();
+                          setForm((f) => ({ ...f, customerId: created.id }));
+                          toastSuccess("Pelanggan disimpan ke master");
+                        } catch (e) {
+                          toastError(
+                            e instanceof Error
+                              ? e.message
+                              : "Gagal menyimpan pelanggan"
+                          );
+                        }
+                      })();
+                    }}
+                  >
+                    Simpan sebagai pelanggan baru
+                  </Button>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Salesman</Label>
+                  <Input
+                    value={form.salesman}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, salesman: e.target.value }))
+                    }
+                  />
+                </div>
                 <div className="grid gap-2">
                   <Label>Nama Klien</Label>
                   <Input

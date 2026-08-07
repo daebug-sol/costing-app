@@ -20,6 +20,10 @@ const navItems = [
   { href: "/database", label: "Database" },
   { href: "/costing", label: "Costing" },
   { href: "/documentation", label: "Documentation" },
+  { href: "/customers", label: "Pelanggan" },
+  { href: "/sales-orders", label: "Sales Order" },
+  { href: "/invoices", label: "Invoice" },
+  { href: "/payments", label: "Pembayaran" },
   { href: "/help", label: "Help" },
 ] as const;
 

@@ -103,6 +103,41 @@ export type DashboardQuotationFunnel = {
   bookedCount: number;
   totalCount: number;
   winRatePct: number;
+  /** O2C stages (optional for older clients). */
+  sentCount?: number;
+  wonCount?: number;
+  lostCount?: number;
+};
+
+export type DashboardO2cFunnel = {
+  quoteCount: number;
+  orderCount: number;
+  deliveredCount: number;
+  invoicedCount: number;
+  paidCount: number;
+};
+
+export type DashboardArAging = {
+  totals: {
+    current: number;
+    d1_30: number;
+    d31_60: number;
+    d61_90: number;
+    d90_plus: number;
+  };
+  byCustomer: Array<{
+    customerId: string;
+    customerName: string;
+    openAmount: number;
+  }>;
+  rows: Array<{
+    invoiceId: string;
+    invNumber: string;
+    customerName: string;
+    openAmount: number;
+    daysPastDue: number;
+    bucket: string;
+  }>;
 };
 
 export type DashboardStatusDistributionRow = {
@@ -176,6 +211,8 @@ export type DashboardApiResponse = {
   quotationAging: DashboardQuotationAging;
   discountMarginTrend: DashboardDiscountMarginTrend;
   salesLeaderboard: DashboardSalesLeaderboard;
+  o2cFunnel?: DashboardO2cFunnel;
+  arAging?: DashboardArAging;
 };
 
 export const EMPTY_DASHBOARD_RESPONSE: DashboardApiResponse = {

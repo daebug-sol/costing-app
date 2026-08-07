@@ -11,7 +11,14 @@ export type CostingSidebarFilters = {
 
 export type DocumentationListFilters = {
   listSearch: string;
-  listStatusFilter: "all" | "draft" | "final" | "approved";
+  listStatusFilter:
+    | "all"
+    | "draft"
+    | "sent"
+    | "won"
+    | "lost"
+    | "final"
+    | "approved";
   listMonthFilter: string;
   listDateFilter: string;
 };

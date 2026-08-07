@@ -201,19 +201,22 @@ describe("buildDashboardAnalyticsPayload", () => {
     expect(payload.quotationAging.expiredCount).toBe(15);
   });
 
-  it("aligns funnel win rate with booked statuses", () => {
+  it("computes win rate as won/(won+lost), ignoring open drafts", () => {
     const payload = buildDashboardAnalyticsPayload(
       {
         projects: [baseProject],
         quotations: [
-          { ...baseQuotation, id: "q1", status: "final" },
-          { ...baseQuotation, id: "q2", status: "draft" },
+          { ...baseQuotation, id: "q1", status: "won" },
+          { ...baseQuotation, id: "q2", status: "lost" },
+          { ...baseQuotation, id: "q3", status: "draft" },
         ],
         defaultPaymentTerms: "DP 50%, balance CBD",
       },
       new Date("2026-05-09T00:00:00.000Z")
     );
 
+    expect(payload.quotationFunnel.wonCount).toBe(1);
+    expect(payload.quotationFunnel.lostCount).toBe(1);
     expect(payload.quotationFunnel.bookedCount).toBe(1);
     expect(payload.quotationFunnel.winRatePct).toBe(50);
   });

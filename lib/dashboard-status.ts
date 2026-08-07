@@ -6,16 +6,29 @@ const STATUS_ALIASES: Record<string, string> = {
   finalise: "finalized",
   finalised: "finalized",
   draft: "draft",
+  sent: "sent",
+  won: "won",
+  lost: "lost",
+  superseded: "superseded",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   approved: "approved",
   finalized: "finalized",
   draft: "draft",
+  sent: "sent",
+  won: "won",
+  lost: "lost",
+  superseded: "superseded",
 };
 
-export const BOOKED_QUOTATION_STATUSES = new Set(["approved", "finalized"]);
-export const POTENTIAL_QUOTATION_STATUSES = new Set(["draft"]);
+/** Booked quotation statuses — won + legacy approved/finalized during transition. */
+export const BOOKED_QUOTATION_STATUSES = new Set([
+  "approved",
+  "finalized",
+  "won",
+]);
+export const POTENTIAL_QUOTATION_STATUSES = new Set(["draft", "sent"]);
 
 export function normalizeStatus(rawStatus: string | null | undefined): string {
   const lowered = (rawStatus ?? "").trim().toLowerCase();
@@ -33,4 +46,13 @@ export function isBookedQuotationStatus(rawStatus: string | null | undefined): b
 
 export function isPotentialQuotationStatus(rawStatus: string | null | undefined): boolean {
   return POTENTIAL_QUOTATION_STATUSES.has(normalizeStatus(rawStatus));
+}
+
+export function isWonQuotationStatus(rawStatus: string | null | undefined): boolean {
+  const s = normalizeStatus(rawStatus);
+  return s === "won" || s === "approved" || s === "finalized";
+}
+
+export function isLostQuotationStatus(rawStatus: string | null | undefined): boolean {
+  return normalizeStatus(rawStatus) === "lost";
 }

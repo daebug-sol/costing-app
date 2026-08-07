@@ -248,3 +248,88 @@ export async function requireCustomRowInOrg(
   }
   return { ok: true };
 }
+
+export async function requireCustomerInOrg(
+  id: string,
+  orgId: string
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  const row = await prisma.customer.findFirst({
+    where: { id, organizationId: orgId },
+    select: { id: true },
+  });
+  if (!row) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Not found" }, { status: 404 }),
+    };
+  }
+  return { ok: true };
+}
+
+export async function requireSalesOrderInOrg(
+  id: string,
+  orgId: string
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  const row = await prisma.salesOrder.findFirst({
+    where: { id, organizationId: orgId },
+    select: { id: true },
+  });
+  if (!row) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Not found" }, { status: 404 }),
+    };
+  }
+  return { ok: true };
+}
+
+export async function requireDeliveryOrderInOrg(
+  id: string,
+  orgId: string
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  const row = await prisma.deliveryOrder.findFirst({
+    where: { id, organizationId: orgId },
+    select: { id: true },
+  });
+  if (!row) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Not found" }, { status: 404 }),
+    };
+  }
+  return { ok: true };
+}
+
+export async function requireInvoiceInOrg(
+  id: string,
+  orgId: string
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  const row = await prisma.invoice.findFirst({
+    where: { id, organizationId: orgId },
+    select: { id: true },
+  });
+  if (!row) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Not found" }, { status: 404 }),
+    };
+  }
+  return { ok: true };
+}
+
+export async function requirePaymentInOrg(
+  id: string,
+  orgId: string
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  const row = await prisma.payment.findFirst({
+    where: { id, organizationId: orgId },
+    select: { id: true },
+  });
+  if (!row) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Not found" }, { status: 404 }),
+    };
+  }
+  return { ok: true };
+}

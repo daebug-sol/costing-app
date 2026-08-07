@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
 import { prisma } from "@/lib/prisma";
 import { computeQuotationTotals } from "@/lib/quotation-financials";
-import { getOrCreateSettings } from "@/lib/tenant-queries";
+import { getOrCreateSettings, tenantWhere } from "@/lib/tenant-queries";
 
 const quotationProjectSelect = {
   id: true,
@@ -50,16 +50,48 @@ const listInclude = {
   },
 } as const;
 
-export async function GET() {
+/** O2C chain for Documentation progress folders (`?view=documents`). */
+const documentsInclude = {
+  customer: {
+    select: { id: true, name: true, company: true },
+  },
+  convertedSo: {
+    select: {
+      id: true,
+      soNumber: true,
+      status: true,
+      grandTotal: true,
+      deliveries: {
+        select: { id: true, doNumber: true, status: true },
+      },
+      invoices: {
+        select: {
+          id: true,
+          invNumber: true,
+          status: true,
+          grandTotal: true,
+          paidTotal: true,
+          dueDate: true,
+        },
+      },
+    },
+  },
+} as const;
+
+export async function GET(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
   const { orgId } = guard;
 
   try {
+    const view = new URL(request.url).searchParams.get("view");
+    const include =
+      view === "documents" ? documentsInclude : listInclude;
+
     const rows = await prisma.quotation.findMany({
-      where: { organizationId: orgId },
+      where: tenantWhere.quotations(orgId),
       orderBy: { updatedAt: "desc" },
-      include: listInclude,
+      include,
     });
     return NextResponse.json(rows);
   } catch (e) {

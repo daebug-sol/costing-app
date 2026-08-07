@@ -42,6 +42,11 @@ type Settings = {
   validityDays: number;
   termsConditions: string;
   onboardingComplete?: boolean;
+  quoPrefix?: string;
+  soPrefix?: string;
+  doPrefix?: string;
+  invPrefix?: string;
+  payPrefix?: string;
   /** Read-only product modules; ignored on PUT. */
   modules?: { ahu: boolean };
   updatedAt: string;
@@ -554,6 +559,65 @@ export function SettingsPage() {
             }
           >
             {saving === "forex" ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              "Simpan"
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <Card size="sm" className="border-border ">
+        <CardHeader>
+          <CardTitle className="text-lg">Prefix penomoran dokumen</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Format nomor: PREFIX-YYYYMM-0001 (contoh QT-202608-0001)
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {(
+            [
+              ["quoPrefix", "Quotation"],
+              ["soPrefix", "Sales Order"],
+              ["doPrefix", "Surat Jalan"],
+              ["invPrefix", "Invoice"],
+              ["payPrefix", "Pembayaran"],
+            ] as const
+          ).map(([key, label]) => (
+            <div key={key} className="space-y-1.5">
+              <Label htmlFor={key}>{label}</Label>
+              <Input
+                id={key}
+                value={row[key] ?? ""}
+                maxLength={8}
+                onChange={(e) =>
+                  setRow({
+                    ...row,
+                    [key]: e.target.value.toUpperCase(),
+                  } as Settings)
+                }
+              />
+            </div>
+          ))}
+        </CardContent>
+        <CardFooter className="justify-end border-t bg-muted/40">
+          <Button
+            type="button"
+            disabled={saving !== null}
+            onClick={() =>
+              void put(
+                {
+                  quoPrefix: row.quoPrefix ?? "QT",
+                  soPrefix: row.soPrefix ?? "SO",
+                  doPrefix: row.doPrefix ?? "SJ",
+                  invPrefix: row.invPrefix ?? "INV",
+                  payPrefix: row.payPrefix ?? "PAY",
+                },
+                "prefixes"
+              )
+            }
+          >
+            {saving === "prefixes" ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
               "Simpan"

@@ -1,10 +1,17 @@
 import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { nextDocumentNumber } from "@/lib/doc-numbering";
 import { parseQuotationItemsFromBody } from "@/lib/quotation-items-parse";
 import { computeQuotationTotals } from "@/lib/quotation-financials";
 import { replaceQuotationItems } from "@/lib/replace-quotation-items";
 import { guardApiRoute } from "@/lib/api-guard";
+import {
+  canTransitionQuotation,
+  DOC_TYPES,
+  normalizeQuotationStatus,
+  QUOTATION_STATUS,
+} from "@/lib/o2c/status";
 import { requireQuotationInOrg } from "@/lib/tenant-context";
 import { tenantWhere } from "@/lib/tenant-queries";
 
@@ -104,7 +111,76 @@ export async function PUT(request: Request, context: Ctx) {
     const data: Prisma.QuotationUncheckedUpdateInput = {};
 
     if (body.status !== undefined) {
-      data.status = String(body.status).trim().toLowerCase();
+      const nextStatus = normalizeQuotationStatus(String(body.status));
+      if (!canTransitionQuotation(existing.status, nextStatus)) {
+        return NextResponse.json(
+          {
+            error: `Transisi status tidak diizinkan: ${existing.status} → ${nextStatus}`,
+          },
+          { status: 400 }
+        );
+      }
+      data.status = nextStatus;
+      if (nextStatus === QUOTATION_STATUS.SENT && !existing.sentAt) {
+        data.sentAt = new Date();
+      }
+      if (
+        (nextStatus === QUOTATION_STATUS.WON ||
+          nextStatus === QUOTATION_STATUS.APPROVED ||
+          nextStatus === QUOTATION_STATUS.FINALIZED) &&
+        !existing.wonAt
+      ) {
+        data.wonAt = new Date();
+      }
+      if (nextStatus === QUOTATION_STATUS.LOST) {
+        data.lostAt = new Date();
+        if (body.lostReason !== undefined) {
+          data.lostReason =
+            body.lostReason === null || body.lostReason === ""
+              ? null
+              : String(body.lostReason);
+        }
+      }
+      // Auto-number on first send if noSurat empty (manual override still allowed below)
+      const becomingSent =
+        nextStatus === QUOTATION_STATUS.SENT &&
+        normalizeQuotationStatus(existing.status) === QUOTATION_STATUS.DRAFT;
+      if (becomingSent && !existing.noSurat && body.noSurat === undefined) {
+        const noSurat = await prisma.$transaction((tx) =>
+          nextDocumentNumber(DOC_TYPES.QUO, orgId, tx)
+        );
+        data.noSurat = noSurat;
+      }
+    }
+    if (body.customerId !== undefined) {
+      if (body.customerId === null || body.customerId === "") {
+        data.customerId = null;
+      } else {
+        const cid = String(body.customerId);
+        const cust = await prisma.customer.findFirst({
+          where: { id: cid, organizationId: orgId },
+          select: { id: true },
+        });
+        if (!cust) {
+          return NextResponse.json(
+            { error: "Pelanggan tidak ditemukan" },
+            { status: 404 }
+          );
+        }
+        data.customerId = cid;
+      }
+    }
+    if (body.salesman !== undefined) {
+      data.salesman =
+        body.salesman === null || body.salesman === ""
+          ? null
+          : String(body.salesman);
+    }
+    if (body.lostReason !== undefined && body.status === undefined) {
+      data.lostReason =
+        body.lostReason === null || body.lostReason === ""
+          ? null
+          : String(body.lostReason);
     }
     if (body.noSurat !== undefined) {
       data.noSurat =

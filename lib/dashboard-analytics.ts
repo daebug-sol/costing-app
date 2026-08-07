@@ -8,9 +8,12 @@ import { getDashboardRangeStart } from "@/lib/dashboard-range";
 import { finite } from "@/lib/calculations";
 import { computeCostSummary, marginTogglesFromProject } from "@/lib/cost-summary";
 import { effectiveSectionSubtotal } from "@/lib/section-subtotal";
+import { buildArAging } from "@/lib/o2c/ar-aging";
 import {
   isBookedQuotationStatus,
+  isLostQuotationStatus,
   isPotentialQuotationStatus,
+  isWonQuotationStatus,
   normalizeStatus,
   statusLabel,
 } from "@/lib/dashboard-status";
@@ -81,12 +84,34 @@ type DashboardQuotationInput = {
   } | null;
 };
 
+export type DashboardSalesOrderInput = {
+  id: string;
+  status: string;
+  tanggal: Date;
+  grandTotal: number;
+};
+
+export type DashboardInvoiceInput = {
+  id: string;
+  invNumber: string | null;
+  customerId: string;
+  customerName: string;
+  status: string;
+  dueDate: Date | null;
+  tanggal: Date;
+  grandTotal: number;
+  paidTotal: number;
+};
+
 export type DashboardAnalyticsInput = {
   projects: DashboardProjectInput[];
   quotations: DashboardQuotationInput[];
   defaultPaymentTerms: string;
   selectedProjectId?: string | null;
   range?: DashboardRange;
+  /** When present, booked revenue KPIs prefer Sales Orders (open/delivered). */
+  salesOrders?: DashboardSalesOrderInput[];
+  invoices?: DashboardInvoiceInput[];
 };
 
 type PaymentInstallment = {
@@ -269,9 +294,19 @@ function kpiFromData(input: DashboardAnalyticsInput, now: Date, range: Dashboard
   const backlogValue = rangeQuotations
     .filter((quotation) => isBookedQuotationStatus(quotation.status))
     .reduce((sum, quotation) => sum + asBookedRevenueAmount(quotation), 0);
-  const totalCount = rangeQuotations.length;
-  const bookedQuotation = approvedQuotation;
-  const winRatePct = totalCount > 0 ? (bookedQuotation / totalCount) * 100 : 0;
+  const wonCount = rangeQuotations.filter((q) => isWonQuotationStatus(q.status)).length;
+  const lostCount = rangeQuotations.filter((q) => isLostQuotationStatus(q.status)).length;
+  const decided = wonCount + lostCount;
+  const winRatePct =
+    decided > 0
+      ? (wonCount / decided) * 100
+      : rangeQuotations.length > 0
+        ? (approvedQuotation / rangeQuotations.length) * 100
+        : 0;
+
+  const soRows = (input.salesOrders ?? []).filter(
+    (so) => !["cancelled"].includes((so.status ?? "").toLowerCase())
+  );
   const taxExposurePpn = rangeQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPN), 0);
   const taxExposurePph = rangeQuotations.reduce((sum, quotation) => sum + normalizePercent(quotation.totalPPH), 0);
 
@@ -282,16 +317,39 @@ function kpiFromData(input: DashboardAnalyticsInput, now: Date, range: Dashboard
   let bookedRevenueMtd = 0;
   let bookedRevenueYtd = 0;
 
-  for (const quotation of quotations) {
-    if (!isBookedQuotationStatus(quotation.status)) continue;
-    const amount = asBookedRevenueAmount(quotation);
-    if (quotation.tanggal >= ytdStart && quotation.tanggal <= utcNow) {
-      bookedRevenueYtd += amount;
+  if (soRows.length > 0) {
+    for (const so of soRows) {
+      const amount = normalizePercent(so.grandTotal);
+      if (so.tanggal >= ytdStart && so.tanggal <= utcNow) {
+        bookedRevenueYtd += amount;
+      }
+      if (so.tanggal >= mtdStart && so.tanggal <= utcNow) {
+        bookedRevenueMtd += amount;
+      }
     }
-    if (quotation.tanggal >= mtdStart && quotation.tanggal <= utcNow) {
-      bookedRevenueMtd += amount;
+  } else {
+    for (const quotation of quotations) {
+      if (!isBookedQuotationStatus(quotation.status)) continue;
+      const amount = asBookedRevenueAmount(quotation);
+      if (quotation.tanggal >= ytdStart && quotation.tanggal <= utcNow) {
+        bookedRevenueYtd += amount;
+      }
+      if (quotation.tanggal >= mtdStart && quotation.tanggal <= utcNow) {
+        bookedRevenueMtd += amount;
+      }
     }
   }
+
+  const soBacklog =
+    soRows.length > 0
+      ? soRows
+          .filter((so) =>
+            ["open", "partially_delivered", "delivered"].includes(
+              (so.status ?? "").toLowerCase()
+            )
+          )
+          .reduce((sum, so) => sum + normalizePercent(so.grandTotal), 0)
+      : backlogValue;
 
   return {
     totalProjects,
@@ -303,7 +361,7 @@ function kpiFromData(input: DashboardAnalyticsInput, now: Date, range: Dashboard
     bookedRevenueMtd: roundMoney(bookedRevenueMtd),
     bookedRevenueYtd: roundMoney(bookedRevenueYtd),
     pipelineValue: roundMoney(pipelineValue),
-    backlogValue: roundMoney(backlogValue),
+    backlogValue: roundMoney(soBacklog),
     winRatePct: roundMoney(winRatePct),
     taxExposurePpn: roundMoney(taxExposurePpn),
     taxExposurePph: roundMoney(taxExposurePph),
@@ -601,55 +659,83 @@ function cashflowProjectionFromData(
   let defaultFallbackCount = 0;
   let deterministicFallbackCount = 0;
 
-  const bookedQuotations = input.quotations.filter((quotation) =>
-    isBookedQuotationStatus(quotation.status)
-  );
+  const openInvoices = (input.invoices ?? []).filter((inv) => {
+    const s = (inv.status ?? "").toLowerCase();
+    if (s === "void" || s === "draft" || s === "paid") return false;
+    return inv.grandTotal - inv.paidTotal > 0.01;
+  });
 
-  for (const quotation of bookedQuotations) {
-    const installments = resolveInstallments(quotation.paymentTerms, input.defaultPaymentTerms);
-    const quotationMonth = startOfUtcMonth(quotation.tanggal);
-    const revenueBase = asBookedRevenueAmount(quotation);
-
-    for (const installment of installments) {
-      if (installment.basis === "explicit") explicitTermCount += 1;
-      if (installment.basis === "default-fallback") defaultFallbackCount += 1;
-      if (installment.basis === "fallback") deterministicFallbackCount += 1;
-
-      const dueMonth = addUtcMonths(quotationMonth, installment.monthOffset);
+  if (openInvoices.length > 0) {
+    for (const inv of openInvoices) {
+      const openAmt = Math.max(0, inv.grandTotal - inv.paidTotal);
+      const due = inv.dueDate ?? inv.tanggal;
+      const dueMonth = startOfUtcMonth(due);
       const idx = diffUtcMonths(start, dueMonth);
       if (idx < 0 || idx >= monthKeys.length) continue;
       const key = monthKeys[idx];
       const bucket = buckets.get(key);
       if (!bucket) continue;
-      bucket.projectedIn += revenueBase * (installment.percent / 100);
+      bucket.projectedIn += openAmt;
     }
+  } else {
+    const bookedQuotations = input.quotations.filter((quotation) =>
+      isBookedQuotationStatus(quotation.status)
+    );
 
-    const cashOutBase = defaultCashOutBasis(quotation);
-    const outDist: Array<[number, number]> = [
-      [0, 0.6],
-      [1, 0.4],
-    ];
-    for (const [offset, weight] of outDist) {
-      const dueMonth = addUtcMonths(quotationMonth, offset);
-      const idx = diffUtcMonths(start, dueMonth);
-      if (idx < 0 || idx >= monthKeys.length) continue;
-      const key = monthKeys[idx];
-      const bucket = buckets.get(key);
-      if (!bucket) continue;
-      bucket.projectedOut += cashOutBase * weight;
+    for (const quotation of bookedQuotations) {
+      const installments = resolveInstallments(
+        quotation.paymentTerms,
+        input.defaultPaymentTerms
+      );
+      const quotationMonth = startOfUtcMonth(quotation.tanggal);
+      const revenueBase = asBookedRevenueAmount(quotation);
+
+      for (const installment of installments) {
+        if (installment.basis === "explicit") explicitTermCount += 1;
+        if (installment.basis === "default-fallback") defaultFallbackCount += 1;
+        if (installment.basis === "fallback") deterministicFallbackCount += 1;
+
+        const dueMonth = addUtcMonths(quotationMonth, installment.monthOffset);
+        const idx = diffUtcMonths(start, dueMonth);
+        if (idx < 0 || idx >= monthKeys.length) continue;
+        const key = monthKeys[idx];
+        const bucket = buckets.get(key);
+        if (!bucket) continue;
+        bucket.projectedIn += revenueBase * (installment.percent / 100);
+      }
+
+      const cashOutBase = defaultCashOutBasis(quotation);
+      const outDist: Array<[number, number]> = [
+        [0, 0.6],
+        [1, 0.4],
+      ];
+      for (const [offset, weight] of outDist) {
+        const dueMonth = addUtcMonths(quotationMonth, offset);
+        const idx = diffUtcMonths(start, dueMonth);
+        if (idx < 0 || idx >= monthKeys.length) continue;
+        const key = monthKeys[idx];
+        const bucket = buckets.get(key);
+        if (!bucket) continue;
+        bucket.projectedOut += cashOutBase * weight;
+      }
     }
   }
 
   const assumptions: DashboardCashflowAssumptions = {
-    termRuleUsed: "pattern-percent-parser + deterministic 50/50 fallback",
+    termRuleUsed:
+      openInvoices.length > 0
+        ? "invoice-due-date open AR"
+        : "pattern-percent-parser + deterministic 50/50 fallback",
     confidenceNote:
-      deterministicFallbackCount > 0
-        ? "Some payment terms were unrecognized and used deterministic 50/50 fallback."
-        : defaultFallbackCount > 0
-          ? "Some payment terms used default App Settings fallback parser."
-          : explicitTermCount > 0
-            ? "Payment terms parsed from quotation text patterns."
-            : "No booked quotations available; projection is empty.",
+      openInvoices.length > 0
+        ? "Projected inflows from unpaid invoices by due date."
+        : deterministicFallbackCount > 0
+          ? "Some payment terms were unrecognized and used deterministic 50/50 fallback."
+          : defaultFallbackCount > 0
+            ? "Some payment terms used default App Settings fallback parser."
+            : explicitTermCount > 0
+              ? "Payment terms parsed from quotation text patterns."
+              : "No booked quotations available; projection is empty.",
   };
 
   return {
@@ -678,17 +764,29 @@ function quotationFunnelFromData(
   let finalCount = 0;
   let approvedCount = 0;
   let bookedCount = 0;
+  let sentCount = 0;
+  let wonCount = 0;
+  let lostCount = 0;
 
   for (const quotation of scoped) {
     const normalized = normalizeStatus(quotation.status);
     if (normalized === "draft") draftCount += 1;
     if (normalized === "finalized") finalCount += 1;
     if (normalized === "approved") approvedCount += 1;
+    if (normalized === "sent") sentCount += 1;
+    if (isWonQuotationStatus(quotation.status)) wonCount += 1;
+    if (isLostQuotationStatus(quotation.status)) lostCount += 1;
     if (isBookedQuotationStatus(quotation.status)) bookedCount += 1;
   }
 
   const totalCount = scoped.length;
-  const winRatePct = totalCount > 0 ? (bookedCount / totalCount) * 100 : 0;
+  const decided = wonCount + lostCount;
+  const winRatePct =
+    decided > 0
+      ? (wonCount / decided) * 100
+      : totalCount > 0
+        ? (bookedCount / totalCount) * 100
+        : 0;
   return {
     draftCount,
     finalCount,
@@ -696,6 +794,9 @@ function quotationFunnelFromData(
     bookedCount,
     totalCount,
     winRatePct: roundMoney(winRatePct),
+    sentCount,
+    wonCount,
+    lostCount,
   };
 }
 
@@ -949,7 +1050,15 @@ export function buildDashboardAnalyticsPayload(
       }
     : input;
 
-  if (scopedInput.projects.length === 0 && scopedInput.quotations.length === 0) {
+  const hasO2c =
+    (scopedInput.salesOrders?.length ?? 0) > 0 ||
+    (scopedInput.invoices?.length ?? 0) > 0;
+
+  if (
+    scopedInput.projects.length === 0 &&
+    scopedInput.quotations.length === 0 &&
+    !hasO2c
+  ) {
     return {
       ...EMPTY_DASHBOARD_RESPONSE,
       range,
@@ -959,6 +1068,22 @@ export function buildDashboardAnalyticsPayload(
       },
     };
   }
+
+  const soList = scopedInput.salesOrders ?? [];
+  const invList = scopedInput.invoices ?? [];
+  const ar = buildArAging(
+    invList.map((inv) => ({
+      id: inv.id,
+      invNumber: inv.invNumber,
+      customerId: inv.customerId,
+      customerName: inv.customerName,
+      dueDate: inv.dueDate,
+      grandTotal: inv.grandTotal,
+      paidTotal: inv.paidTotal,
+      status: inv.status,
+    })),
+    now
+  );
 
   return {
     range,
@@ -976,5 +1101,34 @@ export function buildDashboardAnalyticsPayload(
     quotationAging: quotationAgingFromData(scopedInput, now, range),
     discountMarginTrend: discountMarginTrendFromData(scopedInput, now, range),
     salesLeaderboard: salesLeaderboardFromData(scopedInput, now, range),
+    o2cFunnel: {
+      quoteCount: scopedInput.quotations.length,
+      orderCount: soList.filter(
+        (s) => (s.status ?? "").toLowerCase() !== "cancelled"
+      ).length,
+      deliveredCount: soList.filter((s) =>
+        ["delivered", "partially_delivered"].includes(
+          (s.status ?? "").toLowerCase()
+        )
+      ).length,
+      invoicedCount: invList.filter(
+        (i) => !["void", "draft"].includes((i.status ?? "").toLowerCase())
+      ).length,
+      paidCount: invList.filter(
+        (i) => (i.status ?? "").toLowerCase() === "paid"
+      ).length,
+    },
+    arAging: {
+      totals: ar.totals,
+      byCustomer: ar.byCustomer,
+      rows: ar.rows.map((r) => ({
+        invoiceId: r.invoiceId,
+        invNumber: r.invNumber,
+        customerName: r.customerName,
+        openAmount: r.openAmount,
+        daysPastDue: r.daysPastDue,
+        bucket: r.bucket,
+      })),
+    },
   };
 }

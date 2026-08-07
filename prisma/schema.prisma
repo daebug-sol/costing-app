@@ -15,15 +15,21 @@ model Organization {
   ahuModuleEnabled  Boolean  @default(false)
   createdAt         DateTime @default(now())
 
-  members          OrganizationMember[]
-  settings         AppSettings?
-  materials        MaterialPrice[]
-  profiles         ProfileData[]
-  components       ComponentCatalog[]
-  customDbTables     CustomDbTable[]
-  projects         CostingProject[]
-  quotations       Quotation[]
-  databaseFolders  DatabaseFolder[]
+  members           OrganizationMember[]
+  settings          AppSettings?
+  materials         MaterialPrice[]
+  profiles          ProfileData[]
+  components        ComponentCatalog[]
+  customDbTables    CustomDbTable[]
+  projects          CostingProject[]
+  quotations        Quotation[]
+  databaseFolders   DatabaseFolder[]
+  customers         Customer[]
+  documentSequences DocumentSequence[]
+  salesOrders       SalesOrder[]
+  deliveryOrders    DeliveryOrder[]
+  invoices          Invoice[]
+  payments          Payment[]
 }
 
 model OrganizationMember {
@@ -70,7 +76,51 @@ model AppSettings {
   presetTtdReviewed  String?
   presetTtdApproved  String?
   onboardingComplete Boolean      @default(false)
+  /** Document number prefixes — format {PREFIX}-{YYYYMM}-{seq4}. */
+  quoPrefix          String       @default("QT")
+  soPrefix           String       @default("SO")
+  doPrefix           String       @default("SJ")
+  invPrefix          String       @default("INV")
+  payPrefix          String       @default("PAY")
   updatedAt          DateTime     @updatedAt
+}
+
+model Customer {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  company        String       @default("")
+  address        String       @default("")
+  attn           String       @default("")
+  phone          String       @default("")
+  email          String?
+  npwp           String?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  quotations  Quotation[]
+  salesOrders SalesOrder[]
+  invoices    Invoice[]
+  payments    Payment[]
+
+  @@index([organizationId, name])
+  @@index([organizationId])
+}
+
+model DocumentSequence {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /** QUO | SO | DO | INV | PAY */
+  docType        String
+  /** YYYYMM */
+  period         String
+  lastNumber     Int          @default(0)
+
+  @@unique([organizationId, docType, period])
+  @@index([organizationId])
 }
 
 /** Folder tree for /database — scope `custom` or `ahu`. */
@@ -376,6 +426,8 @@ model Quotation {
   organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   projectId       String?
   project         CostingProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  customerId      String?
+  customer        Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
   items           QuotationItem[]
   status          String          @default("draft")
   noSurat         String?
@@ -391,10 +443,10 @@ model Quotation {
   ourRef          String?
   yourRef         String?
   discount        Float           @default(0.0)
-  discountEnabled Boolean        @default(true)
+  discountEnabled Boolean         @default(true)
   ppn             Float           @default(11.0)
-  ppnEnabled      Boolean        @default(true)
-  pphEnabled      Boolean        @default(false)
+  ppnEnabled      Boolean         @default(true)
+  pphEnabled      Boolean         @default(false)
   pphRate         Float           @default(0.0)
   totalBeforeDisc Float           @default(0.0)
   totalAfterDisc  Float           @default(0.0)
@@ -412,10 +464,206 @@ model Quotation {
   ttdReviewed     String?
   ttdApproved     String?
   stampPath       String?
+  sentAt          DateTime?
+  wonAt           DateTime?
+  lostAt          DateTime?
+  lostReason      String?
+  revision        Int             @default(0)
+  revisionOfId    String?
+  revisionOf      Quotation?      @relation("QuotationRevision", fields: [revisionOfId], references: [id], onDelete: SetNull)
+  revisions       Quotation[]     @relation("QuotationRevision")
+  convertedSoId   String?
+  convertedSo     SalesOrder?     @relation("QuotationConvertedSo", fields: [convertedSoId], references: [id], onDelete: SetNull)
+  salesOrders     SalesOrder[]    @relation("SalesOrderFromQuotation")
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
   @@index([organizationId])
+  @@index([customerId])
+  @@index([convertedSoId])
+}
+
+model SalesOrder {
+  id               String           @id @default(cuid())
+  organizationId   String
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  soNumber         String
+  quotationId      String?
+  quotation        Quotation?       @relation("SalesOrderFromQuotation", fields: [quotationId], references: [id], onDelete: SetNull)
+  customerId       String
+  customer         Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  tanggal          DateTime         @default(now())
+  poNumber         String?
+  status           String           @default("open")
+  subtotal         Float            @default(0.0)
+  discount         Float            @default(0.0)
+  ppn              Float            @default(0.0)
+  grandTotal       Float            @default(0.0)
+  paymentTerms     String?
+  deliveryTerms    String?
+  notes            String?
+  /** Snapshot client fields for PDF */
+  clientName       String?
+  clientCompany    String?
+  clientAddress    String?
+  clientAttn       String?
+  clientPhone      String?
+  items            SalesOrderItem[]
+  deliveries       DeliveryOrder[]
+  invoices         Invoice[]
+  convertedFromQuos Quotation[]     @relation("QuotationConvertedSo")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([organizationId, soNumber])
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([quotationId])
+  @@index([status])
+}
+
+model SalesOrderItem {
+  id              String         @id @default(cuid())
+  soId            String
+  salesOrder      SalesOrder     @relation(fields: [soId], references: [id], onDelete: Cascade)
+  quotationItemId String?
+  projectId       String?
+  description     String
+  spec            String?
+  qty             Float          @default(1)
+  uom             String         @default("Unit")
+  unitPrice       Float
+  totalPrice      Float
+  deliveredQty    Float          @default(0)
+  deliveryItems   DeliveryItem[]
+  sortOrder       Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([soId])
+}
+
+model DeliveryOrder {
+  id              String         @id @default(cuid())
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  doNumber        String
+  salesOrderId    String
+  salesOrder      SalesOrder     @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  tanggal         DateTime       @default(now())
+  status          String         @default("draft")
+  shippingAddress String?
+  notes           String?
+  items           DeliveryItem[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([organizationId, doNumber])
+  @@index([organizationId])
+  @@index([salesOrderId])
+}
+
+model DeliveryItem {
+  id           String         @id @default(cuid())
+  doId         String
+  deliveryOrder DeliveryOrder @relation(fields: [doId], references: [id], onDelete: Cascade)
+  soItemId     String
+  soItem       SalesOrderItem @relation(fields: [soItemId], references: [id], onDelete: Restrict)
+  qtyDelivered Float
+  createdAt    DateTime       @default(now())
+
+  @@index([doId])
+  @@index([soItemId])
+}
+
+model Invoice {
+  id             String              @id @default(cuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invNumber      String?
+  salesOrderId   String?
+  salesOrder     SalesOrder?         @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  customerId     String
+  customer       Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  tanggal        DateTime            @default(now())
+  dueDate        DateTime?
+  /** dp | progress | final */
+  kind           String              @default("final")
+  subtotal       Float               @default(0.0)
+  discountPct    Float               @default(0.0)
+  discountAmt    Float               @default(0.0)
+  dpp            Float               @default(0.0)
+  ppn            Float               @default(0.0)
+  pph            Float               @default(0.0)
+  grandTotal     Float               @default(0.0)
+  paidTotal      Float               @default(0.0)
+  status         String              @default("draft")
+  notes          String?
+  voidReason     String?
+  clientName     String?
+  clientCompany  String?
+  clientAddress  String?
+  clientAttn     String?
+  clientPhone    String?
+  items          InvoiceItem[]
+  allocations    PaymentAllocation[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([salesOrderId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invId       String
+  invoice     Invoice  @relation(fields: [invId], references: [id], onDelete: Cascade)
+  description String
+  qty         Float    @default(1)
+  uom         String   @default("Unit")
+  unitPrice   Float
+  totalPrice  Float
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([invId])
+}
+
+model Payment {
+  id             String              @id @default(cuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payNumber      String
+  customerId     String
+  customer       Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  tanggal        DateTime            @default(now())
+  method         String              @default("transfer")
+  reference      String?
+  amount         Float
+  status         String              @default("posted")
+  notes          String?
+  allocations    PaymentAllocation[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([organizationId, payNumber])
+  @@index([organizationId])
+  @@index([customerId])
+}
+
+model PaymentAllocation {
+  id        String  @id @default(cuid())
+  paymentId String
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  amount    Float
+
+  @@unique([paymentId, invoiceId])
+  @@index([invoiceId])
 }
 
 model QuotationItem {
