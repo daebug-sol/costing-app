@@ -22,11 +22,11 @@ import {
 import { isLessonComplete } from "@/lib/help/progress";
 
 export function HelpTrackList({ trackId }: { trackId: string }) {
+  const { progress, hydrated } = useHelpProgress();
   const track = getTrack(trackId);
   if (!track) return null;
 
   const lessons = getLessonsForTrack(track.id);
-  const { progress, hydrated } = useHelpProgress();
   const counts = trackProgressCounts(track.id, progress.completedLessonKeys);
 
   return (

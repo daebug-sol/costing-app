@@ -11,7 +11,7 @@ test.describe("Help ('/help')", () => {
   });
 
   // Baselines not committed yet — re-enable after `npx playwright test tests/ui/help.visual.spec.ts --update-snapshots`
-  test.fix("matches visual baseline (help hub shell)", async ({ page }) => {
+  test.skip("matches visual baseline (help hub shell)", async ({ page }) => {
     await page.goto("/help");
     await expect(page.getByRole("heading", { level: 1, name: "Help" })).toBeVisible();
     await expect(page.getByTestId("help-hub")).toBeVisible();
@@ -50,7 +50,7 @@ test.describe("Help ('/help')", () => {
   });
 
   // Baselines not committed yet — re-enable after `npx playwright test tests/ui/help.visual.spec.ts --update-snapshots`
-  test.fix("matches visual baseline (help lesson shell)", async ({ page }) => {
+  test.skip("matches visual baseline (help lesson shell)", async ({ page }) => {
     await page.goto("/help/mulai-cepat/orientasi-aplikasi");
     await expect(
       page.getByRole("heading", { level: 1, name: "Orientasi aplikasi" })

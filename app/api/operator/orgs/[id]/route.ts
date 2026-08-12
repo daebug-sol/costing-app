@@ -95,8 +95,11 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const resolved = resolveOperatorOrgPatch(current, {
-      plan: hasPlan ? raw.plan : undefined,
-      ahuModuleEnabled: hasAhu ? raw.ahuModuleEnabled : undefined,
+      plan: hasPlan && isOrgPlan(raw.plan) ? raw.plan : undefined,
+      ahuModuleEnabled:
+        hasAhu && typeof raw.ahuModuleEnabled === "boolean"
+          ? raw.ahuModuleEnabled
+          : undefined,
     });
 
     if (!resolved.ok) {

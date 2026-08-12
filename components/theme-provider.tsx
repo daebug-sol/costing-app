@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import {
@@ -50,18 +51,22 @@ function getSystemPrefersDark(): boolean {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preferences, setPreferences] = useState<ThemePreferences>(
-    DEFAULT_THEME_PREFERENCES
-  );
-  const [systemPrefersDark, setSystemPrefersDark] = useState(false);
-  const [ready, setReady] = useState(false);
+function subscribeSystemColorScheme(onStoreChange: () => void) {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  media.addEventListener("change", onStoreChange);
+  return () => media.removeEventListener("change", onStoreChange);
+}
 
-  useEffect(() => {
-    setPreferences(readStoredPreferences());
-    setSystemPrefersDark(getSystemPrefersDark());
-    setReady(true);
-  }, []);
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  // Lazy client read avoids setState-in-effect hydration (react-hooks/set-state-in-effect).
+  const [preferences, setPreferences] = useState<ThemePreferences>(
+    readStoredPreferences
+  );
+  const systemPrefersDark = useSyncExternalStore(
+    subscribeSystemColorScheme,
+    getSystemPrefersDark,
+    () => false
+  );
 
   const resolvedAppearance = useMemo(
     () => resolveAppearance(preferences.appearance, systemPrefersDark),
@@ -69,25 +74,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (!ready) return;
-
     applyThemeToDocument(preferences, systemPrefersDark);
     window.localStorage.setItem(
       THEME_STORAGE_KEY,
       serializeThemePreferences(preferences)
     );
-  }, [preferences, systemPrefersDark, ready]);
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = (event: MediaQueryListEvent) => {
-      setSystemPrefersDark(event.matches);
-    };
-
-    media.addEventListener("change", onChange);
-
-    return () => media.removeEventListener("change", onChange);
-  }, []);
+  }, [preferences, systemPrefersDark]);
 
   const setPalette = useCallback((palette: ThemePalette) => {
     setPreferences((current) => ({ ...current, palette }));

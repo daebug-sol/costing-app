@@ -1,3 +1,4 @@
+import { DEFAULT_COSTING_SCOPE } from "./costing-scope";
 import { validateAhuRecalculateContext } from "./ahu-recalc-validation";
 
 describe("validateAhuRecalculateContext", () => {
@@ -38,6 +39,7 @@ describe("validateAhuRecalculateContext", () => {
       ...dims,
       merged: {
         costingScope: {
+          ...DEFAULT_COSTING_SCOPE,
           isFullAhu: false,
           includeElectricHeater: true,
         },
