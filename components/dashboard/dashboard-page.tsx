@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChartInsightBlock } from "@/components/dashboard/chart-insight-block";
+import { ClientListWidget } from "@/components/dashboard/client-list-widget";
 import { DashboardStickyToolbar } from "@/components/dashboard/dashboard-sticky-toolbar";
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
 import {
@@ -357,6 +358,8 @@ export function DashboardPage() {
           </CollapsibleContent>
         </Collapsible>
       </section>
+
+      <ClientListWidget />
 
       <section
         className={cn("min-w-0 p-4 sm:p-6", dashboardSegmentClass)}
