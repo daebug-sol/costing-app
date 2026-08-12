@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { requireCustomRowInOrg } from "@/lib/tenant-context";
 
 type Ctx = { params: Promise<{ rowId: string }> };
@@ -8,6 +9,8 @@ type Ctx = { params: Promise<{ rowId: string }> };
 export async function DELETE(_request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "db:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

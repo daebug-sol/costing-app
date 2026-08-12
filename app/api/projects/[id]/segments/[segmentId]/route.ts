@@ -4,6 +4,7 @@ import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { prisma } from "@/lib/prisma";
 import { syncQuotationItemsFromProject } from "@/lib/sync-quotation-items-from-project";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { requireProjectInOrg, requireSegmentInOrg } from "@/lib/tenant-context";
 import { tenantWhere } from "@/lib/tenant-queries";
 
@@ -12,6 +13,8 @@ type Ctx = { params: Promise<{ id: string; segmentId: string }> };
 export async function PUT(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "costing:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {
@@ -147,6 +150,8 @@ export async function PUT(request: Request, context: Ctx) {
 export async function DELETE(_request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "costing:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

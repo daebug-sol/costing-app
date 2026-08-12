@@ -10,8 +10,12 @@ import { Label } from "@/components/ui/label";
 import { formatPhoneDash } from "@/lib/phone-format";
 import { formatNumber } from "@/lib/utils/format";
 import { PageShell } from "@/components/page-shell";
+import { OrgMembersCard } from "@/components/settings/org-members-card";
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card";
+import type { OrgRole } from "@/lib/org-roles";
+import type { Permission } from "@/lib/permissions";
 import { toastError, toastSuccess } from "@/store/toastStore";
+import { useCostingStore } from "@/store/costingStore";
 
 type Settings = {
   id: string;
@@ -49,6 +53,8 @@ type Settings = {
   payPrefix?: string;
   /** Read-only product modules; ignored on PUT. */
   modules?: { ahu: boolean };
+  role?: OrgRole;
+  permissions?: Permission[];
   updatedAt: string;
 };
 
@@ -67,6 +73,7 @@ export function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const syncOrgCaps = useCostingStore((s) => s.loadOrgModules);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,18 +89,27 @@ export function SettingsPage() {
         presetCheckedByName: data.presetCheckedByName ?? "",
         presetApprovedByName: data.presetApprovedByName ?? "",
       });
+      void syncOrgCaps().catch(() => undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal memuat");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [syncOrgCaps]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  const canWrite = (row?.permissions ?? []).includes("settings:write");
+  const canManageMembers = (row?.permissions ?? []).includes("members:manage");
+  const actorRole: OrgRole = row?.role ?? "member";
+
   const put = async (partial: Record<string, unknown>, card: string) => {
+    if (!canWrite) {
+      toastError("Anda tidak punya izin mengubah pengaturan");
+      return;
+    }
     setSaving(card);
     try {
       const r = await fetch("/api/settings", {
@@ -103,6 +119,7 @@ export function SettingsPage() {
       });
       if (!r.ok) throw new Error(await readErr(r));
       setRow(await r.json());
+      void syncOrgCaps().catch(() => undefined);
       toastSuccess("Pengaturan disimpan");
     } catch (e) {
       toastError(e instanceof Error ? e.message : "Gagal menyimpan");
@@ -181,7 +198,7 @@ export function SettingsPage() {
                 type="button"
                 size="sm"
                 onClick={() => void put({ onboardingComplete: true }, "onboarding")}
-                disabled={saving === "onboarding"}
+                disabled={saving === "onboarding" || !canWrite}
               >
                 {saving === "onboarding" ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -200,6 +217,15 @@ export function SettingsPage() {
       ) : null}
 
       <ThemeSettingsCard />
+
+      {!canWrite ? (
+        <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          Peran Anda ({actorRole}) hanya dapat melihat pengaturan. Hubungi owner
+          atau admin untuk mengubah data organisasi.
+        </p>
+      ) : null}
+
+      {canManageMembers ? <OrgMembersCard actorRole={actorRole} /> : null}
 
       <Card size="sm" className="shadow-sm">
         <CardHeader>
@@ -277,7 +303,7 @@ export function SettingsPage() {
         <CardFooter className="justify-end border-t bg-muted/40">
           <Button
             type="button"
-            disabled={saving !== null}
+            disabled={saving !== null || !canWrite}
             onClick={() =>
               void put(
                 {
@@ -409,7 +435,7 @@ export function SettingsPage() {
         <CardFooter className="justify-end border-t bg-muted/40">
           <Button
             type="button"
-            disabled={saving !== null}
+            disabled={saving !== null || !canWrite}
             onClick={() =>
               void put(
                 {
@@ -473,7 +499,7 @@ export function SettingsPage() {
         <CardFooter className="justify-end border-t bg-muted/40">
           <Button
             type="button"
-            disabled={saving !== null}
+            disabled={saving !== null || !canWrite}
             onClick={() =>
               void put(
                 {
@@ -545,7 +571,7 @@ export function SettingsPage() {
         <CardFooter className="justify-end border-t bg-muted/40">
           <Button
             type="button"
-            disabled={saving !== null}
+            disabled={saving !== null || !canWrite}
             onClick={() =>
               void put(
                 {
@@ -603,7 +629,7 @@ export function SettingsPage() {
         <CardFooter className="justify-end border-t bg-muted/40">
           <Button
             type="button"
-            disabled={saving !== null}
+            disabled={saving !== null || !canWrite}
             onClick={() =>
               void put(
                 {
@@ -689,7 +715,7 @@ export function SettingsPage() {
         <CardFooter className="justify-end border-t bg-muted/40">
           <Button
             type="button"
-            disabled={saving !== null}
+            disabled={saving !== null || !canWrite}
             onClick={() =>
               void put(
                 {

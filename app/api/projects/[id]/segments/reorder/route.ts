@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { requireProjectInOrg } from "@/lib/tenant-context";
 import { tenantWhere } from "@/lib/tenant-queries";
 
@@ -10,6 +11,8 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function PUT(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "costing:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

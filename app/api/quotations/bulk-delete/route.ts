@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 
 export async function POST(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "o2c:quote");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

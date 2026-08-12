@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { applyCustomDbCellValue } from "@/lib/custom-db-cell-update";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { requireCustomRowInOrg } from "@/lib/tenant-context";
 
 type TargetCell = { rowId: string; columnId: string };
@@ -9,6 +10,8 @@ type TargetCell = { rowId: string; columnId: string };
 export async function PATCH(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "db:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

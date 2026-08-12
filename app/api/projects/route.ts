@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
+import { assertWithinPlanLimits } from "@/lib/org-entitlements";
 import { prisma } from "@/lib/prisma";
 import { tenantWhere } from "@/lib/tenant-queries";
 
@@ -62,9 +64,14 @@ export async function GET() {
 export async function POST(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "costing:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {
+    const limitGate = await assertWithinPlanLimits(orgId, "projects");
+    if (!limitGate.ok) return limitGate.response;
+
     const body = await request.json();
     const name =
       typeof body.name === "string" ? body.name.trim() : "";

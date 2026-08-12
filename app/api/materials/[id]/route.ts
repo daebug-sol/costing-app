@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { requireAhuModule } from "@/lib/org-modules";
 import { prisma } from "@/lib/prisma";
 import { tenantWhere } from "@/lib/tenant-queries";
@@ -15,6 +16,8 @@ async function findMaterial(orgId: string, id: string) {
 export async function PUT(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "db:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   const ahuGate = await requireAhuModule(orgId);
@@ -118,6 +121,8 @@ export async function PUT(request: Request, context: Ctx) {
 export async function DELETE(_request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "db:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   const ahuGate = await requireAhuModule(orgId);

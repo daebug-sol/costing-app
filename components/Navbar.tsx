@@ -10,10 +10,12 @@ import {
 import { Menu, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { canSeeNavHref } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { useCostingStore } from "@/store/costingStore";
 
 const navItems = [
   { href: "/", label: "Dashboard" },
@@ -29,13 +31,19 @@ const navItems = [
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const role = useCostingStore((s) => s.role);
+  const permissions = useCostingStore((s) => s.permissions);
+
+  const visible = navItems.filter(({ href }) =>
+    canSeeNavHref(href, role, permissions)
+  );
 
   return (
     <nav
       className="flex flex-col gap-1 md:flex-row md:items-center md:gap-0.5"
       aria-label="Main"
     >
-      {navItems.map(({ href, label }) => {
+      {visible.map(({ href, label }) => {
         const active =
           href === "/"
             ? pathname === "/"
@@ -112,6 +120,11 @@ function AuthControls() {
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const loadOrgModules = useCostingStore((s) => s.loadOrgModules);
+
+  useEffect(() => {
+    void loadOrgModules().catch(() => undefined);
+  }, [loadOrgModules]);
 
   return (
     <header className="fixed top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/80">

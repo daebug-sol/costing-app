@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isDefaultAhuFileId } from "@/lib/database-folders";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { requireAhuModule } from "@/lib/org-modules";
 import {
   requireAhuFileInOrg,
@@ -13,6 +14,8 @@ type Params = { params: Promise<{ fileId: string }> };
 export async function PATCH(request: Request, { params }: Params) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "db:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {
@@ -71,6 +74,8 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(request: Request, { params }: Params) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "db:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

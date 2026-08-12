@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { prisma } from "@/lib/prisma";
 import { syncQuotationItemsFromProject } from "@/lib/sync-quotation-items-from-project";
@@ -38,6 +39,8 @@ export async function GET(_request: Request, context: Ctx) {
 export async function PUT(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "costing:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {
@@ -120,6 +123,8 @@ export async function PUT(request: Request, context: Ctx) {
 export async function DELETE(_request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "costing:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

@@ -3,6 +3,7 @@ import { mergeRecalcParams, parseAhuRecalcParams } from "@/lib/ahu-recalc-params
 import { validateAhuRecalculateContext } from "@/lib/ahu-recalc-validation";
 import { computeAhuSegmentCostingBlocks } from "@/lib/ahu-segment-costing";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { finite } from "@/lib/calculations";
 import { normalizeCostingScope } from "@/lib/costing-scope";
@@ -17,6 +18,8 @@ type Ctx = { params: Promise<{ id: string; segmentId: string }> };
 export async function POST(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "costing:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   const ahuGate = await requireAhuModule(orgId);

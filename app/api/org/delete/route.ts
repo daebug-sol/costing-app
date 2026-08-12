@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { deleteOrganizationData } from "@/lib/tenant-queries";
 
 export async function DELETE(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "org:danger");
+  if (denied) return denied;
   const { orgId, userId } = guard;
 
   try {

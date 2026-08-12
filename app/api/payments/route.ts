@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { nextDocumentNumber } from "@/lib/doc-numbering";
 import { invoiceStatusFromPaid } from "@/lib/o2c/invoice-totals";
 import {
@@ -51,6 +52,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "o2c:payment");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

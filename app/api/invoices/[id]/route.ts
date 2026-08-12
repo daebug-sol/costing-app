@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { nextDocumentNumber } from "@/lib/doc-numbering";
 import { computeInvoiceTotals } from "@/lib/o2c/invoice-totals";
 import { DOC_TYPES, INVOICE_STATUS } from "@/lib/o2c/status";
@@ -45,6 +46,8 @@ export async function GET(_request: Request, context: Ctx) {
 export async function PUT(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "o2c:invoice");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

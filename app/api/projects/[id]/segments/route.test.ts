@@ -11,7 +11,11 @@ jest.mock("@/lib/prisma", () => ({
 }));
 
 jest.mock("@/lib/api-guard", () => ({
-  guardApiRoute: jest.fn(async () => ({ userId: "test-user", orgId: "org-a" })),
+  guardApiRoute: jest.fn(async () => ({
+    userId: "test-user",
+    orgId: "org-a",
+    role: "owner",
+  })),
 }));
 
 jest.mock("@/lib/tenant-context", () => ({

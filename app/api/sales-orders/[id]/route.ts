@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { SO_STATUS } from "@/lib/o2c/status";
 import { requireSalesOrderInOrg } from "@/lib/tenant-context";
@@ -51,6 +52,8 @@ export async function GET(_request: Request, context: Ctx) {
 export async function PUT(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "o2c:order");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

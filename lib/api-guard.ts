@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
-import { requireOrganization } from "@/lib/tenant-context";
+import { isAuthBypassed, requireAuth } from "@/lib/auth";
+import type { OrgRole } from "@/lib/org-roles";
+import {
+  bypassOrgRole,
+  ensureOrganizationMember,
+  requireOrganization,
+} from "@/lib/tenant-context";
 
-type GuardSuccess = { userId: string; orgId: string };
+type GuardSuccess = { userId: string; orgId: string; role: OrgRole };
 type GuardFailure = { response: NextResponse };
 
 export async function guardApiRoute(): Promise<GuardSuccess | GuardFailure> {
@@ -12,5 +17,15 @@ export async function guardApiRoute(): Promise<GuardSuccess | GuardFailure> {
   const orgResult = await requireOrganization();
   if ("response" in orgResult) return orgResult;
 
-  return { userId: authResult.userId, orgId: orgResult.orgId };
+  const { userId, orgId } = {
+    userId: authResult.userId,
+    orgId: orgResult.orgId,
+  };
+
+  if (isAuthBypassed()) {
+    return { userId, orgId, role: bypassOrgRole() };
+  }
+
+  const role = await ensureOrganizationMember(orgId, userId);
+  return { userId, orgId, role };
 }

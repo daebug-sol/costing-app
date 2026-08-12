@@ -6,6 +6,7 @@ import { parseQuotationItemsFromBody } from "@/lib/quotation-items-parse";
 import { computeQuotationTotals } from "@/lib/quotation-financials";
 import { replaceQuotationItems } from "@/lib/replace-quotation-items";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import {
   canTransitionQuotation,
   DOC_TYPES,
@@ -91,6 +92,8 @@ function recalcTotalsFromItems(
 export async function PUT(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "o2c:quote");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {
@@ -420,6 +423,8 @@ export async function PUT(request: Request, context: Ctx) {
 export async function DELETE(_request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "o2c:quote");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

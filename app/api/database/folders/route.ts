@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import {
   ensureDefaultFolders,
   folderListOrder,
@@ -56,6 +57,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "db:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

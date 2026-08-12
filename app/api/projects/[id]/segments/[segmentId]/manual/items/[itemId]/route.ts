@@ -3,6 +3,7 @@ import { finite } from "@/lib/calculations";
 import { rollupManualSegmentFinancials } from "@/lib/manual-costing-rollup";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import {
   requireManualItemInOrg,
   requireProjectInOrg,
@@ -14,6 +15,8 @@ type Ctx = { params: Promise<{ id: string; segmentId: string; itemId: string }> 
 export async function PUT(request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "costing:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {
@@ -135,6 +138,8 @@ export async function PUT(request: Request, context: Ctx) {
 export async function DELETE(_request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "costing:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

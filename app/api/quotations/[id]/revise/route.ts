@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { QUOTATION_STATUS } from "@/lib/o2c/status";
 import { requireQuotationInOrg } from "@/lib/tenant-context";
@@ -11,6 +12,8 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function POST(_request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "o2c:quote");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

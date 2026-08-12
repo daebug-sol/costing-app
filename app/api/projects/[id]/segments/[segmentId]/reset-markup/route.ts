@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
 import { prisma } from "@/lib/prisma";
 import { clearAhuSectionOverrides } from "@/lib/project-rollup";
@@ -11,6 +12,8 @@ type Ctx = { params: Promise<{ id: string; segmentId: string }> };
 export async function POST(_request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "costing:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {

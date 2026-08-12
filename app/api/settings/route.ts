@@ -1,20 +1,27 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
-import { getOrgModules } from "@/lib/org-modules";
+import { getOrgEntitlements } from "@/lib/org-entitlements";
+import { permissionsFor, requirePermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateSettings } from "@/lib/tenant-queries";
 
 export async function GET() {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
-  const { orgId } = guard;
+  const { orgId, role } = guard;
 
   try {
-    const [settings, modules] = await Promise.all([
+    const [settings, entitlements] = await Promise.all([
       getOrCreateSettings(orgId),
-      getOrgModules(orgId),
+      getOrgEntitlements(orgId),
     ]);
-    return NextResponse.json({ ...settings, modules });
+    return NextResponse.json({
+      ...settings,
+      plan: entitlements.plan,
+      modules: entitlements.modules,
+      role,
+      permissions: permissionsFor(role),
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json(
@@ -27,11 +34,13 @@ export async function GET() {
 export async function PUT(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "settings:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {
     const body = await request.json();
-    // `modules` (e.g. ahu) is operator-managed — never accept from client PUT.
+    // `plan` and `modules` (e.g. ahu) are operator-managed — never accept from client PUT.
     const settings = await getOrCreateSettings(orgId);
 
     const data: {
@@ -174,8 +183,14 @@ export async function PUT(request: Request) {
       where: { id: settings.id },
       data,
     });
-    const modules = await getOrgModules(orgId);
-    return NextResponse.json({ ...updated, modules });
+    const entitlements = await getOrgEntitlements(orgId);
+    return NextResponse.json({
+      ...updated,
+      plan: entitlements.plan,
+      modules: entitlements.modules,
+      role: guard.role,
+      permissions: permissionsFor(guard.role),
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json(

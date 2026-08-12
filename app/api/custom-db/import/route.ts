@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
 import { requireCustomTableInOrg } from "@/lib/tenant-context";
 import {
   columnHeaderToVariableKey,
@@ -32,6 +33,8 @@ function chunk<T>(arr: T[], size: number): T[][] {
 export async function POST(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "db:write");
+  if (denied) return denied;
   const { orgId } = guard;
 
   const rate = checkRateLimit(rateLimitKey([orgId, "custom-db-import"]), 5, 60_000);

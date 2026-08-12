@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getClerkOrgId, getSessionUserId, isAuthBypassed } from "@/lib/auth";
+import { parseOrgRole, type OrgRole } from "@/lib/org-roles";
 import { prisma } from "@/lib/prisma";
 
 export async function resolveOrganizationId(
@@ -28,6 +29,45 @@ export async function resolveOrganizationId(
     },
   });
   return org.id;
+}
+
+/**
+ * Ensure OrganizationMember exists for (orgId, userId).
+ * Does not overwrite an existing role. Missing rows default to `member`.
+ */
+export async function ensureOrganizationMember(
+  orgId: string,
+  userId: string
+): Promise<OrgRole> {
+  const existing = await prisma.organizationMember.findUnique({
+    where: {
+      organizationId_userId: { organizationId: orgId, userId },
+    },
+    select: { role: true },
+  });
+  if (existing) return parseOrgRole(existing.role);
+
+  try {
+    const created = await prisma.organizationMember.create({
+      data: { organizationId: orgId, userId, role: "member" },
+      select: { role: true },
+    });
+    return parseOrgRole(created.role);
+  } catch {
+    // Race: another request created the row — re-read.
+    const again = await prisma.organizationMember.findUnique({
+      where: {
+        organizationId_userId: { organizationId: orgId, userId },
+      },
+      select: { role: true },
+    });
+    return parseOrgRole(again?.role);
+  }
+}
+
+/** Auth bypass / tests: owner unless TEST_ORG_ROLE opts into another role. */
+export function bypassOrgRole(): OrgRole {
+  return parseOrgRole(process.env.TEST_ORG_ROLE ?? "owner");
 }
 
 export async function getActiveOrganizationId(): Promise<string | null> {

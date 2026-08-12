@@ -6,11 +6,19 @@ datasource db {
   provider = "postgresql"
 }
 
+enum OrgPlan {
+  free
+  standard
+  enterprise
+}
+
 model Organization {
   id                String   @id @default(cuid())
   clerkOrgId        String?  @unique
   name              String
   slug              String   @unique
+  /** Public SaaS tier; new orgs default Free. Operator-managed — not client-writable. */
+  plan              OrgPlan  @default(free)
   /** Operator-managed: special clients keep AHU; new orgs default off. */
   ahuModuleEnabled  Boolean  @default(false)
   createdAt         DateTime @default(now())

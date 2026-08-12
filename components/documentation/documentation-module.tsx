@@ -565,9 +565,17 @@ export function DocumentationModule() {
       const body = (await r.json().catch(() => ({}))) as {
         error?: string;
         message?: string;
+        code?: string;
         id?: string;
       };
       if (!r.ok) {
+        if (body.code === "PLAN_LIMIT_REACHED") {
+          toastError(
+            body.error?.trim() ||
+              "Free plan limit reached. Upgrade to Standard to create more."
+          );
+          return;
+        }
         const detail =
           typeof body.message === "string" && body.message.trim()
             ? body.message
@@ -672,7 +680,21 @@ export function DocumentationModule() {
     const cancelled = false;
     (async () => {
       const r = await fetch("/api/quotations", { method: "POST" });
-      if (!r.ok || cancelled) return;
+      if (!r.ok || cancelled) {
+        if (!cancelled && !r.ok) {
+          const errBody = (await r.json().catch(() => ({}))) as {
+            error?: string;
+            code?: string;
+          };
+          toastError(
+            errBody.code === "PLAN_LIMIT_REACHED"
+              ? errBody.error?.trim() ||
+                  "Free plan limit reached. Upgrade to Standard to create more."
+              : errBody.error?.trim() || "Gagal membuat penawaran"
+          );
+        }
+        return;
+      }
       const created = (await r.json()) as QuotationApi;
       const proj =
         available.find((p) => p.id === fromProject) ??

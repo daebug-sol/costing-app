@@ -7,7 +7,13 @@ import type {
   ManualCostingItem,
 } from "@prisma/client";
 import { create } from "zustand";
+import type { OrgPlan } from "@/lib/org-entitlements";
 import type { OrgModules } from "@/lib/org-modules";
+import type { OrgRole } from "@/lib/org-roles";
+import {
+  permissionsFor,
+  type Permission,
+} from "@/lib/permissions";
 
 export type CostingSectionWithLines = CostingSection & {
   lineItems: CostingLineItem[];
@@ -39,7 +45,17 @@ export type AppSettingsModules = OrgModules;
 
 async function readErr(res: Response): Promise<string> {
   try {
-    const j = (await res.json()) as { error?: string; detail?: string };
+    const j = (await res.json()) as {
+      error?: string;
+      detail?: string;
+      code?: string;
+    };
+    if (j?.code === "PLAN_LIMIT_REACHED") {
+      return (
+        j.error ??
+        "Free plan limit reached. Upgrade to Standard to create more."
+      );
+    }
     if (j?.error) {
       return j.detail ? `${j.error} (${j.detail})` : j.error;
     }
@@ -47,6 +63,36 @@ async function readErr(res: Response): Promise<string> {
     /* ignore */
   }
   return res.statusText || "Request failed";
+}
+
+function parsePlan(json: unknown): OrgPlan {
+  const p = (json as { plan?: unknown } | null)?.plan;
+  if (p === "standard" || p === "enterprise" || p === "free") return p;
+  return "free";
+}
+
+function parseRole(json: unknown): OrgRole {
+  const r = (json as { role?: unknown } | null)?.role;
+  if (
+    r === "owner" ||
+    r === "admin" ||
+    r === "sales" ||
+    r === "pm" ||
+    r === "ppic" ||
+    r === "ceo" ||
+    r === "member"
+  ) {
+    return r;
+  }
+  return "member";
+}
+
+function parsePermissions(json: unknown, role: OrgRole): Permission[] {
+  const raw = (json as { permissions?: unknown } | null)?.permissions;
+  if (Array.isArray(raw) && raw.every((x) => typeof x === "string")) {
+    return raw as Permission[];
+  }
+  return permissionsFor(role);
 }
 
 /** Deep-clone JSON fields so fetch body is valid and Prisma accepts nested objects. */
@@ -131,8 +177,14 @@ function parseModules(json: unknown): OrgModules {
 export interface CostingStore {
   projects: CostingProjectListItem[];
   currentProject: CostingProjectDetail | null;
+  /** SaaS plan for the active org (from GET /api/settings; read-only). */
+  plan: OrgPlan;
   /** Product modules for the active org (from GET /api/settings). */
   modules: OrgModules;
+  /** App-owned org role for the signed-in member. */
+  role: OrgRole;
+  /** Capability strings for the current role. */
+  permissions: Permission[];
   isCalculating: boolean;
   isLoading: boolean;
   loadOrgModules: () => Promise<void>;
@@ -166,7 +218,10 @@ export interface CostingStore {
 export const useCostingStore = create<CostingStore>((set, get) => ({
   projects: [],
   currentProject: null,
+  plan: "free",
   modules: { ahu: false },
+  role: "member",
+  permissions: permissionsFor("member"),
   isCalculating: false,
   isLoading: false,
 
@@ -174,7 +229,13 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
     const rs = await fetch("/api/settings", { cache: "no-store" });
     if (!rs.ok) throw new Error(await readErr(rs));
     const json = await rs.json();
-    set({ modules: parseModules(json) });
+    const role = parseRole(json);
+    set({
+      plan: parsePlan(json),
+      modules: parseModules(json),
+      role,
+      permissions: parsePermissions(json, role),
+    });
   },
 
   loadProjects: async () => {
@@ -210,9 +271,18 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
       defaultEskalasi: number;
       defaultAsuransi: number;
       defaultMobilisasi: number;
+      plan?: OrgPlan;
       modules?: OrgModules;
+      role?: OrgRole;
+      permissions?: Permission[];
     };
-    set({ modules: parseModules(s) });
+    const role = parseRole(s);
+    set({
+      plan: parsePlan(s),
+      modules: parseModules(s),
+      role,
+      permissions: parsePermissions(s, role),
+    });
     const r = await fetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

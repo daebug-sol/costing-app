@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requirePermission } from "@/lib/permissions";
+import { assertWithinPlanLimits } from "@/lib/org-entitlements";
 import { prisma } from "@/lib/prisma";
 import { computeQuotationTotals } from "@/lib/quotation-financials";
 import { getOrCreateSettings, tenantWhere } from "@/lib/tenant-queries";
@@ -106,9 +108,14 @@ export async function GET(request: Request) {
 export async function POST() {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const denied = requirePermission(guard.role, "o2c:quote");
+  if (denied) return denied;
   const { orgId } = guard;
 
   try {
+    const limitGate = await assertWithinPlanLimits(orgId, "quotations");
+    if (!limitGate.ok) return limitGate.response;
+
     const settings = await getOrCreateSettings(orgId);
     const ppnRate =
       typeof settings.ppnRate === "number" && Number.isFinite(settings.ppnRate)
