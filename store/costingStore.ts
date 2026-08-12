@@ -185,6 +185,8 @@ export interface CostingStore {
   role: OrgRole;
   /** Capability strings for the current role. */
   permissions: Permission[];
+  /** Platform operator (OPERATOR_USER_IDS); from GET /api/me. */
+  isOperator: boolean;
   isCalculating: boolean;
   isLoading: boolean;
   loadOrgModules: () => Promise<void>;
@@ -222,19 +224,33 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
   modules: { ahu: false },
   role: "member",
   permissions: permissionsFor("member"),
+  isOperator: false,
   isCalculating: false,
   isLoading: false,
 
   loadOrgModules: async () => {
-    const rs = await fetch("/api/settings", { cache: "no-store" });
+    const [rs, meRs] = await Promise.all([
+      fetch("/api/settings", { cache: "no-store" }),
+      fetch("/api/me", { cache: "no-store" }),
+    ]);
     if (!rs.ok) throw new Error(await readErr(rs));
     const json = await rs.json();
     const role = parseRole(json);
+    let isOperator = false;
+    if (meRs.ok) {
+      try {
+        const me = (await meRs.json()) as { isOperator?: unknown };
+        isOperator = me.isOperator === true;
+      } catch {
+        isOperator = false;
+      }
+    }
     set({
       plan: parsePlan(json),
       modules: parseModules(json),
       role,
       permissions: parsePermissions(json, role),
+      isOperator,
     });
   },
 

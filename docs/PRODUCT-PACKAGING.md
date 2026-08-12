@@ -80,15 +80,33 @@ CEO is **read-heavy** (dashboards + read caps; ops nav visible as viewer). Write
 
 ## Operator enablement (AHU / Enterprise client)
 
-No admin UI in this pass. Use SQL (or seed for local/dev):
+Platform operators manage `plan` and `ahuModuleEnabled` via **`/operator`** (allowlisted Clerk users) or the operator API (Bearer key). Client org admins cannot set these fields on `PUT /api/settings`.
 
-```sql
-UPDATE "Organization"
-SET plan = 'enterprise', "ahuModuleEnabled" = true
-WHERE slug = '…';
+### UI
+
+1. Set `OPERATOR_USER_IDS` to a comma-separated list of Clerk user IDs.
+2. Sign in as an allowlisted user → open **Operator** in the navbar.
+3. Set plan (`free` / `standard` / `enterprise`) and AHU switch, then **Simpan**.
+
+Consistency: Free clears AHU; AHU on requires Enterprise.
+
+### API (scripts)
+
+```bash
+# List orgs
+curl -s -H "Authorization: Bearer $OPERATOR_API_KEY" \
+  https://<host>/api/operator/orgs
+
+# Enable Enterprise + AHU for an org
+curl -s -X PATCH -H "Authorization: Bearer $OPERATOR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"plan":"enterprise","ahuModuleEnabled":true}' \
+  https://<host>/api/operator/orgs/<orgId>
 ```
 
-Local seed sets the DAE/dev org to `plan: enterprise` and `ahuModuleEnabled: true`.
+Env (see `.env.example`): `OPERATOR_USER_IDS`, `OPERATOR_API_KEY`. Both fail closed when unset/empty.
+
+Local seed still sets the DAE/dev org to `plan: enterprise` and `ahuModuleEnabled: true`.
 
 ---
 
@@ -96,7 +114,7 @@ Local seed sets the DAE/dev org to `plan: enterprise` and `ahuModuleEnabled: tru
 
 - Clerk custom role sync
 - Field-level masking (e.g. hide margin from sales)
-- Operator plan/AHU admin UI
 - Stripe / checkout
 - Public pricing page
 - Removing AHU code from the repository
+- Operator audit log table / impersonation

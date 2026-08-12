@@ -26,6 +26,10 @@ cp .env.example .env
 | `SENTRY_ORG` / `SENTRY_PROJECT` | No | — | Optional | Recommended | For source maps upload |
 | `UPSTASH_REDIS_REST_URL` / `TOKEN` | No | — | Optional | Recommended | In-memory fallback when unset |
 | `AUTH_BYPASS` | **Never prod** | — | **Do not set** | **Do not set** | CI/test only (`true` + `TEST_USER_ID` + `TEST_ORG_ID`) |
+| `OPERATOR_USER_IDS` | No* | Optional | Recommended | Recommended | Comma-separated Clerk user IDs for `/operator` UI; empty/unset = no operator UI access |
+| `OPERATOR_API_KEY` | No* | Optional | Optional | Recommended for scripts | Bearer key for `/api/operator/*`; empty/unset = key auth disabled |
+
+\*Operator APIs fail closed when both are unset. See [PRODUCT-PACKAGING.md](./PRODUCT-PACKAGING.md).
 
 See [`.env.example`](../.env.example) for the canonical list.
 

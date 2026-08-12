@@ -28,7 +28,7 @@ Verify in code and deployment; update status as you ship features.
 | **Observability** | Structured logs; error tracking (Sentry); optional metrics. | ✅ `lib/logger.ts`, Sentry scaffold (env-gated) | Sentry test event pending manual |
 | **CI** | Lint, test, build on every PR; block merge on failure. | ✅ `.github/workflows/ci.yml` | Local: test/build PASS |
 | **Legal / privacy** | Privacy policy, terms; data export/delete for GDPR-style compliance. | ✅ `/legal/privacy`, `/legal/terms`, `/api/org/export`, `/api/org/delete`, footer links | Pages exist; staging URL check pending |
-| **Product modules** | Per-org plan + entitlements (Free/Standard/Enterprise; AHU SKU) gated in API + UI; operator-managed. See [PRODUCT-PACKAGING.md](./PRODUCT-PACKAGING.md). | ✅ `Organization.plan` + `ahuModuleEnabled`; `lib/org-entitlements.ts`, `lib/org-modules.ts`; settings exposes read-only `plan` + `modules.ahu` | Enterprise + AHU: `UPDATE "Organization" SET plan = 'enterprise', "ahuModuleEnabled" = true WHERE slug = '…';` (or seed) |
+| **Product modules** | Per-org plan + entitlements (Free/Standard/Enterprise; AHU SKU) gated in API + UI; operator-managed. See [PRODUCT-PACKAGING.md](./PRODUCT-PACKAGING.md). | ✅ `Organization.plan` + `ahuModuleEnabled`; `lib/org-entitlements.ts`, `lib/org-modules.ts`; settings exposes read-only `plan` + `modules.ahu`; `/operator` + `/api/operator/orgs` (`OPERATOR_USER_IDS` / `OPERATOR_API_KEY`) | Enable via Operator console or `PATCH /api/operator/orgs/:id` with Bearer key (fail closed if env unset) |
 
 ---
 

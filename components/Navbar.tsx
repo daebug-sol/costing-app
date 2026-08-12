@@ -33,38 +33,49 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const role = useCostingStore((s) => s.role);
   const permissions = useCostingStore((s) => s.permissions);
+  const isOperator = useCostingStore((s) => s.isOperator);
 
   const visible = navItems.filter(({ href }) =>
     canSeeNavHref(href, role, permissions)
   );
+
+  const linkClass = (href: string) => {
+    const active =
+      href === "/"
+        ? pathname === "/"
+        : pathname === href || pathname.startsWith(`${href}/`);
+    return cn(
+      "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+      active
+        ? "bg-primary text-primary-foreground shadow-sm"
+        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+    );
+  };
 
   return (
     <nav
       className="flex flex-col gap-1 md:flex-row md:items-center md:gap-0.5"
       aria-label="Main"
     >
-      {visible.map(({ href, label }) => {
-        const active =
-          href === "/"
-            ? pathname === "/"
-            : pathname === href || pathname.startsWith(`${href}/`);
-
-        return (
-          <Link
-            key={href}
-            href={href}
-            onClick={onNavigate}
-            className={cn(
-              "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-              active
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            {label}
-          </Link>
-        );
-      })}
+      {visible.map(({ href, label }) => (
+        <Link
+          key={href}
+          href={href}
+          onClick={onNavigate}
+          className={linkClass(href)}
+        >
+          {label}
+        </Link>
+      ))}
+      {isOperator ? (
+        <Link
+          href="/operator"
+          onClick={onNavigate}
+          className={linkClass("/operator")}
+        >
+          Operator
+        </Link>
+      ) : null}
     </nav>
   );
 }
