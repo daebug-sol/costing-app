@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 /**
  * Visual / smoke spec for the Dashboard route ("/").
  *
- * Locks down compact IA: hero KPIs, tabbed insight panel, detail accordion.
+ * Locks down compact IA: hero KPIs, tabbed insight panel, penjualan detail blocks.
  * Chart pixels are masked; table fallbacks verified via detail sheet or tabs.
  */
 
@@ -20,7 +20,7 @@ test.describe("Dashboard ('/')", () => {
       page.getByText(/Ringkasan finansial proyek dan quotation/)
     ).toBeVisible();
 
-    await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Muat ulang" })).toBeVisible();
 
     await expect(page.getByRole("heading", { level: 2, name: "Insight utama" })).toBeVisible();
     await expect(page.getByTestId("dashboard-tab-finansial")).toBeVisible();
@@ -53,19 +53,19 @@ test.describe("Dashboard ('/')", () => {
     await expect(page.getByRole("columnheader", { name: "Tahap" })).toBeVisible();
   });
 
-  test("detail accordion exposes quotation aging", async ({ page }) => {
+  test("penjualan tab exposes quotation aging", async ({ page }) => {
     await page.waitForLoadState("networkidle");
-    await page.getByTestId("dashboard-detail-accordion").getByRole("button").click();
+    await page.getByTestId("dashboard-tab-penjualan").click();
     await expect(page.getByTestId("quotation-aging-table")).toBeVisible();
   });
 
   test("renders new KPI strips", async ({ page }) => {
     const heroLabels = [
-      "Booked revenue YTD",
-      "Booked revenue MTD",
-      "Weighted gross margin",
-      "Pipeline value",
-      "Discount leakage",
+      "Pendapatan booked YTD",
+      "Pendapatan booked MTD",
+      "Margin kotor tertimbang",
+      "Nilai pipeline",
+      "Kebocoran diskon",
     ];
     const secondaryLabels = ["Total proyek", "Quotation pending", "Win rate", "Eksposur pajak (PPN + PPh)"];
 
@@ -75,12 +75,9 @@ test.describe("Dashboard ('/')", () => {
       await expect(heroGrid.getByText(label, { exact: true })).toBeVisible();
     }
 
-    const viewport = page.viewportSize();
-    if (viewport && viewport.width >= 640) {
-      const secondaryGrid = page.getByTestId("dashboard-secondary-kpis");
-      for (const label of secondaryLabels) {
-        await expect(secondaryGrid.getByText(label, { exact: true })).toBeVisible();
-      }
+    const secondaryGrid = page.getByTestId("dashboard-secondary-kpis");
+    for (const label of secondaryLabels) {
+      await expect(secondaryGrid.getByText(label, { exact: true })).toBeVisible();
     }
   });
 

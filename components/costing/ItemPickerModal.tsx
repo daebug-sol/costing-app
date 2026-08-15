@@ -248,7 +248,7 @@ export function ItemPickerModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[min(90vh,900px)] max-h-[90vh] w-[min(100vw-2rem,1400px)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(90rem,calc(100vw-2rem))]">
         <DialogHeader className="border-b border-border px-6 py-4">
-          <DialogTitle>Pilih Item dari Database</DialogTitle>
+          <DialogTitle>Pilih item dari database</DialogTitle>
         </DialogHeader>
 
         <div className="grid min-h-[min(380px,42vh)] flex-1 grid-cols-1 gap-0 md:grid-cols-2">
@@ -419,7 +419,7 @@ export function ItemPickerModal({
             disabled={!canSubmit || submitting || groups.length === 0}
             onClick={() => void handleConfirm()}
           >
-            Tambahkan ke Costing
+            Tambahkan ke item
           </Button>
         </DialogFooter>
       </DialogContent>

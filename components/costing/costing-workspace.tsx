@@ -48,7 +48,6 @@ import {
   type SetStateAction,
 } from "react";
 import {
-  CostingBreadcrumb,
   CostingLevelHeading,
   CostingShell,
 } from "@/components/costing/costing-shell";
@@ -256,7 +255,7 @@ function SortableCostingSegment({
     ...listeners,
     className:
       "cursor-grab touch-none select-none active:cursor-grabbing rounded-md px-1 py-0.5 -mx-1 -my-0.5",
-    title: "Tahan lalu seret untuk mengurutkan assembly",
+    title: "Tahan lalu seret untuk mengurutkan item",
   };
   return <>{children({ setNodeRef, style, dragProps })}</>;
 }
@@ -1793,6 +1792,43 @@ export function CostingWorkspace() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  /** Flat manual segment (default “Kelompok utama”). */
+  const addManualItem = () => {
+    addSegment("manual").catch((e) => showToast(String(e)));
+  };
+
+  /**
+   * Manual segment + second named group so the new segment opens in
+   * multi-group mode (same naming as ManualWorkspace “Tambah item grup”).
+   */
+  const addManualGroupItem = async () => {
+    try {
+      await addSegment("manual");
+      const project = useCostingStore.getState().currentProject;
+      if (!project) return;
+      const newest = [...(project.segments ?? [])].sort(
+        (a, b) => b.sortOrder - a.sortOrder
+      )[0];
+      if (!newest || newest.type !== "manual") return;
+      const r = await fetch(
+        `/api/projects/${project.id}/segments/${newest.id}/manual/groups`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "Kelompok 2" }),
+        }
+      );
+      if (!r.ok) {
+        const j = (await r.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        showToast(j?.error ?? "Gagal membuat item grup");
+      }
+    } catch (e) {
+      showToast(String(e));
+    }
+  };
+
   const [useEsk, setUseEsk] = useState(true);
   const [useAsu, setUseAsu] = useState(true);
   const [useMob, setUseMob] = useState(true);
@@ -2199,7 +2235,7 @@ export function CostingWorkspace() {
   const statusBadge = (s: string) => {
     const v = s.toLowerCase();
     if (v === "finalized" || v === "final")
-      return <Badge>Finalized</Badge>;
+      return <Badge>Final</Badge>;
     if (v === "draft") return <Badge variant="secondary">Draft</Badge>;
     return <Badge variant="outline">{s}</Badge>;
   };
@@ -2217,7 +2253,7 @@ export function CostingWorkspace() {
         width="wide"
         eyebrow="Workspace"
         title="Costing"
-        description="Kelola proyek, assembly, dan rincian biaya tanpa mengubah logika perhitungan."
+        description="Kelola proyek, item, dan rincian biaya tanpa mengubah logika perhitungan."
         className="shrink-0"
         actions={<ContextualHelpLink pathname="/costing" />}
       />
@@ -2226,7 +2262,7 @@ export function CostingWorkspace() {
         <div
           className={cn(
             "grid h-full min-h-0 grid-cols-1 gap-4 sm:gap-5",
-            !sidebarCollapsed && "lg:grid-cols-[minmax(0,40%)_minmax(0,60%)]"
+            !sidebarCollapsed && "lg:grid-cols-[minmax(0,32%)_minmax(0,68%)]"
           )}
         >
       {!sidebarCollapsed ? (
@@ -2235,7 +2271,7 @@ export function CostingWorkspace() {
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1">
               <h2 className="truncate text-sm font-semibold text-foreground">
-                Costing Projects
+                Proyek costing
               </h2>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -2260,7 +2296,7 @@ export function CostingWorkspace() {
               onClick={() => setNewOpen(true)}
             >
               <Plus className="size-3.5" />
-              Tambah proyek
+              Proyek baru
             </Button>
           </div>
           <div className="relative mt-2">
@@ -2303,7 +2339,7 @@ export function CostingWorkspace() {
                       <SelectContent>
                         <SelectItem value="all">Semua</SelectItem>
                         <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="finalized">Finalized</SelectItem>
+                        <SelectItem value="finalized">Final</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2364,7 +2400,7 @@ export function CostingWorkspace() {
             <EmptyState
               icon={FolderKanban}
               title="Belum ada proyek"
-              description='Klik tombol "Tambah proyek" di atas untuk membuat proyek costing.'
+              description='Klik tombol "Proyek baru" di atas untuk membuat proyek costing.'
               className="py-8"
               secondaryActionLabel="Bantuan"
               onSecondaryAction={() =>
@@ -2379,13 +2415,10 @@ export function CostingWorkspace() {
             <div className="space-y-4">
               {projectGroups.map((month) => (
                 <div key={month.monthKey}>
-                  <p className="text-muted-foreground mb-2 border-b border-border pb-1 text-[10px] font-semibold uppercase tracking-wide">
-                    {month.monthLabel}
-                  </p>
                   {month.days.map((day) => (
                     <div key={day.dayKey} className="mb-3">
-                      <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">
-                        {day.dayLabel}
+                      <p className="text-muted-foreground mb-1.5 text-xs">
+                        {month.monthLabel} · {day.dayLabel}
                       </p>
                       <div className="space-y-2">
                         {day.items.map((p) => {
@@ -2400,7 +2433,7 @@ export function CostingWorkspace() {
                                 )
                               }
                               className={cn(
-                                "w-full rounded-lg border p-2.5 text-left text-sm transition-shadow",
+                                "w-full rounded-lg border p-2.5 text-left text-sm transition-colors",
                                 active
                                   ? "border-primary bg-primary/8 border-l-4 "
                                   : "bg-card border-border hover:bg-muted/40"
@@ -2411,7 +2444,7 @@ export function CostingWorkspace() {
                                   {p.name}
                                 </span>
                                 <Badge variant="outline" className="text-[10px]">
-                                  {p.segmentCount} assembly
+                                  {p.segmentCount} item
                                 </Badge>
                               </div>
                               <div className="mt-0.5 text-[11px] text-muted-foreground">
@@ -2466,7 +2499,7 @@ export function CostingWorkspace() {
             description={
               sidebarCollapsed
                 ? 'Buka daftar proyek dengan tombol di kiri atas, atau buat proyek baru dari halaman ini setelah daftar dibuka.'
-                : 'Pilih proyek di daftar kiri, atau buat baru dengan tombol "Tambah proyek" di pojok atas daftar.'
+                : 'Pilih proyek di daftar kiri, atau buat baru dengan tombol "Proyek baru" di pojok atas daftar.'
             }
             className={cn(
               "h-[min(480px,calc(100vh-8rem))]",
@@ -2529,29 +2562,41 @@ export function CostingWorkspace() {
                   </>
                 ) : null}
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="outline" className="gap-1">
-                      <Plus className="size-4" />
-                      Assembly
-                    </Button>
-                  </DropdownMenuTrigger>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          className="size-8 rounded-full"
+                          aria-label="Tambah metode costing"
+                          data-add-item-trigger
+                        >
+                          <Plus className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>Tambah metode costing</TooltipContent>
+                  </Tooltip>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => addManualItem()}>
+                      Tambah item
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => void addManualGroupItem()}
+                    >
+                      Tambah item grup
+                    </DropdownMenuItem>
                     {ahuModuleEnabled ? (
                       <DropdownMenuItem
                         onClick={() =>
                           addSegment("ahu").catch((e) => showToast(String(e)))
                         }
                       >
-                        + AHU costing
+                        AHU otomatis
                       </DropdownMenuItem>
                     ) : null}
-                    <DropdownMenuItem
-                      onClick={() =>
-                        addSegment("manual").catch((e) => showToast(String(e)))
-                      }
-                    >
-                      + Manual costing
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -2560,19 +2605,18 @@ export function CostingWorkspace() {
             {segments.length === 0 ? (
               <EmptyState
                 icon={FolderKanban}
-                title="Belum ada assembly"
-                description="Tambahkan assembly AHU atau manual. Satu penawaran bisa berisi banyak item (banyak assembly)."
+                title="Belum ada item"
+                description="Tambahkan item, item grup, atau AHU otomatis. Satu penawaran bisa berisi banyak item."
+                actionLabel="Tambah item"
+                onAction={() => {
+                  const el = document.querySelector<HTMLButtonElement>(
+                    "[data-add-item-trigger]"
+                  );
+                  el?.click();
+                }}
                 className="bg-card border border-dashed border-border py-12"
               />
-            ) : (
-              <p className="text-muted-foreground text-xs leading-relaxed">
-                <span className="text-foreground font-medium">Buka detail:</span> tombol
-                panah + label jenis ·{" "}
-                <span className="text-foreground font-medium">Urutkan:</span> seret ikon grip
-                di kiri · <span className="text-foreground font-medium">Nama:</span> kolom judul
-                assembly
-              </p>
-            )}
+            ) : null}
 
             <DndContext
               sensors={segmentSensors}
@@ -2608,7 +2652,7 @@ export function CostingWorkspace() {
                                   <div
                                     {...dragProps}
                                     className={cn(
-                                      "text-muted-foreground hover:text-foreground hover:bg-muted/60 flex size-8 shrink-0 cursor-grab items-center justify-center rounded-md border border-border bg-muted/40 active:cursor-grabbing",
+                                      "text-muted-foreground hover:text-foreground hover:bg-muted/60 flex size-8 shrink-0 cursor-grab items-center justify-center rounded-md active:cursor-grabbing",
                                       dragProps.className
                                     )}
                                   >
@@ -2625,30 +2669,31 @@ export function CostingWorkspace() {
                                         !(openSegments[seg.id] ?? true)
                                       );
                                     }}
-                                    className="hover:bg-muted/60 flex min-w-0 shrink-0 items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-left shadow-sm transition-colors"
+                                    className="text-muted-foreground hover:text-foreground hover:bg-muted/60 flex size-8 shrink-0 items-center justify-center rounded-md transition-colors"
                                     aria-expanded={segOpen}
                                     aria-label={
                                       segOpen
-                                        ? `Ciutkan detail assembly ${seg.title}`
-                                        : `Buka detail assembly ${seg.title}`
+                                        ? `Ciutkan detail item ${seg.title}`
+                                        : `Buka detail item ${seg.title}`
                                     }
                                   >
                                     {segOpen ? (
-                                      <ChevronDown className="text-muted-foreground size-4 shrink-0" />
+                                      <ChevronDown className="size-4 shrink-0" />
                                     ) : (
-                                      <ChevronRight className="text-muted-foreground size-4 shrink-0" />
+                                      <ChevronRight className="size-4 shrink-0" />
                                     )}
-                                    <AssemblyTypeBadge
-                                      variant={seg.type === "manual" ? "manual" : "ahu"}
-                                    />
                                   </button>
+                                  <AssemblyTypeBadge
+                                    variant={seg.type === "manual" ? "manual" : "ahu"}
+                                    className="min-w-[4.5rem]"
+                                  />
                                   <div className="min-w-0 flex-1 sm:max-w-[14rem]">
                                     <Input
                                       className="h-9 w-full min-w-0 bg-background text-sm font-medium"
                                       defaultValue={seg.title}
                                       key={`t-${seg.id}-${seg.title}`}
                                       title={seg.title}
-                                      aria-label={`Nama assembly ${seg.title}`}
+                                      aria-label={`Nama item ${seg.title}`}
                                       onPointerDown={(e) => e.stopPropagation()}
                                       onBlur={(e) =>
                                         patchSegment(seg.id, {
@@ -2669,12 +2714,13 @@ export function CostingWorkspace() {
                                     variant="ghost"
                                     size="icon"
                                     className="text-muted-foreground hover:text-destructive size-8 shrink-0"
-                                    title="Hapus assembly"
+                                    title="Hapus item"
+                                    aria-label={`Hapus item ${seg.title}`}
                                     onPointerDown={(e) => e.stopPropagation()}
                                     onClick={() => {
                                       if (
                                         window.confirm(
-                                          "Hapus assembly ini beserta isinya?"
+                                          "Hapus item ini beserta isinya?"
                                         )
                                       )
                                         deleteSegment(seg.id).catch((e) =>
@@ -2693,17 +2739,7 @@ export function CostingWorkspace() {
                                   colSpan={4}
                                   className="border-border/80 bg-card p-4 sm:p-5"
                                 >
-                                  <CostingShell
-                                    level="assembly"
-                                    className="mt-1 border-t-0"
-                                  >
-                                    <CostingBreadcrumb
-                                      projectName={currentProject.name}
-                                      segmentTitle={seg.title}
-                                      segmentKind={
-                                        seg.type === "manual" ? "Manual" : "AHU"
-                                      }
-                                    />
+                                  <CostingShell level="assembly">
                                     {seg.type === "manual" ? (
                                       <ManualWorkspace
                                         segmentId={seg.id}
@@ -2782,10 +2818,7 @@ export function CostingWorkspace() {
             </DndContext>
 
             {/* C — Summary */}
-            <CostingShell
-              level="summary"
-              className="overflow-hidden border-primary/25 shadow-sm"
-            >
+            <CostingShell level="summary" className="overflow-hidden">
               <Collapsible
                 open={projectSummaryOpenByProject[currentProject.id] === true}
                 onOpenChange={(open) =>
@@ -2793,19 +2826,13 @@ export function CostingWorkspace() {
                 }
               >
                 <CollapsibleTrigger className="hover:bg-muted/20 flex w-full items-center gap-3 px-4 py-4 text-left transition-colors sm:gap-4 sm:px-5">
-                  <div className="border-primary/30 from-primary/15 via-primary/8 relative shrink-0 rounded-lg border bg-gradient-to-br to-transparent px-3 py-2 shadow-sm">
-                    <span
-                      className="bg-primary absolute top-1.5 bottom-1.5 left-0 w-1 rounded-full"
-                      aria-hidden
-                    />
-                    <CostingLevelHeading
-                      level="summary"
-                      as="h3"
-                      className="text-primary pl-2 text-sm font-bold tracking-tight"
-                    >
-                      Ringkasan biaya proyek
-                    </CostingLevelHeading>
-                  </div>
+                  <CostingLevelHeading
+                    level="summary"
+                    as="h3"
+                    className="shrink-0 text-sm font-semibold"
+                  >
+                    Ringkasan biaya proyek
+                  </CostingLevelHeading>
                   <div className="min-w-0 flex-1 text-right">
                     <div className="text-muted-foreground flex flex-col items-end gap-0.5 text-[11px] sm:flex-row sm:justify-end sm:gap-x-6 sm:text-xs">
                       <span className="whitespace-nowrap">
@@ -2815,7 +2842,7 @@ export function CostingWorkspace() {
                         </span>
                       </span>
                       <span className="whitespace-nowrap">
-                        Total selling:{" "}
+                        Total harga jual:{" "}
                         <span className="tabular-money text-sm font-semibold text-foreground sm:text-base">
                           {formatIDR(totals.selling)}
                         </span>
@@ -2832,7 +2859,7 @@ export function CostingWorkspace() {
                 <Table>
                   <TableBody>
                     <TableRow>
-                      <TableCell>Total material cost (HPP)</TableCell>
+                      <TableCell>Total biaya material (HPP)</TableCell>
                       <TableCell className="tabular-money text-right">
                         {formatIDR(totals.hpp)}
                       </TableCell>
@@ -2862,7 +2889,7 @@ export function CostingWorkspace() {
                     <TableRow>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="min-w-[5rem]">Contingency</span>
+                          <span className="min-w-[5rem]">Kontinjensi</span>
                           <Input
                             className="h-8 w-16 text-right"
                             type="number"
@@ -3036,7 +3063,7 @@ export function CostingWorkspace() {
                       )
                     }
                   >
-                    Save Draft
+                    Simpan draft
                   </Button>
                   <Button
                     type="button"
@@ -3046,11 +3073,11 @@ export function CostingWorkspace() {
                       )
                     }
                   >
-                    Finalize
+                    Finalkan proyek
                   </Button>
                   <Button type="button" variant="outline" asChild>
                     <Link href={`/documentation?fromProject=${currentProject.id}`}>
-                      → Create Quotation
+                      Buat penawaran
                     </Link>
                   </Button>
                 </div>
@@ -3066,15 +3093,15 @@ export function CostingWorkspace() {
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Buat Project Costing Baru</DialogTitle>
+            <DialogTitle>Buat proyek costing</DialogTitle>
             <DialogDescription>
-              Masukkan nama proyek. Anda bisa menambah assembly AHU atau manual
+              Masukkan nama proyek. Anda bisa menambah item AHU atau manual
               setelah proyek dibuat.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="np-name">Nama Project</Label>
+              <Label htmlFor="np-name">Nama proyek</Label>
               <Input
                 id="np-name"
                 value={newName}
@@ -3089,7 +3116,7 @@ export function CostingWorkspace() {
               variant="outline"
               onClick={() => setNewOpen(false)}
             >
-              Cancel
+              Batal
             </Button>
             <Button
               type="button"
@@ -3105,7 +3132,7 @@ export function CostingWorkspace() {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add line item</DialogTitle>
+            <DialogTitle>Tambah baris item</DialogTitle>
             <DialogDescription>
               Tambahkan baris manual pada section yang dipilih.
             </DialogDescription>

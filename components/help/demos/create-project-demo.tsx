@@ -37,7 +37,7 @@ export function CreateProjectDemo() {
                 : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
             }
           >
-            Tambah proyek
+            Proyek baru
           </motion.div>
           {!reduce ? (
             <motion.div

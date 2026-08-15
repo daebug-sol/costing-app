@@ -103,7 +103,7 @@ export function DashboardToolbar({
         disabled={loading}
       >
         <RefreshCw data-icon="inline-start" className={loading ? "animate-spin" : undefined} />
-        Refresh data
+        Muat ulang
       </Button>
     </motion.div>
   );

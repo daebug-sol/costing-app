@@ -113,9 +113,7 @@ export function ClientListWidget() {
     <section aria-label="Daftar pelanggan" data-testid="dashboard-clients">
       <ChartInsightBlock
         title="Pelanggan"
-        description="Daftar klien dari master data — kelola lengkap di halaman Pelanggan."
         loading={loading}
-        accent="status"
         detailTitle="Daftar pelanggan"
         detailDescription="Daftar lengkap pelanggan beserta kontak."
         detailContent={<ClientTable rows={rows} showEmail />}
@@ -141,15 +139,12 @@ export function ClientListWidget() {
             <ClientTable rows={visibleRows} />
             {hiddenCount > 0 ? (
               <p className="text-xs text-muted-foreground">
-                +{hiddenCount} lainnya — buka &quot;Lihat detail&quot; untuk
-                daftar lengkap.
+                +{hiddenCount} lainnya — buka &quot;Lihat detail&quot; untuk daftar lengkap.
               </p>
             ) : null}
-            <div>
-              <Button type="button" variant="outline" size="sm" asChild>
-                <Link href="/customers">Kelola pelanggan</Link>
-              </Button>
-            </div>
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link href="/customers">Kelola pelanggan</Link>
+            </Button>
           </div>
         )}
       </ChartInsightBlock>

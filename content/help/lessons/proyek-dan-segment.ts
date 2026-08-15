@@ -17,10 +17,10 @@ export const proyekDanSegment: HelpLesson = {
       uiHint: "Navbar → Costing",
     },
     {
-      title: "Tambah proyek",
-      body: "Tekan Tambah proyek, isi nama dan metadata dasar, lalu simpan. Proyek baru muncul di daftar dan siap menerima segment.",
+      title: "Proyek baru",
+      body: "Tekan Proyek baru, isi nama dan metadata dasar, lalu simpan. Proyek baru muncul di daftar dan siap menerima segment.",
       demoId: "create-project",
-      uiHint: "Tombol Tambah proyek",
+      uiHint: "Tombol Proyek baru",
     },
     {
       title: "Tambah segment",

@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 type AssemblyTypeBadgeProps = {
@@ -9,23 +8,19 @@ type AssemblyTypeBadgeProps = {
 const LABEL: Record<AssemblyTypeBadgeProps["variant"], string> = {
   ahu: "AHU",
   manual: "Manual",
-  "sub-assembly": "Sub-assembly",
+  "sub-assembly": "Kelompok",
 };
 
+/** Inline type label (not a bordered pill). `sub-assembly` kept for TS; prefer not rendering it in UI. */
 export function AssemblyTypeBadge({ variant, className }: AssemblyTypeBadgeProps) {
   return (
-    <Badge
-      variant="outline"
+    <span
       className={cn(
-        "shrink-0 border px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
-        variant === "ahu" &&
-          "border-primary/35 bg-primary/10 text-primary dark:border-primary/50 dark:bg-primary/20 dark:text-primary-foreground",
-        (variant === "manual" || variant === "sub-assembly") &&
-          "border-violet-300 bg-violet-100 text-violet-950 dark:border-violet-600 dark:bg-violet-950/90 dark:text-violet-50",
+        "shrink-0 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase",
         className
       )}
     >
       {LABEL[variant]}
-    </Badge>
+    </span>
   );
 }
