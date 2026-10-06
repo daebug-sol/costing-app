@@ -6,7 +6,8 @@ Next.js 16 / React 19 / Tailwind 4 / Prisma 7 / Clerk. Indonesian-primary UI wit
 
 ## Commands
 - `npm run lint` · `npm run typecheck` · `npm test` (jest) · `npm run build`
-- `npm run ui:test` (Playwright visual, port 3100, `AUTH_BYPASS=true`); `ui:test:update` only for intended visual changes
+- `npm run ui:standard` (executable UI rules; Stop hook enforces it)
+- `npm run ui:test` (Playwright visual, port 3100, `AUTH_BYPASS=true`); `ui:test:update` only for intended visual changes. Run against a **local** DB, never Neon: `npm run db:up`, then with `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/costing_dev?schema=public` and `TEST_ORG_ID=test-org` run `db:migrate`, `db:seed`, `ui:test`
 - Local dev: `npm run dev` (needs Postgres: `npm run db:up`, `db:migrate`, `db:seed`)
 
 ## Hard rules
