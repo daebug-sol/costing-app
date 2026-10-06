@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import {
   ChevronDown,
   FileText,
@@ -122,6 +123,7 @@ export function DocumentationListView({
   dateFilter,
   onDateFilterChange,
 }: Props) {
+  const { t } = useI18n();
   const allProjects = folders.flatMap((f) => f.projects);
   const projectCount = allProjects.length;
   const selectedCount = selectedIds.size;
@@ -149,7 +151,7 @@ export function DocumentationListView({
             ) : (
               <Plus className="size-4" />
             )}
-            Create quotation
+            {t("common.createQuotation")}
           </Button>
         </div>
       }
@@ -314,7 +316,7 @@ export function DocumentationListView({
             <p className="text-foreground font-medium">Tidak ada penawaran</p>
             <p className="text-muted-foreground mt-1 max-w-sm text-sm">
               Ubah filter atau klik{" "}
-              <span className="font-medium text-foreground">Create quotation</span>.
+              <span className="font-medium text-foreground">{t("common.createQuotation")}</span>.
             </p>
             <Button
               type="button"
@@ -327,7 +329,7 @@ export function DocumentationListView({
               ) : (
                 <Plus className="size-4" />
               )}
-              Create quotation
+              {t("common.createQuotation")}
             </Button>
           </CardContent>
         </Card>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import {
   DndContext,
   type DragEndEvent,
@@ -212,6 +213,7 @@ export function ManualWorkspace({
   collapseAllManualSignal = 0,
   expandAllManualSignal = 0,
 }: ManualWorkspaceProps) {
+  const { t } = useI18n();
   const [confirm, confirmDialog] = useConfirm();
   const currentProject = useCostingStore((s) => s.currentProject);
   const loadProject = useCostingStore((s) => s.loadProject);
@@ -1045,7 +1047,7 @@ export function ManualWorkspace({
           <Table>
             <TableBody>
               <TableRow>
-                <TableCell>Total material cost (HPP)</TableCell>
+                <TableCell>{t("costing.totalMaterialHpp")}</TableCell>
                 <TableCell className="tabular-money text-right">
                   {formatIDR(totals.hpp)}
                 </TableCell>
@@ -1197,7 +1199,7 @@ export function ManualWorkspace({
                 </TableCell>
               </TableRow>
               <TableRow className="border-t-2 font-medium">
-                <TableCell>Total cost</TableCell>
+                <TableCell>{t("costing.totalCost")}</TableCell>
                 <TableCell className="tabular-money text-right">
                   {formatIDR(totals.totalCost)}
                 </TableCell>
@@ -1263,7 +1265,7 @@ export function ManualWorkspace({
             </Button>
             <Button type="button" variant="outline" asChild>
               <Link href={`/documentation?fromProject=${currentProject.id}`}>
-                → Create Quotation
+                → {t("common.createQuotation")}
               </Link>
             </Button>
           </div>

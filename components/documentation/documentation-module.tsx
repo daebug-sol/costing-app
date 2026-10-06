@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { Textarea } from "@/components/ui/textarea";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -280,6 +281,7 @@ function fmtDateInput(iso: string) {
 }
 
 export function DocumentationModule() {
+  const { t } = useI18n();
   const [confirm, confirmDialog] = useConfirm();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1238,6 +1240,7 @@ export function DocumentationModule() {
   return (
     <div className="bg-muted relative flex h-[calc(100vh-3.5rem)] min-h-0 flex-col overflow-hidden">
       {confirmDialog}
+      <h1 className="sr-only">{t("documentation.editorTitle")}</h1>
       <div className="bg-card/95 border-border z-30 flex shrink-0 flex-col gap-2 border-b px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           <Button

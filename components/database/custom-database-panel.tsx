@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -241,6 +242,7 @@ export function CustomDatabasePanel({
 }: {
   show: (t: "success" | "error", m: string) => void;
 }) {
+  const { t } = useI18n();
   const [table, setTable] = useState<CustomTable | null>(null);
   const customFolderId = useUiWorkflowStore((s) => s.database.customFolderId);
   const customFileId = useUiWorkflowStore((s) => s.database.customFileId);
@@ -950,7 +952,7 @@ export function CustomDatabasePanel({
     });
   };
 
-  if (loading) return <div className="rounded-lg border p-4 text-sm">Loading custom database...</div>;
+  if (loading) return <div className="rounded-lg border p-4 text-sm">{t("database.custom.loading")}</div>;
 
   if (!activeFileId || !table) {
     return (
@@ -1013,11 +1015,11 @@ export function CustomDatabasePanel({
         <div className="flex items-center">
         <span className="text-xs text-muted-foreground">
           {saveStatus === "saving"
-            ? "Saving..."
+            ? t("common.saving")
             : saveStatus === "saved"
-              ? "Saved"
+              ? t("common.saved")
               : saveStatus === "failed"
-                ? "Save failed"
+                ? t("common.saveFailed")
                 : ""}
         </span>
         </div>

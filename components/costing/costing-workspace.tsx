@@ -1580,13 +1580,13 @@ function AhuSegmentEditor({
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
                         <TableHead className="w-10" />
-                        <TableHead>Description</TableHead>
+                        <TableHead>{t("common.description")}</TableHead>
                         <TableHead className="w-16">UOM</TableHead>
                         <TableHead className="w-28 text-right">Qty</TableHead>
                         <TableHead className="text-right">
-                          Unit price (IDR)
+                          {t("costing.unitPriceIdr")}
                         </TableHead>
-                        <TableHead className="text-right">Total (IDR)</TableHead>
+                        <TableHead className="text-right">{t("costing.totalIdr")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1720,6 +1720,7 @@ function AhuSegmentEditor({
 }
 
 export function CostingWorkspace() {
+  const { t } = useI18n();
   const [confirm, confirmDialog] = useConfirm();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -3144,7 +3145,7 @@ export function CostingWorkspace() {
           </DialogHeader>
           <div className="grid gap-3 py-2">
             <div className="space-y-1">
-              <Label>Description</Label>
+              <Label>{t("common.description")}</Label>
               <Input value={addDesc} onChange={(e) => setAddDesc(e.target.value)} />
             </div>
             <div className="grid grid-cols-3 gap-2">

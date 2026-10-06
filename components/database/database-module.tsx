@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import {
   Download,
   Package,
@@ -164,6 +165,7 @@ const AHU_TAB_CONTENT_CLASS =
 /* ——— Materials ——— */
 
 function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) => void }) {
+  const { t } = useI18n();
   const ahuFolderId = useUiWorkflowStore((s) => s.database.ahuFolderId);
   const ahuFileId = useUiWorkflowStore((s) => s.database.ahuFileId);
   const setDatabaseAhuNav = useUiWorkflowStore((s) => s.setDatabaseAhuNav);
@@ -520,7 +522,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
             icon={Package}
             title="Belum ada material"
             description="Tambahkan material atau impor dari Excel (.xlsx)."
-            actionLabel="Add New"
+            actionLabel={t("common.addNew")}
             onAction={openAdd}
           />
         ) : filtered.length === 0 ? (
@@ -533,13 +535,13 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Density</TableHead>
-                <TableHead className="text-right">Price/kg</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
+                <TableHead>{t("common.code")}</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead>{t("common.category")}</TableHead>
+                <TableHead className="text-right">{t("database.density")}</TableHead>
+                <TableHead className="text-right">{t("database.pricePerKg")}</TableHead>
+                <TableHead>{t("common.unit")}</TableHead>
+                <TableHead className="w-[100px] text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -632,7 +634,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
             </div>
             <div className="grid gap-1.5 sm:grid-cols-2">
               <div className="grid gap-1.5">
-                <Label htmlFor="m-den">Density</Label>
+                <Label htmlFor="m-den">{t("database.density")}</Label>
                 <Input
                   id="m-den"
                   inputMode="decimal"
@@ -704,6 +706,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
 /* ——— Profiles ——— */
 
 function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => void }) {
+  const { t } = useI18n();
   const ahuFolderId = useUiWorkflowStore((s) => s.database.ahuFolderId);
   const ahuFileId = useUiWorkflowStore((s) => s.database.ahuFileId);
   const setDatabaseAhuNav = useUiWorkflowStore((s) => s.setDatabaseAhuNav);
@@ -1063,7 +1066,7 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
             icon={Package}
             title="Belum ada data profil"
             description="Tambahkan profil panel atau impor Excel (.xlsx)."
-            actionLabel="Add New"
+            actionLabel={t("common.addNew")}
             onAction={openAdd}
           />
         ) : filtered.length === 0 ? (
@@ -1076,13 +1079,13 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Weight/m</TableHead>
-                <TableHead className="text-right">Price/m</TableHead>
-                <TableHead className="text-center">Panel thick</TableHead>
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
+                <TableHead>{t("common.code")}</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead>{t("common.type")}</TableHead>
+                <TableHead className="text-right">{t("database.weightPerM")}</TableHead>
+                <TableHead className="text-right">{t("database.pricePerM")}</TableHead>
+                <TableHead className="text-center">{t("database.panelThick")}</TableHead>
+                <TableHead className="w-[100px] text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1233,6 +1236,7 @@ function ComponentsPanel({
 }: {
   show: (t: "success" | "error", m: string) => void;
 }) {
+  const { t } = useI18n();
   const ahuFolderId = useUiWorkflowStore((s) => s.database.ahuFolderId);
   const ahuFileId = useUiWorkflowStore((s) => s.database.ahuFileId);
   const setDatabaseAhuNav = useUiWorkflowStore((s) => s.setDatabaseAhuNav);
@@ -1663,7 +1667,7 @@ function ComponentsPanel({
             icon={Package}
             title="Belum ada komponen"
             description="Tambahkan katalog komponen atau impor Excel (.xlsx)."
-            actionLabel="Add New"
+            actionLabel={t("common.addNew")}
             onAction={openAdd}
           />
         ) : filtered.length === 0 ? (
@@ -1676,14 +1680,14 @@ function ComponentsPanel({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Brand</TableHead>
-                <TableHead className="max-w-[180px]">Spec</TableHead>
-                <TableHead className="text-right">Unit price</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
+                <TableHead>{t("common.code")}</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead>{t("common.category")}</TableHead>
+                <TableHead>{t("database.brand")}</TableHead>
+                <TableHead className="max-w-[180px]">{t("database.spec")}</TableHead>
+                <TableHead className="text-right">{t("database.unitPrice")}</TableHead>
+                <TableHead>{t("common.unit")}</TableHead>
+                <TableHead className="w-[100px] text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
