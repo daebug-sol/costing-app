@@ -805,7 +805,7 @@ export function ManualWorkspace({
                           />
                         </div>
                         <span
-                          className="tabular-money text-muted-foreground min-w-0 flex-1 truncate text-right text-[11px] sm:text-xs"
+                          className="tabular-money text-muted-foreground min-w-0 flex-1 truncate text-right text-xs sm:text-xs"
                           title={`Subtotal HPP: ${formatIDR(g.subtotal)}`}
                         >
                           Subtotal HPP: {formatIDR(g.subtotal)}

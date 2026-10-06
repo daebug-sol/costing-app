@@ -1,5 +1,6 @@
 "use client";
 
+import { dashboardChartPlotClass } from "@/components/dashboard/dashboard-surface-styles";
 import { useMemo, useState } from "react";
 import { Cell, Pie, PieChart } from "recharts";
 import {
@@ -83,7 +84,7 @@ export function CostBreakdownChart({
 
       <div
         ref={ref}
-        className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
+        className={dashboardChartPlotClass}
         aria-label={t("dashboard.costBreakdown.donutLabel")}
       >
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -121,7 +122,7 @@ export function CostBreakdownChart({
             />
           </PieChart>
         </ChartContainer>
-        <ul className="mt-3 flex flex-col gap-1.5 text-[11px] text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-3">
+        <ul className="mt-3 flex flex-col gap-1.5 text-xs text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-3">
           {breakdown.rows.map((row, index) => (
             <li key={row.key} className="flex min-w-0 items-center gap-1.5">
               <span

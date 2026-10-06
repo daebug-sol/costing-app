@@ -1,5 +1,6 @@
 "use client";
 
+import { dashboardChartPlotClass } from "@/components/dashboard/dashboard-surface-styles";
 import { useMemo, useState } from "react";
 import { Cell, Pie, PieChart } from "recharts";
 import {
@@ -63,7 +64,7 @@ export function StatusDistribution({ data }: { data: DashboardStatusDistribution
 
       <div
         ref={ref}
-        className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
+        className={dashboardChartPlotClass}
       >
         <ChartContainer config={chartConfig} className="aspect-auto h-64 w-full min-w-0">
           <PieChart accessibilityLayer>
@@ -96,7 +97,7 @@ export function StatusDistribution({ data }: { data: DashboardStatusDistribution
             />
           </PieChart>
         </ChartContainer>
-        <ul className="mt-3 flex flex-col gap-1 text-[11px] text-muted-foreground">
+        <ul className="mt-3 flex flex-col gap-1 text-xs text-muted-foreground">
           {rows.map((row, index) => (
             <li key={row.status} className="flex min-w-0 items-center gap-2">
               <span

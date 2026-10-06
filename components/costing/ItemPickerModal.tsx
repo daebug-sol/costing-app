@@ -325,7 +325,7 @@ export function ItemPickerModal({
               ) : (
                 groupedLeft.map(([cat, rows]) => (
                   <div key={cat} className="mb-4">
-                    <p className="text-muted-foreground mb-2 text-[11px] font-semibold uppercase tracking-wide">
+                    <p className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wide">
                       {cat}
                     </p>
                     <div className="space-y-1">
@@ -338,7 +338,7 @@ export function ItemPickerModal({
                           <label
                             key={r.key}
                             className={cn(
-                              "flex cursor-pointer items-start gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm hover:bg-white",
+                              "flex cursor-pointer items-start gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm hover:bg-muted",
                               disabled && "cursor-not-allowed opacity-60"
                             )}
                           >

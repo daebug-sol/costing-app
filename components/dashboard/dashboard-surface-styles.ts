@@ -95,6 +95,10 @@ export function secondaryKpiTintClass(index: number) {
   return secondaryTileTints[index % secondaryTileTints.length];
 }
 
+/** Plot area frame for charts — flat surface, no gradient. */
+export const dashboardChartPlotClass =
+  "min-w-0 rounded-none border border-border/80 bg-surface-nested p-3";
+
 /** L3 wrapper inside accordion detail — dashed inset boundary. */
 export function dashboardDetailInnerClass(className?: string) {
   return cn(

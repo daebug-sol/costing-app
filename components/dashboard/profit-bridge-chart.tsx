@@ -1,5 +1,6 @@
 "use client";
 
+import { dashboardChartPlotClass } from "@/components/dashboard/dashboard-surface-styles";
 import {
   Bar,
   CartesianGrid,
@@ -83,7 +84,7 @@ export function ProfitBridgeChart({
     <div className="space-y-4" data-testid="profit-bridge-chart">
       <div
         ref={ref}
-        className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
+        className={dashboardChartPlotClass}
       >
         <ChartContainer
           config={chartConfig}
@@ -167,14 +168,14 @@ export function ProfitBridgeChart({
                   dataKey="pctOfGross"
                   position="top"
                   formatter={(value) => `${Number(value ?? 0).toFixed(1)}%`}
-                  className="fill-muted-foreground text-[10px]"
+                  className="fill-muted-foreground text-2xs"
                 />
               ) : null}
             </Bar>
           </ComposedChart>
         </ChartContainer>
         {useHorizontalLayout ? (
-          <p className="mt-2 text-[11px] text-muted-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             {t("dashboard.profitBridge.narrowHint")}
           </p>
         ) : null}

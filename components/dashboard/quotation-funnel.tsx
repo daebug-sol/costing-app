@@ -1,5 +1,6 @@
 "use client";
 
+import { dashboardChartPlotClass } from "@/components/dashboard/dashboard-surface-styles";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -39,7 +40,7 @@ export function QuotationFunnel({ data }: { data: DashboardQuotationFunnel }) {
       </div>
       <div
         ref={ref}
-        className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
+        className={dashboardChartPlotClass}
       >
         <ChartContainer config={chartConfig} className="aspect-auto h-64 w-full min-w-0">
           <BarChart

@@ -18,7 +18,7 @@ export function CreateProjectDemo() {
           <div className="bg-muted h-3 w-24 rounded" />
           <div className="bg-muted/60 h-20 w-full rounded-md" />
           <motion.div
-            className="absolute top-8 right-2 rounded-md bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground"
+            className="absolute top-8 right-2 rounded-md bg-primary px-2.5 py-1 text-2xs font-medium text-primary-foreground"
             animate={
               reduce
                 ? undefined

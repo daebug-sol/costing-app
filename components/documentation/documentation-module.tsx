@@ -1612,7 +1612,7 @@ export function DocumentationModule() {
                     onFocus={() => setPickerOpen(true)}
                   />
                   {pickerOpen && (
-                    <div className="border-input absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border bg-white shadow-lg">
+                    <div className="border-input absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border bg-popover shadow-md">
                       {filteredAvailable.length === 0 ? (
                         <div className="text-muted-foreground p-3 text-sm">
                           Tidak ada proyek final/approved dengan harga jual &gt; 0.
@@ -1688,7 +1688,7 @@ export function DocumentationModule() {
                                   })
                                 }
                               />
-                              <p className="text-muted-foreground mt-0.5 text-[10px]">
+                              <p className="text-muted-foreground mt-0.5 text-2xs">
                                 {it.spec.length}/{SPEC_MAX_CHARS}
                               </p>
                             </td>
@@ -1748,7 +1748,7 @@ export function DocumentationModule() {
                   </table>
                 </div>
 
-                <div className="space-y-2 rounded-lg border bg-white p-4 text-sm">
+                <div className="space-y-2 rounded-lg border bg-card p-4 text-sm">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span>{formatIDR(previewTotals.totalBeforeDisc)}</span>
@@ -2169,7 +2169,7 @@ export function DocumentationModule() {
                         <td className="border border-border px-1 py-1 align-top break-words">
                           <div className="break-words">{it.description}</div>
                           {it.spec ? (
-                            <div className="text-muted-foreground mt-1 text-[10px] whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                            <div className="text-muted-foreground mt-1 text-2xs whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                               {it.spec}
                             </div>
                           ) : null}

@@ -2446,11 +2446,11 @@ export function CostingWorkspace() {
                                 <span className="font-medium text-foreground">
                                   {p.name}
                                 </span>
-                                <Badge variant="outline" className="text-[10px]">
+                                <Badge variant="outline" className="text-2xs">
                                   {p.segmentCount} item
                                 </Badge>
                               </div>
-                              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                              <div className="mt-0.5 text-xs text-muted-foreground">
                                 {p.previewAhuModel ?? "—"} · Flow{" "}
                                 {p.previewFlowCMH != null
                                   ? formatNumber(p.previewFlowCMH, 0)
@@ -2707,7 +2707,7 @@ export function CostingWorkspace() {
                                     />
                                   </div>
                                   <span
-                                    className="tabular-money text-muted-foreground min-w-0 flex-1 truncate text-right text-[11px] sm:text-xs"
+                                    className="tabular-money text-muted-foreground min-w-0 flex-1 truncate text-right text-xs sm:text-xs"
                                     title={`Subtotal HPP: ${formatIDR(seg.subtotal)}`}
                                   >
                                     Subtotal HPP: {formatIDR(seg.subtotal)}
@@ -2838,7 +2838,7 @@ export function CostingWorkspace() {
                     Ringkasan biaya proyek
                   </CostingLevelHeading>
                   <div className="min-w-0 flex-1 text-right">
-                    <div className="text-muted-foreground flex flex-col items-end gap-0.5 text-[11px] sm:flex-row sm:justify-end sm:gap-x-6 sm:text-xs">
+                    <div className="text-muted-foreground flex flex-col items-end gap-0.5 text-xs sm:flex-row sm:justify-end sm:gap-x-6 sm:text-xs">
                       <span className="whitespace-nowrap">
                         HPP:{" "}
                         <span className="tabular-money font-medium text-foreground">

@@ -77,13 +77,12 @@ type UpdateCellResponse = {
 
 const PAGE_SIZE = 100;
 
-const FORMULA_REF_CELL_CLASSES = [
-  "bg-rose-100/80 text-rose-900 dark:bg-rose-500/20 dark:text-rose-200",
-  "bg-sky-100/80 text-sky-900 dark:bg-sky-500/20 dark:text-sky-200",
-  "bg-amber-100/80 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200",
-  "bg-emerald-100/80 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-200",
-  "bg-violet-100/80 text-violet-900 dark:bg-violet-500/20 dark:text-violet-200",
-  "bg-fuchsia-100/80 text-fuchsia-900 dark:bg-fuchsia-500/20 dark:text-fuchsia-200",
+/** Formula reference tones — semantic tokens only; more than four refs reuse tones in order. */
+const FORMULA_REF_TONES = [
+  { cell: "bg-destructive/10 text-foreground", text: "text-destructive", ring: "ring-2 ring-destructive/70" },
+  { cell: "bg-primary/10 text-foreground", text: "text-primary", ring: "ring-2 ring-primary/70" },
+  { cell: "bg-warning/10 text-foreground", text: "text-warning", ring: "ring-2 ring-warning/70" },
+  { cell: "bg-success/10 text-foreground", text: "text-success", ring: "ring-2 ring-success/70" },
 ] as const;
 
 /** Spreadsheet cell focus — inset outline avoids broken ring on table borders (UI-HARNESS: clear state). */
@@ -124,46 +123,9 @@ function getGridCellInteractionClasses(opts: {
 }
 
 function getRefToneClasses(index: number) {
-  const i = ((index % FORMULA_REF_CELL_CLASSES.length) + FORMULA_REF_CELL_CLASSES.length) %
-    FORMULA_REF_CELL_CLASSES.length;
-  switch (i) {
-    case 0:
-      return {
-        cellClass: FORMULA_REF_CELL_CLASSES[0],
-        formulaTextClass: "text-rose-700 dark:text-rose-300",
-        borderClass: "ring-2 ring-rose-500/80 dark:ring-rose-400/70",
-      };
-    case 1:
-      return {
-        cellClass: FORMULA_REF_CELL_CLASSES[1],
-        formulaTextClass: "text-sky-700 dark:text-sky-300",
-        borderClass: "ring-2 ring-sky-500/80 dark:ring-sky-400/70",
-      };
-    case 2:
-      return {
-        cellClass: FORMULA_REF_CELL_CLASSES[2],
-        formulaTextClass: "text-amber-700 dark:text-amber-300",
-        borderClass: "ring-2 ring-amber-500/80 dark:ring-amber-400/70",
-      };
-    case 3:
-      return {
-        cellClass: FORMULA_REF_CELL_CLASSES[3],
-        formulaTextClass: "text-emerald-700 dark:text-emerald-300",
-        borderClass: "ring-2 ring-emerald-500/80 dark:ring-emerald-400/70",
-      };
-    case 4:
-      return {
-        cellClass: FORMULA_REF_CELL_CLASSES[4],
-        formulaTextClass: "text-violet-700 dark:text-violet-300",
-        borderClass: "ring-2 ring-violet-500/80 dark:ring-violet-400/70",
-      };
-    default:
-      return {
-        cellClass: FORMULA_REF_CELL_CLASSES[5],
-        formulaTextClass: "text-fuchsia-700 dark:text-fuchsia-300",
-        borderClass: "ring-2 ring-fuchsia-500/80 dark:ring-fuchsia-400/70",
-      };
-  }
+  const n = FORMULA_REF_TONES.length;
+  const tone = FORMULA_REF_TONES[((index % n) + n) % n];
+  return { cellClass: tone.cell, formulaTextClass: tone.text, borderClass: tone.ring };
 }
 
 function extractFormulaVarKeys(rawValue: string): string[] {
@@ -479,7 +441,7 @@ export function CustomDatabasePanel({
     const keys = extractFormulaVarKeys(raw);
     if (keys.length === 0) return null;
     const colorByKey = new Map<string, number>();
-    keys.forEach((k, i) => colorByKey.set(k, i % FORMULA_REF_CELL_CLASSES.length));
+    keys.forEach((k, i) => colorByKey.set(k, i % FORMULA_REF_TONES.length));
     return {
       rowId: focusedCell.rowId,
       formulaColumnId: focusedCell.columnId,
@@ -1090,7 +1052,7 @@ export function CustomDatabasePanel({
                   onContextMenu={(e) => openContextMenu(e, { columnId: col.id })}
                   className={`sticky top-0 z-30 px-4 py-2.5 text-left font-medium ${
                     isLocked(col.id)
-                      ? "bg-[#203351] text-white border-2 border-[#15233a]"
+                      ? "border-2 border-primary bg-primary text-primary-foreground"
                       : "border-b border-r bg-muted"
                   }`}
                 >
@@ -1155,7 +1117,7 @@ export function CustomDatabasePanel({
                       refColorIndex === undefined ? "" : getRefToneClasses(refColorIndex).borderClass;
                     const formulaTextColorClass =
                       refColorIndex === undefined
-                        ? "text-violet-700 dark:text-violet-300"
+                        ? "text-primary"
                         : getRefToneClasses(refColorIndex).formulaTextClass;
                     const isFormulaCell =
                       activeFormulaRefs?.rowId === row.id &&
@@ -1576,7 +1538,7 @@ export function CustomDatabasePanel({
             <span
               key={key}
               className={`rounded px-2 py-1 font-mono ${
-                FORMULA_REF_CELL_CLASSES[i % FORMULA_REF_CELL_CLASSES.length]
+                FORMULA_REF_TONES[i % FORMULA_REF_TONES.length].cell
               }`}
             >
               {key}

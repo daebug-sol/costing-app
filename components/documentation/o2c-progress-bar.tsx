@@ -71,7 +71,7 @@ export function O2cProgressBar({ progress, className }: Props) {
                 disabled && "cursor-not-allowed opacity-60"
               )}
             >
-              <span className="truncate text-[0.65rem] font-semibold leading-tight sm:text-xs">
+              <span className="truncate text-2xs font-semibold leading-tight sm:text-xs">
                 {STAGE_SHORT[stage.stage]}
               </span>
             </button>

@@ -10,9 +10,9 @@ export function FolderFileDemo() {
     <DemoShell label="Demo folder dan file database">
       <div className="flex gap-3">
         <div className="flex w-28 flex-col gap-2">
-          <div className="text-muted-foreground text-[10px]">Folder</div>
+          <div className="text-muted-foreground text-2xs">Folder</div>
           <motion.div
-            className="rounded-md border border-primary/40 bg-primary/10 px-2 py-1.5 text-[10px] font-medium"
+            className="rounded-md border border-primary/40 bg-primary/10 px-2 py-1.5 text-2xs font-medium"
             animate={reduce ? undefined : { opacity: [0.7, 1, 0.7] }}
             transition={
               reduce
@@ -22,15 +22,15 @@ export function FolderFileDemo() {
           >
             Harga AHU
           </motion.div>
-          <div className="bg-muted/50 rounded-md px-2 py-1.5 text-[10px] text-muted-foreground">
+          <div className="bg-muted/50 rounded-md px-2 py-1.5 text-2xs text-muted-foreground">
             Custom
           </div>
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <div className="text-muted-foreground text-[10px]">File</div>
+            <div className="text-muted-foreground text-2xs">File</div>
             <motion.span
-              className="rounded-md bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground"
+              className="rounded-md bg-primary px-2 py-0.5 text-2xs font-medium text-primary-foreground"
               animate={
                 reduce
                   ? undefined

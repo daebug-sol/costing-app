@@ -16,7 +16,7 @@ export function AssemblyTypeBadge({ variant, className }: AssemblyTypeBadgeProps
   return (
     <span
       className={cn(
-        "shrink-0 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase",
+        "shrink-0 text-2xs font-semibold tracking-wide text-muted-foreground uppercase",
         className
       )}
     >

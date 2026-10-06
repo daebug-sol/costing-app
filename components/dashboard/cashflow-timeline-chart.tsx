@@ -1,5 +1,6 @@
 "use client";
 
+import { dashboardChartPlotClass } from "@/components/dashboard/dashboard-surface-styles";
 import {
   Bar,
   CartesianGrid,
@@ -74,7 +75,7 @@ export function CashflowTimelineChart({
     <div className="space-y-4" data-testid="cashflow-timeline-chart">
       <div
         ref={ref}
-        className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
+        className={dashboardChartPlotClass}
       >
         <ChartContainer config={chartConfig} className={CHART_FRAME_CLASS} aria-label={t("dashboard.cashflow.chartLabel")}>
           <ComposedChart
@@ -113,7 +114,7 @@ export function CashflowTimelineChart({
             />
             <ChartLegend
               content={
-                <ChartLegendContent className="flex-wrap justify-start gap-x-3 gap-y-1 text-[11px]" />
+                <ChartLegendContent className="flex-wrap justify-start gap-x-3 gap-y-1 text-xs" />
               }
             />
             <ChartTooltip
