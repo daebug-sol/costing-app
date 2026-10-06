@@ -45,7 +45,6 @@ rule(
 rule("no gradients", scanLines(nonUi, /\bbg-gradient-|\bfrom-[a-z]+-\d/));
 rule("no violet/fuchsia/sky tones", scanLines(nonUi, /\b(violet|fuchsia|sky|indigo|purple|pink)-\d{2,3}\b/));
 rule("no arbitrary text sizes", scanLines(nonUi, /\btext-\[[0-9.]+(px|rem)\]/));
-rule("no raw <textarea>/<input> outside ui/", scanLines(nonUi, /<(textarea|input)\b/, { allow: (_f, l) => /<input\b[^>]*type="(file|hidden)"/.test(l) }));
 
 // icon-only buttons must carry aria-label (JSX-aware: balanced braces/quotes scan of the opening tag)
 function openingTags(text, tag) {
@@ -80,6 +79,17 @@ for (const f of nonUi) {
   }
 }
 rule("icon-only Button has aria-label", iconNoLabel);
+
+const rawFields = [];
+for (const f of nonUi) {
+  for (const tag of ["input", "textarea"]) {
+    for (const t of openingTags(f.text, tag)) {
+      if (tag === "input" && /type=["'](file|hidden)["']/.test(t.src)) continue;
+      rawFields.push(`${f.path}:${f.text.slice(0, t.index).split("\n").length}`);
+    }
+  }
+}
+rule("no raw <textarea>/<input> outside ui/ (file/hidden inputs allowed)", rawFields);
 
 rule(
   "no hardcoded English table headers/labels",
