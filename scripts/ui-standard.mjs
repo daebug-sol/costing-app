@@ -39,7 +39,7 @@ rule("no hex colors", scanLines(nonUi, /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?=["
 rule(
   "no bg-white outside paper/logo previews",
   scanLines(nonUi, /\bbg-white\b/, {
-    allow: (f) => f.path === "components/documentation/documentation-module.tsx" || f.path === "components/settings/settings-page.tsx",
+    allow: (f) => f.path.startsWith("components/documentation/documentation-") || f.path === "components/settings/settings-page.tsx",
   })
 );
 rule("no gradients", scanLines(nonUi, /\bbg-gradient-|\bfrom-[a-z]+-\d/));
@@ -116,7 +116,6 @@ rule("route segments have error.tsx + loading.tsx", missing);
 const MAX_LINES = Number(process.env.UI_MAX_LINES ?? 1500);
 const LEGACY_CEILING = {
   "components/costing/costing-workspace.tsx": 3178,
-  "components/documentation/documentation-module.tsx": 2399,
   "components/database/custom-database-panel.tsx": 1745,
 };
 rule(
