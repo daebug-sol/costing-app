@@ -824,8 +824,8 @@ export function ManualWorkspace({
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={() => {
                             void confirm({
-                              title: `Hapus kelompok ${g.name}?`,
-                              description: "Semua baris di dalam kelompok ikut terhapus.",
+                              title: t("costing.deleteGroupTitle", { name: g.name }),
+                              description: t("costing.deleteGroupDescription"),
                             }).then((ok) => {
                               if (ok) void removeGroup(g.id);
                             });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Plus, Search, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -54,6 +55,7 @@ async function readErr(res: Response): Promise<string> {
 }
 
 export function CustomersModule() {
+  const { t } = useI18n();
   const [confirm, confirmDialog] = useConfirm();
   const [rows, setRows] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +139,7 @@ export function CustomersModule() {
   };
 
   const remove = async (id: string) => {
-    if (!(await confirm({ title: "Hapus pelanggan ini?", description: "Data pelanggan akan dihapus permanen." }))) return;
+    if (!(await confirm({ title: t("customers.deleteTitle"), description: t("customers.deleteDescription") }))) return;
     try {
       const r = await fetch(`/api/customers/${id}`, { method: "DELETE" });
       if (!r.ok) throw new Error(await readErr(r));

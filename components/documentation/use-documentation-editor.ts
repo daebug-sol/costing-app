@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type CustomerFolder } from "@/components/documentation/documentation-list-view";
@@ -13,6 +14,7 @@ import { useConfirm } from "@/components/confirm-dialog";
 import { SPEC_MAX_CHARS, fetchProjectDetailCached, readErr, CostingBreakdown, AvailableProject, CustomerOption, QuotationApi, toListRow, folderNameFor, folderKeyFor, FormLine, SettingsRow, toSettingsDoc, newLocalId, defaultDesc, defaultSpec, itemsFromApi, fmtDateInput } from "./documentation-shared";
 
 export function useDocumentationEditor() {
+  const { t } = useI18n();
   const [confirm, confirmDialog] = useConfirm();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -346,8 +348,8 @@ export function useDocumentationEditor() {
   const handleBulkDelete = useCallback(async () => {
     if (selectedIds.size === 0) return;
     const ok = await confirm({
-      title: `Hapus ${selectedIds.size} file penawaran?`,
-      description: "Tindakan ini tidak bisa dibatalkan.",
+      title: t("documentation.bulkDeleteTitle", { count: selectedIds.size }),
+      description: t("documentation.bulkDeleteDescription"),
     });
     if (!ok) return;
     setDeletingBulk(true);
@@ -368,7 +370,7 @@ export function useDocumentationEditor() {
     } finally {
       setDeletingBulk(false);
     }
-  }, [selectedIds, loadList, confirm]);
+  }, [selectedIds, loadList, confirm, t]);
 
   const openQuotation = useCallback(
     (id: string) => {

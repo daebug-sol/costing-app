@@ -30,6 +30,13 @@ export const useToastStore = create<ToastState>((set) => ({
         }));
       }, 4000);
     }
+    if (variant === "error") {
+      window.setTimeout(() => {
+        set((s) => ({
+          toasts: s.toasts.filter((t) => t.id !== id),
+        }));
+      }, 8000);
+    }
     if (variant === "warning") {
       window.setTimeout(() => {
         set((s) => ({

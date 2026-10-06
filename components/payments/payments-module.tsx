@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { Loader2, Wallet } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
@@ -58,6 +59,7 @@ async function readErr(res: Response) {
 }
 
 export function PaymentsModule() {
+  const { t } = useI18n();
   const [confirm, confirmDialog] = useConfirm();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
@@ -175,7 +177,7 @@ export function PaymentsModule() {
   };
 
   const voidPayment = async (id: string) => {
-    if (!(await confirm({ title: "Void pembayaran ini?", description: "Alokasi invoice akan dibalik.", confirmLabel: "Void" }))) return;
+    if (!(await confirm({ title: t("payments.voidTitle"), description: t("payments.voidDescription"), confirmLabel: t("confirm.void") }))) return;
     try {
       const r = await fetch(`/api/payments/${id}`, {
         method: "PUT",

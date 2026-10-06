@@ -7,9 +7,8 @@ process.stdin.on("end", () => {
   const input = JSON.parse(raw || "{}");
   const file = String(input.tool_input?.file_path ?? "");
   if (!/\.(tsx?|mjs|jsx?)$/.test(file) || /node_modules|\.next|\.claude[\\/]/.test(file)) return;
-  const r = spawnSync("npx", ["eslint", "--no-warn-ignored", file], {
+  const r = spawnSync(process.execPath, ["node_modules/eslint/bin/eslint.js", "--no-warn-ignored", file], {
     encoding: "utf8",
-    shell: true,
   });
   if (r.status !== 0) {
     console.error((r.stdout + r.stderr).slice(0, 4000));

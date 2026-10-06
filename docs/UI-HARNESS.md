@@ -34,7 +34,7 @@ one (e.g. MUI, Chakra, Mantine, raw HTML buttons).
 | Layout chrome | `components/Navbar.tsx`, `app/layout.tsx` |
 | Empty / loading | `components/empty-state.tsx`, `components/table-loading-skeleton.tsx`, `components/ui/skeleton.tsx` |
 | Toast / inline status | `components/Toast.tsx` + `store/toastStore.ts` |
-| Icons | `lucide-react` only |
+| Icons | `lucide-react` in app code; `components/ui/*` primitives use Phosphor (the shadcn preset in `components.json`) — do not import Phosphor elsewhere |
 | Money / number formatting | `lib/utils/format.ts` (`formatIDR`, `formatPercent`, `tabular-money` class) |
 
 **Tokens (Tailwind v4 theme):** prefer semantic tokens — `bg-card`,

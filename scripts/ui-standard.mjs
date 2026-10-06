@@ -39,9 +39,11 @@ rule("no hex colors", scanLines(nonUi, /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?=["
 rule(
   "no bg-white outside paper/logo previews",
   scanLines(nonUi, /\bbg-white\b/, {
-    allow: (f) => f.path.startsWith("components/documentation/documentation-") || f.path === "components/settings/settings-page.tsx",
+    allow: (f) =>
+      ["components/documentation/documentation-form.tsx", "components/documentation/documentation-preview.tsx", "components/settings/settings-page.tsx"].includes(f.path),
   })
 );
+rule("phosphor icons only inside components/ui", scanLines(nonUi, /@phosphor-icons\/react/));
 rule("no gradients", scanLines(nonUi, /\bbg-gradient-|\bfrom-[a-z]+-\d/));
 rule("no violet/fuchsia/sky tones", scanLines(nonUi, /\b(violet|fuchsia|sky|indigo|purple|pink)-\d{2,3}\b/));
 rule("no arbitrary text sizes", scanLines(nonUi, /\btext-\[[0-9.]+(px|rem)\]/));

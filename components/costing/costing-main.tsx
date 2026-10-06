@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { AhuSegmentEditor } from "./ahu-segment-editor";
 import { DndContext, DragOverlay, closestCenter, defaultDropAnimation } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -23,6 +24,7 @@ import { SortableCostingSegment } from "./costing-workspace-shared";
 import type { CostingWorkspaceState } from "./use-costing-workspace";
 
 export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
+  const { t } = useI18n();
   const {
     confirm,
     router,
@@ -332,8 +334,8 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                                     onPointerDown={(e) => e.stopPropagation()}
                                     onClick={() => {
                                       void confirm({
-                                        title: `Hapus item ${seg.title}?`,
-                                        description: "Item beserta isinya akan dihapus.",
+                                        title: t("costing.deleteItemTitle", { name: seg.title }),
+                                        description: t("costing.deleteItemDescription"),
                                       }).then((ok) => {
                                         if (ok)
                                           deleteSegment(seg.id).catch((e) =>

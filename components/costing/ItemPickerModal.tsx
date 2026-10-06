@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ export function ItemPickerModal({
   /** Buat grup baru dari picker; kembalikan id grup atau null jika gagal/dibatalkan */
   onCreateGroup?: (name: string) => Promise<string | null>;
 }) {
+  const { t } = useI18n();
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -263,10 +265,10 @@ export function ItemPickerModal({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Grup baru</DialogTitle>
-            <DialogDescription>Beri nama grup untuk item yang dipilih.</DialogDescription>
+            <DialogTitle>{t("costing.newGroupTitle")}</DialogTitle>
+            <DialogDescription>{t("costing.newGroupDescription")}</DialogDescription>
           </DialogHeader>
-          <Label htmlFor="new-group-name">Nama grup</Label>
+          <Label htmlFor="new-group-name">{t("costing.newGroupName")}</Label>
           <Input
             id="new-group-name"
             autoFocus
@@ -278,7 +280,7 @@ export function ItemPickerModal({
               Batal
             </Button>
             <Button type="submit" disabled={!newGroupName.trim()}>
-              Buat grup
+              {t("costing.newGroupCreate")}
             </Button>
           </DialogFooter>
         </form>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
@@ -31,16 +32,24 @@ export function useConfirm(): [
   (options: ConfirmOptions) => Promise<boolean>,
   React.ReactNode,
 ] {
+  const { t } = useI18n();
   const [pending, setPending] = React.useState<Pending | null>(null);
+  const resolverRef = React.useRef<((ok: boolean) => void) | null>(null);
 
   const confirm = React.useCallback(
     (options: ConfirmOptions) =>
-      new Promise<boolean>((resolve) => setPending({ ...options, resolve })),
+      new Promise<boolean>((resolve) => {
+        // A newer request supersedes an open one: settle the old promise so its caller never hangs.
+        resolverRef.current?.(false);
+        resolverRef.current = resolve;
+        setPending({ ...options, resolve });
+      }),
     []
   );
 
   const settle = (ok: boolean) => {
-    pending?.resolve(ok);
+    resolverRef.current?.(ok);
+    resolverRef.current = null;
     setPending(null);
   };
 
@@ -55,14 +64,14 @@ export function useConfirm(): [
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => settle(false)}>
-            {pending?.cancelLabel ?? "Batal"}
+            {pending?.cancelLabel ?? t("confirm.cancel")}
           </Button>
           <Button
             type="button"
             variant={pending?.destructive === false ? "default" : "destructive"}
             onClick={() => settle(true)}
           >
-            {pending?.confirmLabel ?? "Hapus"}
+            {pending?.confirmLabel ?? t("confirm.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>
