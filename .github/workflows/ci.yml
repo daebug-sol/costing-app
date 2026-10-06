@@ -49,6 +49,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: UI standard
+        run: npm run ui:standard
+
       - name: Test
         run: npm test
 

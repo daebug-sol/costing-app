@@ -9,7 +9,7 @@ export function EditCellDemo() {
   return (
     <DemoShell label="Demo edit sel costing">
       <div className="flex flex-col gap-2">
-        <div className="grid grid-cols-4 gap-1 text-[10px] text-muted-foreground">
+        <div className="grid grid-cols-4 gap-1 text-2xs text-muted-foreground">
           <span>Item</span>
           <span>Qty</span>
           <span>Harga</span>
@@ -50,7 +50,7 @@ export function EditCellDemo() {
           </motion.div>
           <div className="bg-muted/40 rounded px-1.5 py-1 tabular-nums">2.500.000</div>
         </div>
-        <p className="text-muted-foreground text-[10px]">
+        <p className="text-muted-foreground text-2xs">
           Sel aktif — tekan Tab untuk pindah
         </p>
       </div>

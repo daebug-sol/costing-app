@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Plus, Search, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
@@ -17,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toastError, toastSuccess } from "@/store/toastStore";
+import { useConfirm } from "@/components/confirm-dialog";
 
 type Customer = {
   id: string;
@@ -52,6 +55,8 @@ async function readErr(res: Response): Promise<string> {
 }
 
 export function CustomersModule() {
+  const { t } = useI18n();
+  const [confirm, confirmDialog] = useConfirm();
   const [rows, setRows] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -134,7 +139,7 @@ export function CustomersModule() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Hapus pelanggan ini?")) return;
+    if (!(await confirm({ title: t("customers.deleteTitle"), description: t("customers.deleteDescription") }))) return;
     try {
       const r = await fetch(`/api/customers/${id}`, { method: "DELETE" });
       if (!r.ok) throw new Error(await readErr(r));
@@ -154,6 +159,7 @@ export function CustomersModule() {
       description="Data master pelanggan untuk penawaran, sales order, invoice, dan pembayaran"
       contentClassName="space-y-6"
     >
+      {confirmDialog}
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
@@ -292,7 +298,7 @@ export function CustomersModule() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cust-address">Alamat</Label>
-              <textarea
+              <Textarea
                 id="cust-address"
                 rows={2}
                 className="border-input bg-background focus-visible:ring-ring flex min-h-[64px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
@@ -302,7 +308,7 @@ export function CustomersModule() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cust-notes">Catatan</Label>
-              <textarea
+              <Textarea
                 id="cust-notes"
                 rows={2}
                 className="border-input bg-background focus-visible:ring-ring flex min-h-[64px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"

@@ -6,6 +6,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --text-2xs: 0.625rem;
+  --text-2xs--line-height: 1.4;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);

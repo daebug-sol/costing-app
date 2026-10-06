@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, X, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useToastStore } from "@/store/toastStore";
 import { cn } from "@/lib/utils";
 
@@ -42,14 +43,16 @@ export function Toaster() {
         >
           {iconFor(t.variant)}
           <p className="min-w-0 flex-1 pt-0.5 leading-snug">{t.message}</p>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={() => dismiss(t.id)}
-            className="text-muted-foreground hover:bg-muted hover:text-foreground shrink-0 rounded p-0.5"
-            aria-label="Dismiss"
+            className="text-muted-foreground shrink-0"
+            aria-label="Tutup notifikasi"
           >
             <X className="size-4" />
-          </button>
+          </Button>
         </div>
       ))}
     </div>

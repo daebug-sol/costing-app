@@ -129,8 +129,8 @@ change skid math vs Horizontal for identical dims and section count.
 **Trigger.** U opens the costing workspace with no project.
 
 1. A renders an `<EmptyState>` with icon, title "Belum ada proyek
-   costing", a one-line description, and a primary "Tambah proyek" CTA.
-2. U presses "Tambah proyek".
+   costing", a one-line description, and a primary "Proyek baru" CTA.
+2. U presses "Proyek baru".
 3. A opens a `Dialog`. Focus moves to the first field. `Esc` closes the
    dialog and returns focus to the CTA.
 4. U fills required fields. Empty required fields show inline

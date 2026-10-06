@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -73,6 +75,7 @@ export function ItemPickerModal({
   /** Buat grup baru dari picker; kembalikan id grup atau null jika gagal/dibatalkan */
   onCreateGroup?: (name: string) => Promise<string | null>;
 }) {
+  const { t } = useI18n();
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -81,6 +84,8 @@ export function ItemPickerModal({
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [qtyByKey, setQtyByKey] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [newGroupOpen, setNewGroupOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
 
   const unifiedRows: UnifiedRow[] = useMemo(() => {
     return catalog.map((item) => ({
@@ -233,22 +238,58 @@ export function ItemPickerModal({
   const selectGroupValue = (v: string) => {
     if (v === "__create__") {
       if (!onCreateGroup) return;
-      const name = window.prompt("Nama grup baru?");
-      if (!name?.trim()) return;
-      void (async () => {
-        const id = await onCreateGroup(name.trim());
-        if (id) setSelectedGroupId(id);
-      })();
+      setNewGroupName("");
+      setNewGroupOpen(true);
       return;
     }
     setSelectedGroupId(v);
   };
 
+  const submitNewGroup = async () => {
+    const name = newGroupName.trim();
+    if (!name || !onCreateGroup) return;
+    setNewGroupOpen(false);
+    const id = await onCreateGroup(name);
+    if (id) setSelectedGroupId(id);
+  };
+
   return (
+    <>
+    <Dialog open={newGroupOpen} onOpenChange={setNewGroupOpen}>
+      <DialogContent className="sm:max-w-sm">
+        <form
+          className="grid gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submitNewGroup();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>{t("costing.newGroupTitle")}</DialogTitle>
+            <DialogDescription>{t("costing.newGroupDescription")}</DialogDescription>
+          </DialogHeader>
+          <Label htmlFor="new-group-name">{t("costing.newGroupName")}</Label>
+          <Input
+            id="new-group-name"
+            autoFocus
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+          />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setNewGroupOpen(false)}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={!newGroupName.trim()}>
+              {t("costing.newGroupCreate")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[min(90vh,900px)] max-h-[90vh] w-[min(100vw-2rem,1400px)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(90rem,calc(100vw-2rem))]">
         <DialogHeader className="border-b border-border px-6 py-4">
-          <DialogTitle>Pilih Item dari Database</DialogTitle>
+          <DialogTitle>Pilih item dari database</DialogTitle>
         </DialogHeader>
 
         <div className="grid min-h-[min(380px,42vh)] flex-1 grid-cols-1 gap-0 md:grid-cols-2">
@@ -286,7 +327,7 @@ export function ItemPickerModal({
               ) : (
                 groupedLeft.map(([cat, rows]) => (
                   <div key={cat} className="mb-4">
-                    <p className="text-muted-foreground mb-2 text-[11px] font-semibold uppercase tracking-wide">
+                    <p className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wide">
                       {cat}
                     </p>
                     <div className="space-y-1">
@@ -299,7 +340,7 @@ export function ItemPickerModal({
                           <label
                             key={r.key}
                             className={cn(
-                              "flex cursor-pointer items-start gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm hover:bg-white",
+                              "flex cursor-pointer items-start gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm hover:bg-muted",
                               disabled && "cursor-not-allowed opacity-60"
                             )}
                           >
@@ -419,10 +460,11 @@ export function ItemPickerModal({
             disabled={!canSubmit || submitting || groups.length === 0}
             onClick={() => void handleConfirm()}
           >
-            Tambahkan ke Costing
+            Tambahkan ke item
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

@@ -80,9 +80,19 @@ export async function rollupManualSegmentFinancials(segmentId: string) {
   await rollupProjectFinancials(seg.projectId);
 }
 
+/** Default flat-mode group name. Legacy rows may still be named "Umum". */
+export const DEFAULT_MANUAL_GROUP_NAME = "Kelompok utama";
+export const LEGACY_DEFAULT_MANUAL_GROUP_NAME = "Umum";
+
 export async function ensureDefaultUmumGroup(segmentId: string): Promise<string> {
   const existing = await prisma.manualCostingGroup.findFirst({
-    where: { segmentId, name: "Umum" },
+    where: {
+      segmentId,
+      OR: [
+        { name: DEFAULT_MANUAL_GROUP_NAME },
+        { name: LEGACY_DEFAULT_MANUAL_GROUP_NAME },
+      ],
+    },
   });
   if (existing) return existing.id;
 
@@ -92,7 +102,7 @@ export async function ensureDefaultUmumGroup(segmentId: string): Promise<string>
   });
   const sortOrder = (maxOrder._max.sortOrder ?? -1) + 1;
   const g = await prisma.manualCostingGroup.create({
-    data: { segmentId, name: "Umum", sortOrder },
+    data: { segmentId, name: DEFAULT_MANUAL_GROUP_NAME, sortOrder },
   });
   return g.id;
 }

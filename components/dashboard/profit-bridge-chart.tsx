@@ -1,5 +1,6 @@
 "use client";
 
+import { dashboardChartPlotClass } from "@/components/dashboard/dashboard-surface-styles";
 import {
   Bar,
   CartesianGrid,
@@ -23,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useI18n } from "@/components/i18n-provider";
 import { useContainerWidth } from "@/hooks/use-container-width";
 import {
   chartBottomMargin,
@@ -36,13 +38,6 @@ import {
 } from "@/lib/dashboard-ui-mappers";
 import { formatIDR, formatIDRCompact } from "@/lib/utils/format";
 
-const chartConfig = {
-  subtotal: { label: "Subtotal", color: "var(--chart-1)" },
-  positive: { label: "Penambah (+)", color: "var(--chart-2)" },
-  negative: { label: "Pengurang (-)", color: "var(--chart-5)" },
-  final: { label: "Final", color: "var(--chart-4)" },
-} satisfies ChartConfig;
-
 const CHART_FRAME_CLASS = "aspect-auto h-72 w-full min-w-0";
 
 export function ProfitBridgeChart({
@@ -52,6 +47,13 @@ export function ProfitBridgeChart({
   sankey: DashboardSankeyPayload;
   compact?: boolean;
 }) {
+  const { t } = useI18n();
+  const chartConfig = {
+    subtotal: { label: t("dashboard.legend.subtotal"), color: "var(--chart-1)" },
+    positive: { label: t("dashboard.legend.positive"), color: "var(--chart-2)" },
+    negative: { label: t("dashboard.legend.negative"), color: "var(--chart-5)" },
+    final: { label: t("dashboard.legend.final"), color: "var(--chart-4)" },
+  } satisfies ChartConfig;
   const { ref, tier, isCompact } = useContainerWidth<HTMLDivElement>();
   const summary = buildSankeyBridgeSummary(sankey);
   const stages = buildProfitBridgeStages(sankey, summary);
@@ -82,12 +84,12 @@ export function ProfitBridgeChart({
     <div className="space-y-4" data-testid="profit-bridge-chart">
       <div
         ref={ref}
-        className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
+        className={dashboardChartPlotClass}
       >
         <ChartContainer
           config={chartConfig}
           className={CHART_FRAME_CLASS}
-          aria-label="Profit bridge waterfall"
+          aria-label={t("dashboard.profitBridge.chartLabel")}
         >
           <ComposedChart
             data={rows}
@@ -166,15 +168,15 @@ export function ProfitBridgeChart({
                   dataKey="pctOfGross"
                   position="top"
                   formatter={(value) => `${Number(value ?? 0).toFixed(1)}%`}
-                  className="fill-muted-foreground text-[10px]"
+                  className="fill-muted-foreground text-2xs"
                 />
               ) : null}
             </Bar>
           </ComposedChart>
         </ChartContainer>
         {useHorizontalLayout ? (
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Layout horizontal untuk layar sempit — hover bar untuk label lengkap.
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t("dashboard.profitBridge.narrowHint")}
           </p>
         ) : null}
       </div>
@@ -183,9 +185,9 @@ export function ProfitBridgeChart({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tahap</TableHead>
-              <TableHead className="text-right">Nilai (IDR)</TableHead>
-              <TableHead className="text-right">% dari gross</TableHead>
+              <TableHead>{t("common.stage")}</TableHead>
+              <TableHead className="text-right">{t("dashboard.valueIdr")}</TableHead>
+              <TableHead className="text-right">{t("dashboard.pctOfGross")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

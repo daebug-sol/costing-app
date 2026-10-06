@@ -1,21 +1,15 @@
 ﻿"use client";
 
-import { ChevronDown, RefreshCw, Wallet } from "lucide-react";
+import { RefreshCw, Wallet } from "lucide-react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChartInsightBlock } from "@/components/dashboard/chart-insight-block";
+import { useI18n } from "@/components/i18n-provider";
 import { ClientListWidget } from "@/components/dashboard/client-list-widget";
 import { DashboardStickyToolbar } from "@/components/dashboard/dashboard-sticky-toolbar";
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
-import {
-  dashboardDetailInnerClass,
-  dashboardSegmentClass,
-  dashboardSubsegmentClass,
-  dashboardTabPaneClass,
-  secondaryKpiTintClass,
-} from "@/components/dashboard/dashboard-surface-styles";
+import { dashboardSegmentClass } from "@/components/dashboard/dashboard-surface-styles";
 import { useDashboardToolbarStuck } from "@/hooks/use-dashboard-toolbar-stuck";
 import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
 import { QuotationAgingTable } from "@/components/dashboard/quotation-aging-table";
@@ -25,22 +19,11 @@ import { StatusDistribution } from "@/components/dashboard/status-distribution";
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
 import { TableLoadingSkeleton } from "@/components/table-loading-skeleton";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { PillTabsList, PillTabsTrigger } from "@/components/ui/pill-tabs";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import type { DashboardApiResponse, DashboardRange } from "@/lib/dashboard-contract";
+import type { MessageKey } from "@/lib/i18n/messages";
 import { buildMtdBookedDelta, buildTrendDelta, buildYtdBookedDelta } from "@/lib/dashboard-ui-mappers";
 import { cn } from "@/lib/utils";
 import { formatIDR, formatPercent } from "@/lib/utils/format";
@@ -80,46 +63,34 @@ const RevenueTrendChart = dynamic(
   { ssr: false, loading: () => chartPaneFallback }
 );
 
-function SecondaryKpiTile({
-  label,
-  value,
-  tintIndex,
-}: {
-  label: string;
-  value: string | number;
-  tintIndex: number;
-}) {
-  return (
-    <Card size="sm" className={cn("border", secondaryKpiTintClass(tintIndex))}>
-      <CardContent className="p-4">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <p className="tabular-money mt-1 text-lg font-semibold text-foreground">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
 const SECONDARY_KPI_LABELS = [
-  { label: "Total proyek", key: "totalProjects" as const },
-  { label: "Quotation pending", key: "pendingQuotation" as const },
-  { label: "Win rate", key: "winRatePct" as const, format: "percent" as const },
-  {
-    label: "Eksposur pajak (PPN + PPh)",
-    key: "taxExposure" as const,
-    format: "idr" as const,
-  },
-] as const;
+  { labelKey: "dashboard.kpi.totalProjects", key: "totalProjects" },
+  { labelKey: "dashboard.kpi.pendingQuotation", key: "pendingQuotation" },
+  { labelKey: "dashboard.kpi.winRate", key: "winRatePct" },
+  { labelKey: "dashboard.kpi.taxExposure", key: "taxExposure" },
+] as const satisfies ReadonlyArray<{ labelKey: MessageKey; key: string }>;
 
-function SecondaryKpiGrid({
+const NOT_FOUND = "notFound";
+const LOAD_FAILED = "loadFailed";
+
+function SecondaryKpiBar({
   kpis,
   className,
 }: {
   kpis: DashboardApiResponse["kpis"] | undefined;
   className?: string;
 }) {
+  const { t } = useI18n();
+
   return (
-    <div className={cn("grid gap-3 sm:grid-cols-2 lg:grid-cols-4", className)}>
-      {SECONDARY_KPI_LABELS.map((item, index) => {
+    <div
+      className={cn(
+        "grid grid-cols-2 divide-x divide-y divide-border rounded-none border border-border bg-card sm:grid-cols-4 sm:divide-y-0",
+        className
+      )}
+      data-testid="dashboard-secondary-kpis"
+    >
+      {SECONDARY_KPI_LABELS.map((item) => {
         let value: string | number = 0;
         if (item.key === "winRatePct") {
           value = formatPercent(kpis?.winRatePct ?? 0);
@@ -129,7 +100,10 @@ function SecondaryKpiGrid({
           value = kpis?.[item.key] ?? 0;
         }
         return (
-          <SecondaryKpiTile key={item.label} label={item.label} value={value} tintIndex={index} />
+          <div key={item.key} className="min-w-0 px-3 py-3 sm:px-4">
+            <p className="text-xs text-muted-foreground">{t(item.labelKey)}</p>
+            <p className="tabular-money mt-0.5 text-sm font-semibold text-foreground">{value}</p>
+          </div>
         );
       })}
     </div>
@@ -137,11 +111,12 @@ function SecondaryKpiGrid({
 }
 
 export function DashboardPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [data, setData] = useState<DashboardApiResponse | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<typeof NOT_FOUND | typeof LOAD_FAILED | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [range, setRange] = useState<DashboardRange>("all");
   const [activeTab, setActiveTab] = useState("finansial");
@@ -175,9 +150,9 @@ export function DashboardPage() {
 
         if (response.status === 404) {
           setSelectedProjectId(null);
-          throw new Error("Proyek tidak ditemukan");
+          throw new Error(NOT_FOUND);
         }
-        if (!response.ok) throw new Error("Gagal memuat dashboard");
+        if (!response.ok) throw new Error(LOAD_FAILED);
 
         const payload = (await response.json()) as DashboardApiResponse;
         setData(payload);
@@ -187,8 +162,7 @@ export function DashboardPage() {
         }
       } catch (loadError) {
         if (loadError instanceof DOMException && loadError.name === "AbortError") return;
-        const message = loadError instanceof Error ? loadError.message : "Gagal memuat dashboard";
-        setError(message);
+        setError(loadError instanceof Error && loadError.message === NOT_FOUND ? NOT_FOUND : LOAD_FAILED);
       } finally {
         if (!controller.signal.aborted) {
           setInitialLoading(false);
@@ -212,9 +186,9 @@ export function DashboardPage() {
       .then(async (response) => {
         if (response.status === 404) {
           setSelectedProjectId(null);
-          throw new Error("Proyek tidak ditemukan");
+          throw new Error(NOT_FOUND);
         }
-        if (!response.ok) throw new Error("Gagal memuat dashboard");
+        if (!response.ok) throw new Error(LOAD_FAILED);
         return response.json() as Promise<DashboardApiResponse>;
       })
       .then((payload) => {
@@ -224,8 +198,7 @@ export function DashboardPage() {
         }
       })
       .catch((loadError) => {
-        const message = loadError instanceof Error ? loadError.message : "Gagal memuat dashboard";
-        setError(message);
+        setError(loadError instanceof Error && loadError.message === NOT_FOUND ? NOT_FOUND : LOAD_FAILED);
       })
       .finally(() => setRefreshing(false));
   }, [range, selectedProjectId]);
@@ -234,7 +207,7 @@ export function DashboardPage() {
   const chartLoading = initialLoading && !data;
 
   const kpis = data?.kpis;
-  const trendSeries = data?.discountMarginTrend.series ?? [];
+  const trendSeries = useMemo(() => data?.discountMarginTrend.series ?? [], [data]);
   const ytdBookedDelta = useMemo(
     () => buildYtdBookedDelta(trendSeries, kpis?.bookedRevenueYtd ?? 0),
     [trendSeries, kpis?.bookedRevenueYtd]
@@ -261,13 +234,16 @@ export function DashboardPage() {
     onRefresh: refresh,
   };
 
+  const errorMessage =
+    error === NOT_FOUND ? t("dashboard.error.notFound") : t("dashboard.error.load");
+
   if (error && !data) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <p className="text-foreground">{error}</p>
+        <p className="text-foreground">{errorMessage}</p>
         <Button type="button" className="mt-4 gap-2" onClick={refresh}>
           <RefreshCw className="size-4" />
-          Coba lagi
+          {t("common.retry")}
         </Button>
       </div>
     );
@@ -275,9 +251,9 @@ export function DashboardPage() {
 
   return (
     <PageShell
-      eyebrow="Ringkasan"
-      title="Dashboard"
-      description="Ringkasan finansial proyek dan quotation untuk estimasi, sales, dan manajemen."
+      eyebrow={t("dashboard.eyebrow")}
+      title={t("dashboard.title")}
+      description={t("dashboard.description")}
       contentClassName="gap-6 pt-8 pb-6 sm:pt-10 sm:pb-8"
       actions={<DashboardToolbar {...toolbarProps} align="center" surface="panel" />}
     >
@@ -289,7 +265,7 @@ export function DashboardPage() {
 
       {error ? (
         <div className="rounded-none border border-warning/35 bg-warning-muted px-4 py-3 text-xs text-warning">
-          {error}. Menampilkan data terakhir yang tersedia.
+          {t("dashboard.error.staleData", { error: errorMessage })}
         </div>
       ) : null}
 
@@ -301,83 +277,59 @@ export function DashboardPage() {
         ) : (
           <>
         <KpiStatCard
-          title="Booked revenue YTD"
+          title={t("dashboard.kpi.bookedYtd")}
           value={kpis?.bookedRevenueYtd ?? 0}
           formatter={formatIDR}
           deltaPct={ytdBookedDelta}
-          deltaLabel="kontribusi bulan ini vs YTD sebelumnya"
-          hint="Nilai bersih setelah diskon"
-          accent="revenue"
+          deltaLabel={t("dashboard.kpi.vsLastMonth")}
+          hint={t("dashboard.kpi.bookedYtdHint")}
         />
         <KpiStatCard
-          title="Booked revenue MTD"
+          title={t("dashboard.kpi.bookedMtd")}
           value={kpis?.bookedRevenueMtd ?? 0}
           formatter={formatIDR}
           deltaPct={mtdBookedDelta}
-          deltaLabel="dibanding bulan sebelumnya"
-          accent="revenue"
+          deltaLabel={t("dashboard.kpi.vsPrevMonth")}
         />
         <KpiStatCard
-          title="Weighted gross margin"
+          title={t("dashboard.kpi.margin")}
           value={kpis?.weightedGrossMarginPct ?? 0}
           formatter={formatPercent}
           deltaPct={marginDelta}
-          deltaLabel="perubahan margin"
-          accent="margin"
+          deltaLabel={t("dashboard.kpi.vsPrevPeriod")}
         />
         <KpiStatCard
-          title="Pipeline value"
+          title={t("dashboard.kpi.pipeline")}
           value={kpis?.pipelineValue ?? 0}
           formatter={formatIDR}
-          hint="Draft quotation pada periode aktif"
-          accent="pipeline"
+          hint={t("dashboard.kpi.pipelineHint")}
         />
         <KpiStatCard
-          title="Discount leakage"
+          title={t("dashboard.kpi.leakage")}
           value={kpis?.discountLeakageValue ?? 0}
           formatter={formatIDR}
           deltaPct={leakageDelta}
-          deltaLabel="perubahan leakage"
-          accent="leakage"
+          deltaLabel={t("dashboard.kpi.vsPrevPeriod")}
         />
           </>
         )}
       </section>
 
-      <section aria-label="KPI pendukung">
-        <div className="hidden sm:block" data-testid="dashboard-secondary-kpis">
-          <SecondaryKpiGrid kpis={kpis} />
-        </div>
-        <Collapsible className="group/kpi-secondary sm:hidden">
-          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-none border-2 border-primary/20 bg-primary/[0.06] px-4 py-3 text-sm font-medium text-foreground">
-            KPI pendukung
-            <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=open]/kpi-secondary:rotate-180 motion-reduce:transition-none" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3 motion-reduce:animate-none">
-            <SecondaryKpiGrid kpis={kpis} />
-          </CollapsibleContent>
-        </Collapsible>
+      <section aria-label={t("dashboard.kpi.secondaryLabel")}>
+        <SecondaryKpiBar kpis={kpis} />
       </section>
-
-      <ClientListWidget />
 
       <section
         className={cn("min-w-0 p-4 sm:p-6", dashboardSegmentClass)}
         data-testid="dashboard-insight-panel"
         aria-labelledby="dashboard-insight-heading"
       >
-        <div className="mb-4 border-b border-border pb-4">
-          <span
-            className="bg-primary mb-2 block h-0.5 w-10 rounded-full sm:mb-2.5 sm:w-12"
-            aria-hidden
-          />
-          <h2
-            id="dashboard-insight-heading"
-            className="font-display text-foreground text-2xl leading-tight font-semibold tracking-tight sm:text-3xl"
-          >
-            Insight utama
-          </h2>
-        </div>
+        <h2
+          id="dashboard-insight-heading"
+          className="mb-4 text-base font-semibold text-foreground"
+        >
+          {t("dashboard.insight.heading")}
+        </h2>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <PillTabsList>
@@ -386,35 +338,30 @@ export function DashboardPage() {
               layoutId="dashboard-insight-pill"
               data-testid="dashboard-tab-finansial"
             >
-              Finansial
+              {t("dashboard.tab.financial")}
             </PillTabsTrigger>
             <PillTabsTrigger
               value="penjualan"
               layoutId="dashboard-insight-pill"
               data-testid="dashboard-tab-penjualan"
             >
-              Penjualan
+              {t("dashboard.tab.sales")}
             </PillTabsTrigger>
             <PillTabsTrigger
               value="costing"
               layoutId="dashboard-insight-pill"
               data-testid="dashboard-tab-costing"
             >
-              Costing
+              {t("dashboard.tab.costing")}
             </PillTabsTrigger>
           </PillTabsList>
 
           {activeTab === "finansial" ? (
-          <TabsContent
-            value="finansial"
-            className={cn("mt-4 space-y-4 rounded-none border p-3 sm:p-4", dashboardTabPaneClass.finansial)}
-          >
+          <TabsContent value="finansial" className="mt-4 space-y-4">
             <ChartInsightBlock
-              title="Profit bridge"
-              description="Waterfall cost-to-revenue dengan sinyal positif/negatif yang eksplisit."
+              title={t("dashboard.profitBridge.title")}
               loading={chartLoading}
-              accent="bridge"
-              detailDescription="Tabel tahap profit bridge untuk review aksesibilitas."
+              detailDescription={t("dashboard.profitBridge.detail")}
               detailContent={
                 data?.sankey.links.length ? (
                   <ProfitBridgeChart sankey={data.sankey} />
@@ -426,20 +373,18 @@ export function DashboardPage() {
               ) : (
                 <EmptyState
                   icon={Wallet}
-                  title="Belum ada data profit bridge"
-                  description="Tambahkan data costing dan quotation untuk melihat alur profit."
-                  actionLabel="Buka Costing"
+                  title={t("dashboard.profitBridge.emptyTitle")}
+                  description={t("dashboard.profitBridge.emptyDescription")}
+                  actionLabel={t("common.openCosting")}
                   onAction={goToCosting}
                 />
               )}
             </ChartInsightBlock>
 
             <ChartInsightBlock
-              title="Cashflow timeline"
-              description="Cash-in dan cash-out bulanan dengan saldo berjalan."
+              title={t("dashboard.cashflow.title")}
               loading={chartLoading}
-              accent="cashflow"
-              detailDescription="Tabel bulanan cashflow dan saldo berjalan."
+              detailDescription={t("dashboard.cashflow.detail")}
               detailContent={
                 data?.cashflowProjection.series.length ? (
                   <CashflowTimelineChart data={data.cashflowProjection} />
@@ -451,9 +396,9 @@ export function DashboardPage() {
               ) : (
                 <EmptyState
                   icon={Wallet}
-                  title="Belum ada proyeksi cashflow"
-                  description="Setidaknya satu quotation booked dibutuhkan untuk menampilkan timeline."
-                  actionLabel="Buka Costing"
+                  title={t("dashboard.cashflow.emptyTitle")}
+                  description={t("dashboard.cashflow.emptyDescription")}
+                  actionLabel={t("common.openCosting")}
                   onAction={goToCosting}
                 />
               )}
@@ -462,65 +407,49 @@ export function DashboardPage() {
           ) : null}
 
           {activeTab === "penjualan" ? (
-          <TabsContent
-            value="penjualan"
-            className={cn("mt-4 space-y-4 rounded-none border p-3 sm:p-4", dashboardTabPaneClass.penjualan)}
-          >
-            <div className={cn("grid gap-4 lg:grid-cols-2", dashboardSubsegmentClass)}>
-              <ChartInsightBlock
-                title="Quotation funnel"
-                description="Konversi dari draft ke booked dalam periode aktif."
-                loading={chartLoading}
-                accent="funnel"
-              >
+          <TabsContent value="penjualan" className="mt-4 space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ChartInsightBlock title={t("dashboard.funnel.title")} loading={chartLoading}>
                 {data ? <QuotationFunnel data={data.quotationFunnel} /> : null}
               </ChartInsightBlock>
 
-              <ChartInsightBlock
-                title="Status distribution"
-                description="Distribusi status quotation/proyek dengan fallback tabel."
-                loading={chartLoading}
-                accent="status"
-              >
+              <ChartInsightBlock title={t("dashboard.statusDistribution.title")} loading={chartLoading}>
                 {data ? <StatusDistribution data={data.statusDistribution} /> : null}
               </ChartInsightBlock>
             </div>
 
             <ChartInsightBlock
-              title="Sales leaderboard"
-              description="Performa berdasarkan salesman jika tersedia, fallback ke konsentrasi klien."
+              title={t("dashboard.leaderboard.title")}
               loading={chartLoading}
-              accent="leaderboard"
-              detailDescription="Daftar lengkap performa per principal."
+              detailDescription={t("dashboard.leaderboard.detail")}
               detailContent={data ? <SalesLeaderboard data={data.salesLeaderboard} /> : null}
             >
               {data ? <SalesLeaderboard data={data.salesLeaderboard} maxRows={5} /> : null}
+            </ChartInsightBlock>
+
+            <ClientListWidget />
+
+            <ChartInsightBlock title={t("dashboard.aging.title")} loading={chartLoading}>
+              {data ? <QuotationAgingTable data={data.quotationAging} /> : null}
             </ChartInsightBlock>
           </TabsContent>
           ) : null}
 
           {activeTab === "costing" ? (
-          <TabsContent
-            value="costing"
-            className={cn("mt-4 space-y-4 rounded-none border p-3 sm:p-4", dashboardTabPaneClass.costing)}
-          >
+          <TabsContent value="costing" className="mt-4 space-y-4">
             <ChartInsightBlock
-              title="Cost breakdown"
-              description="Komposisi biaya material per sub-assembly atau kategori raw."
+              title={t("dashboard.costBreakdown.title")}
               loading={chartLoading}
-              accent="cost"
-              detailDescription="Tabel breakdown material lengkap."
+              detailDescription={t("dashboard.costBreakdown.detail")}
               detailContent={data ? <CostBreakdownChart costingData={data.costingData} /> : null}
             >
               {data ? <CostBreakdownChart costingData={data.costingData} compact /> : null}
             </ChartInsightBlock>
 
             <ChartInsightBlock
-              title="Revenue trend"
-              description="Tren booked vs potential revenue dalam periode bulanan."
+              title={t("dashboard.revenueTrend.title")}
               loading={chartLoading}
-              accent="revenue"
-              detailDescription="Tabel tren revenue per bulan."
+              detailDescription={t("dashboard.revenueTrend.detail")}
               detailContent={data ? <RevenueTrendChart data={data.revenueTrend} /> : null}
             >
               {data ? <RevenueTrendChart data={data.revenueTrend} compact /> : null}
@@ -529,41 +458,6 @@ export function DashboardPage() {
           ) : null}
         </Tabs>
       </section>
-
-      <Accordion
-        type="single"
-        collapsible
-        className={cn("px-4 sm:px-6", dashboardSegmentClass)}
-        data-testid="dashboard-detail-accordion"
-      >
-        <AccordionItem value="detail" className="border-none">
-          <AccordionTrigger className="border-primary/20 -mx-4 rounded-none border-b bg-primary/[0.08] px-4 py-4 text-base font-semibold hover:no-underline sm:-mx-6 sm:px-6">
-            Detail & tindak lanjut
-          </AccordionTrigger>
-          <AccordionContent className="space-y-4 pb-6 pt-4">
-            <div className={dashboardDetailInnerClass()}>
-              <ChartInsightBlock
-                title="Quotation aging"
-                description="Pantau umur quotation dan masa berlaku yang mendekati habis."
-                loading={chartLoading}
-                accent="aging"
-            >
-              {data ? <QuotationAgingTable data={data.quotationAging} /> : null}
-            </ChartInsightBlock>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-
-      <p className="text-center text-xs text-muted-foreground">
-        <Link href="/costing" className="text-primary underline-offset-4 hover:underline">
-          Costing
-        </Link>
-        {" · "}
-        <Link href="/documentation" className="text-primary underline-offset-4 hover:underline">
-          Documentation
-        </Link>
-      </p>
     </PageShell>
   );
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ChartInsightBlock } from "@/components/dashboard/chart-insight-block";
 import { EmptyState } from "@/components/empty-state";
+import { useI18n } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -35,15 +36,17 @@ function ClientTable({
   rows: ClientRow[];
   showEmail?: boolean;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="rounded-none border border-border/70">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nama</TableHead>
-            <TableHead>Perusahaan</TableHead>
-            <TableHead>Telepon</TableHead>
-            {showEmail ? <TableHead>Email</TableHead> : null}
+            <TableHead>{t("common.name")}</TableHead>
+            <TableHead>{t("common.company")}</TableHead>
+            <TableHead>{t("common.phone")}</TableHead>
+            {showEmail ? <TableHead>{t("common.email")}</TableHead> : null}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -70,6 +73,7 @@ function ClientTable({
 }
 
 export function ClientListWidget() {
+  const { t } = useI18n();
   const router = useRouter();
   const role = useCostingStore((s) => s.role);
   const permissions = useCostingStore((s) => s.permissions);
@@ -77,19 +81,19 @@ export function ClientListWidget() {
 
   const [rows, setRows] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(
     async (signal: AbortSignal) => {
       setLoading(true);
-      setError(null);
+      setFailed(false);
       try {
         const r = await fetch("/api/customers", { signal });
-        if (!r.ok) throw new Error("Gagal memuat pelanggan");
+        if (!r.ok) throw new Error("load failed");
         setRows((await r.json()) as ClientRow[]);
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return;
-        setError(e instanceof Error ? e.message : "Gagal memuat pelanggan");
+        setFailed(true);
       } finally {
         if (!signal.aborted) setLoading(false);
       }
@@ -110,30 +114,27 @@ export function ClientListWidget() {
   const hiddenCount = Math.max(0, rows.length - PREVIEW_ROWS);
 
   return (
-    <section aria-label="Daftar pelanggan" data-testid="dashboard-clients">
+    <section aria-label={t("clients.listLabel")} data-testid="dashboard-clients">
       <ChartInsightBlock
-        title="Pelanggan"
-        description="Daftar klien dari master data — kelola lengkap di halaman Pelanggan."
+        title={t("clients.title")}
         loading={loading}
-        accent="status"
-        detailTitle="Daftar pelanggan"
-        detailDescription="Daftar lengkap pelanggan beserta kontak."
+        detailTitle={t("clients.listLabel")}
+        detailDescription={t("clients.detailDescription")}
         detailContent={<ClientTable rows={rows} showEmail />}
       >
-        {error ? (
+        {failed ? (
           <EmptyState
             icon={Users}
-            title="Gagal memuat pelanggan"
-            description={error}
-            actionLabel="Coba lagi"
+            title={t("clients.loadFailed")}
+            actionLabel={t("common.retry")}
             onAction={() => void load(new AbortController().signal)}
           />
         ) : rows.length === 0 ? (
           <EmptyState
             icon={Users}
-            title="Belum ada pelanggan"
-            description="Tambahkan pelanggan untuk dipakai di penawaran, sales order, dan invoice."
-            actionLabel="Kelola pelanggan"
+            title={t("clients.emptyTitle")}
+            description={t("clients.emptyDescription")}
+            actionLabel={t("clients.manage")}
             onAction={() => router.push("/customers")}
           />
         ) : (
@@ -141,15 +142,12 @@ export function ClientListWidget() {
             <ClientTable rows={visibleRows} />
             {hiddenCount > 0 ? (
               <p className="text-xs text-muted-foreground">
-                +{hiddenCount} lainnya — buka &quot;Lihat detail&quot; untuk
-                daftar lengkap.
+                {t("clients.moreHidden", { count: hiddenCount })}
               </p>
             ) : null}
-            <div>
-              <Button type="button" variant="outline" size="sm" asChild>
-                <Link href="/customers">Kelola pelanggan</Link>
-              </Button>
-            </div>
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link href="/customers">{t("clients.manage")}</Link>
+            </Button>
           </div>
         )}
       </ChartInsightBlock>

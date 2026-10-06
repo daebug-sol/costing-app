@@ -3,11 +3,9 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { animate, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useI18n } from "@/components/i18n-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  kpiAccentClass,
-  type DashboardKpiAccent,
-} from "@/components/dashboard/dashboard-surface-styles";
+import type { DashboardKpiAccent } from "@/components/dashboard/dashboard-surface-styles";
 import { cn } from "@/lib/utils";
 
 type DeltaTone = "positive" | "negative" | "neutral";
@@ -57,11 +55,11 @@ export function KpiStatCard({
   value,
   formatter,
   deltaPct = null,
-  deltaLabel = "vs previous period",
+  deltaLabel,
   hint,
-  accent = "neutral",
   className,
 }: KpiStatCardProps) {
+  const { t } = useI18n();
   const shouldReduceMotion = useReducedMotion();
   const deltaTone = useMemo(
     () => (typeof deltaPct === "number" ? getDeltaTone(deltaPct) : "neutral"),
@@ -78,22 +76,11 @@ export function KpiStatCard({
       transition={shouldReduceMotion ? undefined : { duration: 0.2, ease: "easeOut" }}
       className={className}
     >
-      <Card size="sm" className={cn("relative h-full min-w-0 overflow-hidden", kpiAccentClass(accent))}>
-        <span
-          className={cn(
-            "absolute inset-y-0 left-0 w-1",
-            accent === "revenue" && "bg-chart-2",
-            accent === "margin" && "bg-success",
-            accent === "pipeline" && "bg-chart-3",
-            accent === "leakage" && "bg-warning",
-            accent === "neutral" && "bg-border"
-          )}
-          aria-hidden
-        />
-        <CardHeader className="gap-2 pb-2 pl-3">
+      <Card size="sm" className={cn("relative h-full min-w-0 overflow-hidden border border-border bg-card shadow-sm", className)}>
+        <CardHeader className="gap-2 pb-2">
           <CardTitle className="line-clamp-2 text-xs leading-snug text-muted-foreground">{title}</CardTitle>
         </CardHeader>
-        <CardContent className="flex min-w-0 flex-col gap-2 pl-3">
+        <CardContent className="flex min-w-0 flex-col gap-2">
           <p className="tabular-money break-all text-xl font-semibold text-foreground sm:text-2xl">
             <CountUpValue value={value} formatter={formatter} />
           </p>
@@ -108,7 +95,7 @@ export function KpiStatCard({
             >
               <DeltaIcon className="size-3.5 shrink-0" aria-hidden />
               <span className="tabular-money shrink-0">{deltaValue}</span>
-              <span className="min-w-0 text-muted-foreground">{deltaLabel}</span>
+              <span className="min-w-0 text-muted-foreground">{deltaLabel ?? t("dashboard.kpi.vsPrevPeriod")}</span>
             </p>
           ) : null}
           {hint ? <p className="line-clamp-2 text-xs text-muted-foreground">{hint}</p> : null}

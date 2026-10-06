@@ -67,6 +67,11 @@ test.describe("Help ('/help')", () => {
 
   test("Navbar includes Help link", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Help" })).toBeVisible();
+    const helpLink = page.getByRole("navigation", { name: "Navigasi utama" }).getByRole("link", { name: "Help" });
+    // On narrow viewports the main nav is behind the menu toggle.
+    if (!(await helpLink.isVisible())) {
+      await page.getByRole("button", { name: "Buka menu" }).click();
+    }
+    await expect(helpLink).toBeVisible();
   });
 });

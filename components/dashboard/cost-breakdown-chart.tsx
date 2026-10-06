@@ -1,10 +1,10 @@
 "use client";
 
+import { dashboardChartPlotClass } from "@/components/dashboard/dashboard-surface-styles";
 import { useMemo, useState } from "react";
 import { Cell, Pie, PieChart } from "recharts";
 import {
   ChartContainer,
-  ChartLegend,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useI18n } from "@/components/i18n-provider";
 import { useContainerWidth } from "@/hooks/use-container-width";
 import type { DashboardCostingData } from "@/lib/dashboard-contract";
 import {
@@ -34,10 +35,6 @@ const SEGMENT_COLORS = [
   "var(--chart-5)",
 ];
 
-const chartConfig = {
-  value: { label: "Nilai biaya" },
-} satisfies ChartConfig;
-
 export function CostBreakdownChart({
   costingData,
   compact = false,
@@ -45,6 +42,10 @@ export function CostBreakdownChart({
   costingData: DashboardCostingData;
   compact?: boolean;
 }) {
+  const { t } = useI18n();
+  const chartConfig = {
+    value: { label: t("dashboard.costBreakdown.valueLabel") },
+  } satisfies ChartConfig;
   const { ref, isCompact } = useContainerWidth<HTMLDivElement>();
   const [groupBy, setGroupBy] = useState<CostBreakdownGroup>("subAssembly");
   const breakdown = useMemo(
@@ -55,7 +56,7 @@ export function CostBreakdownChart({
   if (breakdown.rows.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Belum ada kontribusi biaya material untuk breakdown.
+        {t("dashboard.costBreakdown.empty")}
       </p>
     );
   }
@@ -64,7 +65,7 @@ export function CostBreakdownChart({
     <div className="space-y-4" data-testid="cost-breakdown-chart">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          Top contributors dengan tail di bawah 3% digabung ke &quot;Other&quot;.
+          {t("dashboard.costBreakdown.tailNote")}
         </p>
         <Tabs
           value={groupBy}
@@ -72,10 +73,10 @@ export function CostBreakdownChart({
         >
           <TabsList className="grid h-8 w-full max-w-[280px] grid-cols-2">
             <TabsTrigger value="subAssembly" className="text-xs">
-              Sub-assembly
+              {t("dashboard.costBreakdown.byGroup")}
             </TabsTrigger>
             <TabsTrigger value="rawCategory" className="text-xs">
-              Raw category
+              {t("dashboard.costBreakdown.byRawCategory")}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -83,11 +84,11 @@ export function CostBreakdownChart({
 
       <div
         ref={ref}
-        className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
-        aria-label="Cost breakdown donut"
+        className={dashboardChartPlotClass}
+        aria-label={t("dashboard.costBreakdown.donutLabel")}
       >
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <span className="font-medium text-foreground">Total HPP material</span>
+          <span className="font-medium text-foreground">{t("dashboard.costBreakdown.totalMaterial")}</span>
           <span className="tabular-money text-muted-foreground">{formatIDR(breakdown.total)}</span>
         </div>
         <ChartContainer config={chartConfig} className="aspect-auto h-72 w-full min-w-0">
@@ -121,7 +122,7 @@ export function CostBreakdownChart({
             />
           </PieChart>
         </ChartContainer>
-        <ul className="mt-3 flex flex-col gap-1.5 text-[11px] text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-3">
+        <ul className="mt-3 flex flex-col gap-1.5 text-xs text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-3">
           {breakdown.rows.map((row, index) => (
             <li key={row.key} className="flex min-w-0 items-center gap-1.5">
               <span
@@ -144,10 +145,12 @@ export function CostBreakdownChart({
           <TableHeader>
             <TableRow>
               <TableHead>
-                {groupBy === "subAssembly" ? "Sub-assembly" : "Raw category"}
+                {groupBy === "subAssembly"
+                  ? t("dashboard.costBreakdown.byGroup")
+                  : t("dashboard.costBreakdown.byRawCategory")}
               </TableHead>
-              <TableHead className="text-right">Nilai (IDR)</TableHead>
-              <TableHead className="text-right">% dari total</TableHead>
+              <TableHead className="text-right">{t("dashboard.valueIdr")}</TableHead>
+              <TableHead className="text-right">{t("dashboard.pctOfTotal")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

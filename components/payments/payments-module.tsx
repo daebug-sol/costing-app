@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { Loader2, Wallet } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { formatIDR } from "@/lib/utils/format";
 import { toastError, toastSuccess } from "@/store/toastStore";
+import { useConfirm } from "@/components/confirm-dialog";
 
 type Customer = { id: string; name: string; company: string };
 type OpenInv = {
@@ -57,6 +59,8 @@ async function readErr(res: Response) {
 }
 
 export function PaymentsModule() {
+  const { t } = useI18n();
+  const [confirm, confirmDialog] = useConfirm();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [openInvoices, setOpenInvoices] = useState<OpenInv[]>([]);
@@ -173,7 +177,7 @@ export function PaymentsModule() {
   };
 
   const voidPayment = async (id: string) => {
-    if (!confirm("Void pembayaran ini? Alokasi invoice akan dibalik.")) return;
+    if (!(await confirm({ title: t("payments.voidTitle"), description: t("payments.voidDescription"), confirmLabel: t("confirm.void") }))) return;
     try {
       const r = await fetch(`/api/payments/${id}`, {
         method: "PUT",
@@ -204,6 +208,7 @@ export function PaymentsModule() {
       description="Penerimaan kas dan alokasi ke invoice terbuka"
       contentClassName="space-y-6"
     >
+      {confirmDialog}
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         <Card>
           <CardHeader>

@@ -1,5 +1,7 @@
 "use client";
 
+import { toastError } from "@/store/toastStore";
+import { useI18n } from "@/components/i18n-provider";
 import {
   DndContext,
   type DragEndEvent,
@@ -28,7 +30,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EmptyState } from "@/components/empty-state";
 import { AssemblyTypeBadge } from "@/components/costing/assembly-type-badge";
 import { CostingShell } from "@/components/costing/costing-shell";
 import {
@@ -44,6 +45,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -59,8 +66,22 @@ import {
 import { formatIDR } from "@/lib/utils/format";
 import { computeCostSummary, finite } from "@/lib/cost-summary";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/confirm-dialog";
 import { useCostingStore } from "@/store/costingStore";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
+
+/** Must match `ensureDefaultUmumGroup` in lib/manual-costing-rollup.ts */
+const DEFAULT_MANUAL_GROUP_NAME = "Kelompok utama";
+const LEGACY_DEFAULT_MANUAL_GROUP_NAME = "Umum";
+
+const FLAT_DEFAULT_GROUP_NAMES = new Set([
+  DEFAULT_MANUAL_GROUP_NAME,
+  LEGACY_DEFAULT_MANUAL_GROUP_NAME,
+]);
+
+function isFlatDefaultGroupName(name: string) {
+  return FLAT_DEFAULT_GROUP_NAMES.has(name);
+}
 
 type ManualItem = {
   id: string;
@@ -130,7 +151,7 @@ function SortableGroupWrap({
     ...listeners,
     className:
       "cursor-grab touch-none select-none active:cursor-grabbing rounded-md px-1 py-0.5 -mx-1 -my-0.5",
-    title: "Tahan lalu seret untuk mengurutkan sub-assembly",
+    title: "Tahan lalu seret untuk mengurutkan kelompok",
   };
   return (
     <>{children({ setNodeRef, style, dragProps })}</>
@@ -193,6 +214,8 @@ export function ManualWorkspace({
   collapseAllManualSignal = 0,
   expandAllManualSignal = 0,
 }: ManualWorkspaceProps) {
+  const { t } = useI18n();
+  const [confirm, confirmDialog] = useConfirm();
   const currentProject = useCostingStore((s) => s.currentProject);
   const loadProject = useCostingStore((s) => s.loadProject);
   const updateProject = useCostingStore((s) => s.updateProject);
@@ -205,11 +228,7 @@ export function ManualWorkspace({
   const [pickerLockGroupId, setPickerLockGroupId] = useState<string | null>(
     null
   );
-  const [toast, setToast] = useState<string | null>(null);
-  const showToast = (m: string) => {
-    setToast(m);
-    setTimeout(() => setToast(null), 3500);
-  };
+  const showToast = (m: string) => toastError(m);
 
   const [useEsk, setUseEsk] = useState(true);
   const [useAsu, setUseAsu] = useState(true);
@@ -562,11 +581,28 @@ export function ManualWorkspace({
     await loadManual();
   };
 
-  const createSubAssembly = async () => {
-    const id = await createGroupFromName(`Sub-assembly ${groups.length + 1}`);
+  const createKelompok = async () => {
+    const id = await createGroupFromName(`Kelompok ${groups.length + 1}`);
     if (!id) return;
     setOpenCats((prev) => ({ ...prev, [id]: true }));
   };
+
+  const ensureDefaultAndOpenPicker = async () => {
+    if (groups[0]?.id) {
+      openPickerForGroup(groups[0].id);
+      return;
+    }
+    const id = await createGroupFromName(DEFAULT_MANUAL_GROUP_NAME);
+    if (!id) return;
+    setOpenCats((prev) => ({ ...prev, [id]: true }));
+    openPickerForGroup(id);
+  };
+
+  const isFlat =
+    groups.length === 1 && isFlatDefaultGroupName(groups[0]?.name ?? "");
+  const isManualEmpty =
+    groups.length === 0 ||
+    (isFlat && (groups[0]?.items.length ?? 0) === 0);
 
   const removeGroup = async (groupId: string) => {
     if (!projectId) return;
@@ -623,47 +659,83 @@ export function ManualWorkspace({
     <div
       className={cn("space-y-4", !embedded && "mx-auto max-w-6xl")}
     >
-      {toast && (
-        <div className="bg-card border-border fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-lg border px-4 py-2 text-sm">
-          {toast}
+      {confirmDialog}
+
+      {(!embedded || (!loading && !isManualEmpty)) && (
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-2",
+            embedded ? "justify-end" : "justify-between gap-3"
+          )}
+        >
+          {!embedded && (
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">
+                Project: {currentProject.name}
+              </h2>
+              <AssemblyTypeBadge variant="manual" className="mt-1" />
+            </div>
+          )}
+          {!loading && !isManualEmpty ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  aria-label="Tambah item atau item grup"
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => void ensureDefaultAndOpenPicker()}
+                >
+                  Tambah item
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void createKelompok()}>
+                  Tambah item grup
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
       )}
-
-      <div
-        className={cn(
-          "flex flex-wrap items-center gap-2",
-          embedded ? "justify-end" : "justify-between gap-3"
-        )}
-      >
-        {!embedded && (
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              Project: {currentProject.name}
-            </h2>
-            <AssemblyTypeBadge variant="manual" className="mt-1" />
-          </div>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="secondary" onClick={() => void createSubAssembly()}>
-            + Sub-assembly
-          </Button>
-        </div>
-      </div>
 
       {loading ? (
         <div className="space-y-4">
           <Skeleton className="h-40 w-full" />
           <Skeleton className="h-40 w-full" />
         </div>
-      ) : groups.length === 0 ? (
-        <EmptyState
-          icon={Plus}
-          title="Belum ada sub-assembly"
-          description="Tambahkan sub-assembly dulu, lalu pilih part per sub-assembly."
-          actionLabel="+ Sub-assembly"
-          onAction={() => void createSubAssembly()}
-          className="min-h-[240px]"
-        />
+      ) : isManualEmpty ? (
+        <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-10">
+          <p className="text-muted-foreground text-sm">
+            Belum ada item untuk saat ini.
+          </p>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                aria-label="Tambah item atau item grup"
+              >
+                <Plus className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center">
+              <DropdownMenuItem
+                onClick={() => void ensureDefaultAndOpenPicker()}
+              >
+                Tambah item
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void createKelompok()}>
+                Tambah item grup
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       ) : (
         <DndContext
           sensors={sensors}
@@ -684,11 +756,12 @@ export function ManualWorkspace({
                     {({ setNodeRef, style, dragProps }) => {
                     const groupShell = (
                       <>
+                      {!isFlat ? (
                       <div className="flex min-w-0 items-center gap-2 border-b border-border px-3 py-2.5 sm:px-4">
                         <div
                           {...dragProps}
                           className={cn(
-                            "text-muted-foreground hover:text-foreground hover:bg-muted/60 flex size-8 shrink-0 cursor-grab items-center justify-center rounded-md border border-border bg-muted/40 active:cursor-grabbing",
+                            "text-muted-foreground hover:text-foreground hover:bg-muted/60 flex size-8 shrink-0 cursor-grab items-center justify-center rounded-md active:cursor-grabbing",
                             dragProps.className
                           )}
                         >
@@ -700,20 +773,19 @@ export function ManualWorkspace({
                           onClick={() =>
                             setOpenCats((o) => ({ ...o, [g.id]: !open }))
                           }
-                          className="hover:bg-muted/60 flex min-w-0 shrink-0 items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-left shadow-sm transition-colors"
+                          className="text-muted-foreground hover:text-foreground hover:bg-muted/60 flex size-8 shrink-0 items-center justify-center rounded-md transition-colors"
                           aria-expanded={open}
                           aria-label={
                             open
-                              ? `Ciutkan sub-assembly ${g.name}`
-                              : `Buka sub-assembly ${g.name}`
+                              ? `Ciutkan kelompok ${g.name}`
+                              : `Buka kelompok ${g.name}`
                           }
                         >
                           {open ? (
-                            <ChevronDown className="text-muted-foreground size-4 shrink-0" />
+                            <ChevronDown className="size-4 shrink-0" />
                           ) : (
-                            <ChevronRight className="text-muted-foreground size-4 shrink-0" />
+                            <ChevronRight className="size-4 shrink-0" />
                           )}
-                          <AssemblyTypeBadge variant="sub-assembly" />
                         </button>
                         <div className="min-w-0 flex-1 sm:max-w-[12rem]">
                           <Input
@@ -721,13 +793,13 @@ export function ManualWorkspace({
                             defaultValue={g.name}
                             key={`gname-${g.id}-${g.name}`}
                             title={g.name}
-                            aria-label={`Nama sub-assembly ${g.name}`}
+                            aria-label={`Nama kelompok ${g.name}`}
                             onPointerDown={(e) => e.stopPropagation()}
                             onBlur={(e) => void renameGroup(g.id, e.target.value)}
                           />
                         </div>
                         <span
-                          className="tabular-money text-muted-foreground min-w-0 flex-1 truncate text-right text-[11px] sm:text-xs"
+                          className="tabular-money text-muted-foreground min-w-0 flex-1 truncate text-right text-xs sm:text-xs"
                           title={`Subtotal HPP: ${formatIDR(g.subtotal)}`}
                         >
                           Subtotal HPP: {formatIDR(g.subtotal)}
@@ -740,26 +812,30 @@ export function ManualWorkspace({
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={() => openPickerForGroup(g.id)}
                         >
-                          + Part
+                          + Tambah item
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
                           className="text-muted-foreground hover:text-destructive size-8 shrink-0"
-                          title="Hapus sub-assembly"
+                          title="Hapus kelompok"
+                          aria-label={`Hapus kelompok ${g.name}`}
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={() => {
-                            if (window.confirm("Hapus sub-assembly ini beserta part di dalamnya?")) {
-                              void removeGroup(g.id);
-                            }
+                            void confirm({
+                              title: t("costing.deleteGroupTitle", { name: g.name }),
+                              description: t("costing.deleteGroupDescription"),
+                            }).then((ok) => {
+                              if (ok) void removeGroup(g.id);
+                            });
                           }}
                         >
                           <Trash2 className="size-4" />
                         </Button>
                       </div>
-                      {open && (
-                        <>
+                      ) : null}
+                      {(isFlat || open) && (
                           <SortableContext
                             id={`manual-items-${g.id}`}
                             items={itemIds}
@@ -886,6 +962,7 @@ export function ManualWorkspace({
                                               size="icon"
                                               className="size-7 text-amber-700"
                                               title="Kembalikan harga DB"
+                                              aria-label={`Kembalikan harga DB untuk ${row.name}`}
                                               onClick={() =>
                                                 void applyPriceOverride(
                                                   row.id,
@@ -906,6 +983,7 @@ export function ManualWorkspace({
                                             variant="ghost"
                                             size="icon"
                                             className="size-8 text-muted-foreground"
+                                            aria-label={`Hapus baris ${row.name}`}
                                             onClick={() =>
                                               setDeleteItemId(row.id)
                                             }
@@ -920,21 +998,25 @@ export function ManualWorkspace({
                               </TableBody>
                             </Table>
                           </SortableContext>
-                        </>
-                      )}
+                        )}
                       </>
                     );
                     return embedded ? (
                       <div ref={setNodeRef} style={style} className="overflow-hidden">
-                        <CostingShell level="module">
-                          {groupShell}
-                        </CostingShell>
+                        {isFlat ? (
+                          groupShell
+                        ) : (
+                          <CostingShell level="module">{groupShell}</CostingShell>
+                        )}
                       </div>
                     ) : (
                       <div
                         ref={setNodeRef}
                         style={style}
-                        className="border-border/60 overflow-hidden rounded-md border"
+                        className={cn(
+                          "overflow-hidden",
+                          !isFlat && "border-border/60 rounded-md border"
+                        )}
                       >
                         {groupShell}
                       </div>
@@ -957,7 +1039,7 @@ export function ManualWorkspace({
           <Table>
             <TableBody>
               <TableRow>
-                <TableCell>Total material cost (HPP)</TableCell>
+                <TableCell>{t("costing.totalMaterialHpp")}</TableCell>
                 <TableCell className="tabular-money text-right">
                   {formatIDR(totals.hpp)}
                 </TableCell>
@@ -1109,7 +1191,7 @@ export function ManualWorkspace({
                 </TableCell>
               </TableRow>
               <TableRow className="border-t-2 font-medium">
-                <TableCell>Total cost</TableCell>
+                <TableCell>{t("costing.totalCost")}</TableCell>
                 <TableCell className="tabular-money text-right">
                   {formatIDR(totals.totalCost)}
                 </TableCell>
@@ -1175,7 +1257,7 @@ export function ManualWorkspace({
             </Button>
             <Button type="button" variant="outline" asChild>
               <Link href={`/documentation?fromProject=${currentProject.id}`}>
-                → Create Quotation
+                → {t("common.createQuotation")}
               </Link>
             </Button>
           </div>
@@ -1204,10 +1286,10 @@ export function ManualWorkspace({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Hapus item?</DialogTitle>
+            <DialogTitle>Hapus baris?</DialogTitle>
           </DialogHeader>
           <p className="text-muted-foreground text-sm">
-            Item akan dihapus dari sub-assembly ini. Tindakan ini dapat
+            Baris akan dihapus dari item ini. Tindakan ini dapat
             dibatalkan dengan menambahkan ulang dari database.
           </p>
           <DialogFooter>

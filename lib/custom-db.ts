@@ -122,7 +122,6 @@ export function evaluateFormulaExpression(
   });
   if (!/^[\d+\-*/().\s]+$/.test(varExpr)) return { ok: false, value: 0 };
   try {
-    // eslint-disable-next-line no-new-func
     const fn = new Function(`return (${varExpr});`) as () => number;
     const out = Number(fn());
     if (!Number.isFinite(out)) return { ok: false, value: 0 };

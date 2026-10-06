@@ -2,6 +2,7 @@
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark, shadcn } from "@clerk/ui/themes";
+import { I18nProvider } from "@/components/i18n-provider";
 import { Navbar } from "@/components/Navbar";
 import { Toaster } from "@/components/Toast";
 import { ThemeProvider, useTheme } from "@/components/theme-provider";
@@ -40,7 +41,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
-      <AppShell>{children}</AppShell>
+      <I18nProvider>
+        <AppShell>{children}</AppShell>
+      </I18nProvider>
     </ThemeProvider>
   );
 }

@@ -12,8 +12,7 @@ export type CostingLevel =
 
 const levelSurface: Record<CostingLevel, string> = {
   project: "bg-card border border-border",
-  assembly:
-    "rounded-lg border-2 border-border/80 bg-muted/20",
+  assembly: "space-y-4 border-t border-border pt-4",
   segment: "rounded-md border border-border bg-card",
   module:
     "rounded-md border border-dashed border-border/70 bg-muted/30",
@@ -22,7 +21,7 @@ const levelSurface: Record<CostingLevel, string> = {
 
 const levelPadding: Record<CostingLevel, string> = {
   project: "p-5 sm:p-6",
-  assembly: "p-4 sm:p-5",
+  assembly: "",
   segment: "p-4 sm:p-5",
   module: "p-3 sm:p-4",
   summary: "p-4 sm:p-5",
@@ -103,7 +102,7 @@ export function CostingBreadcrumb({
 }: CostingBreadcrumbProps) {
   return (
     <nav
-      aria-label="Lokasi assembly"
+      aria-label="Lokasi item"
       className={cn(
         "text-muted-foreground mb-3 flex min-w-0 flex-wrap items-center gap-1 text-xs",
         className

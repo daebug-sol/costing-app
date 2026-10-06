@@ -8,7 +8,6 @@ export async function POST(request: Request) {
   if ("response" in guard) return guard.response;
   const denied = requirePermission(guard.role, "o2c:quote");
   if (denied) return denied;
-  const { orgId } = guard;
 
   try {
     const body = (await request.json()) as { ids?: unknown };

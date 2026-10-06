@@ -141,7 +141,7 @@ export async function POST(request: Request) {
       );
       const variables = computeNumericVariablesForRow(table.columns, byCol);
 
-      for (const [colId, c] of rowCellMap) {
+      for (const c of rowCellMap.values()) {
         if (c.rawValue.trimStart().startsWith("=")) {
           const res = evaluateFormulaExpression(c.rawValue, variables);
           c.computedValue = res.ok ? res.value : 0;

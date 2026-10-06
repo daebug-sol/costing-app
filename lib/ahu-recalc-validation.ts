@@ -53,7 +53,7 @@ export function validateAhuRecalculateContext(input: {
     return {
       ok: false,
       message:
-        "Pilih minimal satu modul sub-assembly, atau aktifkan Full AHU.",
+        "Pilih minimal satu kelompok modul, atau aktifkan Full AHU.",
     };
   }
 
