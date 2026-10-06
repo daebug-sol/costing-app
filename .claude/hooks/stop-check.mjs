@@ -13,4 +13,9 @@ process.stdin.on("end", () => {
     console.error("Typecheck failed:\n" + (r.stdout + r.stderr).slice(0, 4000));
     process.exit(2);
   }
+  const ui = spawnSync("npm", ["run", "ui:standard", "--silent"], { encoding: "utf8", shell: true });
+  if (ui.status !== 0) {
+    console.error("UI standard failed:\n" + (ui.stdout + ui.stderr).slice(0, 4000));
+    process.exit(2);
+  }
 });

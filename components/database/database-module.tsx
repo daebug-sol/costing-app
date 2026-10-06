@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { useEffect } from "react";
 import { PillTabsList, PillTabsTrigger } from "@/components/ui/pill-tabs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +13,7 @@ import { ProfilesPanel } from "./profiles-panel";
 import { ComponentsPanel } from "./components-panel";
 
 export function DatabaseModule() {
+  const { t } = useI18n();
   const { show } = useToast();
   const modules = useCostingStore((s) => s.modules);
   const loadOrgModules = useCostingStore((s) => s.loadOrgModules);
@@ -48,7 +50,7 @@ export function DatabaseModule() {
               value="custom"
               className="rounded-full px-5 py-2 data-[state=active]:text-primary-foreground data-[state=active]:hover:text-primary-foreground"
             >
-              Custom Database
+              {t("database.tab.custom")}
             </TabsTrigger>
           </TabsList>
         ) : null}
@@ -57,13 +59,13 @@ export function DatabaseModule() {
             <Tabs value={ahuSection} onValueChange={setDatabaseAhuSection} className="w-full">
               <PillTabsList className="mb-6">
                 <PillTabsTrigger value="materials" layoutId="database-ahu-section-pill">
-                  Material Prices
+                  {t("database.tab.materials")}
                 </PillTabsTrigger>
                 <PillTabsTrigger value="profiles" layoutId="database-ahu-section-pill">
-                  Profile Data
+                  {t("database.tab.profiles")}
                 </PillTabsTrigger>
                 <PillTabsTrigger value="components" layoutId="database-ahu-section-pill">
-                  Component Catalog
+                  {t("database.tab.components")}
                 </PillTabsTrigger>
               </PillTabsList>
               <TabsContent value="materials" forceMount className={AHU_TAB_CONTENT_CLASS}>

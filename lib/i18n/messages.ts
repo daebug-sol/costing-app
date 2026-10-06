@@ -7,6 +7,10 @@
  */
 const id = {
   // --- common
+  "database.tab.materials": "Harga material",
+  "database.tab.profiles": "Data profil",
+  "database.tab.components": "Katalog komponen",
+  "database.tab.custom": "Database kustom",
   "route.errorTitle": "Halaman ini bermasalah",
   "route.errorFallback": "Terjadi kendala saat memuat halaman ini.",
   "documentation.editorTitle": "Editor penawaran",
@@ -227,6 +231,10 @@ const id = {
 export type MessageKey = keyof typeof id;
 
 const en: Record<MessageKey, string> = {
+  "database.tab.materials": "Material prices",
+  "database.tab.profiles": "Profile data",
+  "database.tab.components": "Component catalog",
+  "database.tab.custom": "Custom database",
   "route.errorTitle": "This page ran into a problem",
   "route.errorFallback": "Something went wrong while loading this page.",
   "documentation.editorTitle": "Quotation editor",

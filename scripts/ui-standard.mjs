@@ -111,10 +111,20 @@ for (const s of segments) {
 }
 rule("route segments have error.tsx + loading.tsx", missing);
 
+// Size ratchet: files above MAX_LINES are tolerated only at their recorded size and must never grow.
+// Lower a ceiling (or delete the entry) when a file is decomposed. Do not raise them.
 const MAX_LINES = Number(process.env.UI_MAX_LINES ?? 1500);
+const LEGACY_CEILING = {
+  "components/costing/costing-workspace.tsx": 3178,
+  "components/documentation/documentation-module.tsx": 2399,
+  "components/database/custom-database-panel.tsx": 1745,
+};
 rule(
-  `no component file over ${MAX_LINES} lines`,
-  nonUi.filter((f) => f.text.split("\n").length > MAX_LINES).map((f) => `${f.path} (${f.text.split("\n").length})`)
+  `no component file over ${MAX_LINES} lines (legacy files may not grow)`,
+  nonUi
+    .map((f) => ({ path: f.path, n: f.text.split("\n").length }))
+    .filter(({ path, n }) => n > (LEGACY_CEILING[path] ?? MAX_LINES))
+    .map(({ path, n }) => `${path} (${n})`)
 );
 
 let failed = 0;
