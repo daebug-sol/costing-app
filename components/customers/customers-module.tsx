@@ -1,5 +1,6 @@
 "use client";
 
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Plus, Search, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
@@ -295,7 +296,7 @@ export function CustomersModule() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cust-address">Alamat</Label>
-              <textarea
+              <Textarea
                 id="cust-address"
                 rows={2}
                 className="border-input bg-background focus-visible:ring-ring flex min-h-[64px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
@@ -305,7 +306,7 @@ export function CustomersModule() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cust-notes">Catatan</Label>
-              <textarea
+              <Textarea
                 id="cust-notes"
                 rows={2}
                 className="border-input bg-background focus-visible:ring-ring flex min-h-[64px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"

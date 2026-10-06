@@ -1,5 +1,6 @@
 "use client";
 
+import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -916,7 +917,7 @@ export function CustomDatabasePanel({
             {(col.kind === "dropdown" || col.kind.startsWith("dropdown:")) ? (
               <div className="grid gap-1.5">
                 <Label>Opsi (satu per baris)</Label>
-                <textarea
+                <Textarea
                   className="border-input bg-background focus-visible:ring-ring flex min-h-[72px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
                   value={col.dropdownOptions ?? ""}
                   onChange={(e) =>
@@ -1697,7 +1698,7 @@ export function CustomDatabasePanel({
             {addColumnKind === "dropdown" ? (
               <div className="grid gap-1.5">
                 <Label htmlFor="add-column-dropdown-options">Opsi (satu per baris)</Label>
-                <textarea
+                <Textarea
                   id="add-column-dropdown-options"
                   className="border-input bg-background focus-visible:ring-ring flex min-h-[72px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
                   value={addColumnDropdownOptions}

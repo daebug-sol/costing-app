@@ -1,5 +1,6 @@
 "use client";
 
+import { Textarea } from "@/components/ui/textarea";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -1438,7 +1439,7 @@ export function DocumentationModule() {
                     Teks pembuka surat. Tekan Enter untuk baris baru; baris kosong untuk jeda antar
                     paragraf.
                   </p>
-                  <textarea
+                  <Textarea
                     className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[120px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                     value={form.introText}
                     placeholder={DEFAULT_QUOTATION_INTRO}
@@ -1567,7 +1568,7 @@ export function DocumentationModule() {
                 </div>
                 <div className="grid gap-2">
                   <Label>Alamat</Label>
-                  <textarea
+                  <Textarea
                     className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                     value={form.clientAddress}
                     onChange={(e) => setForm((f) => ({ ...f, clientAddress: e.target.value }))}
@@ -1676,7 +1677,7 @@ export function DocumentationModule() {
                               />
                             </td>
                             <td className="px-2 py-2 align-top">
-                              <textarea
+                              <Textarea
                                 className="border-input field-sizing-content min-h-[72px] w-full min-w-[12rem] max-w-[min(100%,22rem)] rounded border px-2 py-1.5 text-xs leading-snug"
                                 value={it.spec}
                                 maxLength={SPEC_MAX_CHARS}
@@ -1904,7 +1905,7 @@ export function DocumentationModule() {
                 </div>
                 <div className="grid gap-2">
                   <Label>T&amp;C</Label>
-                  <textarea
+                  <Textarea
                     className="border-input bg-background min-h-[100px] w-full rounded-md border px-3 py-2 text-sm"
                     value={form.termsConditions}
                     onChange={(e) =>
@@ -1914,7 +1915,7 @@ export function DocumentationModule() {
                 </div>
                 <div className="grid gap-2">
                   <Label>Catatan</Label>
-                  <textarea
+                  <Textarea
                     className="border-input bg-background min-h-[80px] w-full rounded-md border px-3 py-2 text-sm"
                     value={form.notes}
                     onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}

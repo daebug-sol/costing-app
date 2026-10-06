@@ -1,5 +1,6 @@
 "use client";
 
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -245,7 +246,7 @@ export function SettingsPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="co-addr">Alamat</Label>
-            <textarea
+            <Textarea
               id="co-addr"
               className="border-input bg-background focus-visible:ring-ring flex min-h-[88px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
               value={row.companyAddress}
@@ -705,7 +706,7 @@ export function SettingsPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="tc">Syarat &amp; ketentuan default</Label>
-            <textarea
+            <Textarea
               id="tc"
               className="border-input bg-background focus-visible:ring-ring flex min-h-[120px] w-full rounded-md border px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
               value={row.termsConditions}

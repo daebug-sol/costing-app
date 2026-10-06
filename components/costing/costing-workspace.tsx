@@ -1698,13 +1698,14 @@ function AhuSegmentEditor({
                     </TableBody>
                   </Table>
                   <div className="border-t border-border px-4 py-2">
-                    <button
+                    <Button
                       type="button"
-                      className="text-primary text-sm font-medium hover:underline"
+                      variant="link"
+                      className="text-sm"
                       onClick={() => openAddItem(sec.id)}
                     >
-                      + Add Item
-                    </button>
+                      + Tambah item
+                    </Button>
                   </div>
                 </CardContent>
               )}
