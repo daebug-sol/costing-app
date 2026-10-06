@@ -67,6 +67,6 @@ test.describe("Help ('/help')", () => {
 
   test("Navbar includes Help link", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Help" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Navigasi utama" }).getByRole("link", { name: "Help" })).toBeVisible();
   });
 });
