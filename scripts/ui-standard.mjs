@@ -116,7 +116,6 @@ rule("route segments have error.tsx + loading.tsx", missing);
 const MAX_LINES = Number(process.env.UI_MAX_LINES ?? 1500);
 const LEGACY_CEILING = {
   "components/costing/costing-workspace.tsx": 3178,
-  "components/database/custom-database-panel.tsx": 1745,
 };
 rule(
   `no component file over ${MAX_LINES} lines (legacy files may not grow)`,

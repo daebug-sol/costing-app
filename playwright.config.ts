@@ -60,11 +60,20 @@ export default defineConfig({
   projects: [
     {
       name: "chromium-desktop",
+      testIgnore: /.*\.stateful\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
     {
       name: "chromium-mobile",
+      testIgnore: /.*\.stateful\.spec\.ts/,
       use: { ...devices["iPhone 13"] },
+    },
+    {
+      // DB-mutating specs run last so they never race the visual baselines.
+      name: "stateful",
+      testMatch: /.*\.stateful\.spec\.ts/,
+      dependencies: ["chromium-desktop", "chromium-mobile"],
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
   ],
   webServer: {
