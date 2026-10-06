@@ -7,6 +7,8 @@
  */
 const id = {
   // --- common
+  "route.errorTitle": "Halaman ini bermasalah",
+  "route.errorFallback": "Terjadi kendala saat memuat halaman ini.",
   "documentation.editorTitle": "Editor penawaran",
   "common.code": "Kode",
   "common.category": "Kategori",
@@ -225,6 +227,8 @@ const id = {
 export type MessageKey = keyof typeof id;
 
 const en: Record<MessageKey, string> = {
+  "route.errorTitle": "This page ran into a problem",
+  "route.errorFallback": "Something went wrong while loading this page.",
   "documentation.editorTitle": "Quotation editor",
   "common.code": "Code",
   "common.category": "Category",
