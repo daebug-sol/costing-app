@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useI18n } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -35,9 +36,9 @@ export function ChartInsightBlock({
   detailTitle,
   detailDescription,
   detailContent,
-  accent: _accent = "status",
   className,
 }: ChartInsightBlockProps) {
+  const { t } = useI18n();
   const [detailOpen, setDetailOpen] = useState(false);
   const sheetTitle = detailTitle ?? title;
   const sheetDescription = detailDescription ?? description;
@@ -57,7 +58,7 @@ export function ChartInsightBlock({
           <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
             <SheetTrigger asChild>
               <Button type="button" variant="outline" size="sm" className="shrink-0">
-                Lihat detail
+                {t("common.viewDetail")}
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">

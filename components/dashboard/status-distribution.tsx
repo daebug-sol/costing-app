@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useI18n } from "@/components/i18n-provider";
 import { useContainerWidth } from "@/hooks/use-container-width";
 import type { DashboardStatusDistribution } from "@/lib/dashboard-contract";
 import { formatIDR } from "@/lib/utils/format";
@@ -29,13 +30,13 @@ const COLORS = [
   "var(--chart-5)",
 ];
 
-const chartConfig = {
-  value: { label: "Nilai" },
-} satisfies ChartConfig;
-
 type Mode = "quotation" | "project";
 
 export function StatusDistribution({ data }: { data: DashboardStatusDistribution }) {
+  const { t } = useI18n();
+  const chartConfig = {
+    value: { label: t("common.value") },
+  } satisfies ChartConfig;
   const { ref, isCompact } = useContainerWidth<HTMLDivElement>();
   const [mode, setMode] = useState<Mode>("quotation");
   const rows = useMemo(
@@ -44,7 +45,7 @@ export function StatusDistribution({ data }: { data: DashboardStatusDistribution
   );
 
   if (rows.length === 0) {
-    return <p className="text-sm text-muted-foreground">Belum ada data status untuk periode ini.</p>;
+    return <p className="text-sm text-muted-foreground">{t("dashboard.statusDistribution.empty")}</p>;
   }
 
   return (
@@ -52,10 +53,10 @@ export function StatusDistribution({ data }: { data: DashboardStatusDistribution
       <Tabs value={mode} onValueChange={(value) => setMode(value as Mode)}>
         <TabsList className="grid h-8 w-full max-w-[260px] grid-cols-2">
           <TabsTrigger value="quotation" className="text-xs">
-            Quotation
+            {t("common.quotation")}
           </TabsTrigger>
           <TabsTrigger value="project" className="text-xs">
-            Proyek
+            {t("common.project")}
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -84,7 +85,7 @@ export function StatusDistribution({ data }: { data: DashboardStatusDistribution
                   formatter={(value, name, item) => (
                     <div className="flex w-full flex-col gap-0.5">
                       <span>{String(name)}</span>
-                      <span className="tabular-money">{Number(value)} item</span>
+                      <span className="tabular-money">{t("dashboard.itemCount", { count: Number(value) })}</span>
                       <span className="tabular-money text-muted-foreground">
                         {formatIDR(Number(item.payload?.value ?? 0))}
                       </span>
@@ -114,9 +115,9 @@ export function StatusDistribution({ data }: { data: DashboardStatusDistribution
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Jumlah</TableHead>
-              <TableHead className="text-right">Nilai</TableHead>
+              <TableHead>{t("common.status")}</TableHead>
+              <TableHead className="text-right">{t("common.count")}</TableHead>
+              <TableHead className="text-right">{t("common.value")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

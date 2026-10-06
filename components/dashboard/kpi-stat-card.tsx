@@ -3,6 +3,7 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { animate, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useI18n } from "@/components/i18n-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardKpiAccent } from "@/components/dashboard/dashboard-surface-styles";
 import { cn } from "@/lib/utils";
@@ -54,11 +55,11 @@ export function KpiStatCard({
   value,
   formatter,
   deltaPct = null,
-  deltaLabel = "vs periode sebelumnya",
+  deltaLabel,
   hint,
-  accent: _accent = "neutral",
   className,
 }: KpiStatCardProps) {
+  const { t } = useI18n();
   const shouldReduceMotion = useReducedMotion();
   const deltaTone = useMemo(
     () => (typeof deltaPct === "number" ? getDeltaTone(deltaPct) : "neutral"),
@@ -94,7 +95,7 @@ export function KpiStatCard({
             >
               <DeltaIcon className="size-3.5 shrink-0" aria-hidden />
               <span className="tabular-money shrink-0">{deltaValue}</span>
-              <span className="min-w-0 text-muted-foreground">{deltaLabel}</span>
+              <span className="min-w-0 text-muted-foreground">{deltaLabel ?? t("dashboard.kpi.vsPrevPeriod")}</span>
             </p>
           ) : null}
           {hint ? <p className="line-clamp-2 text-xs text-muted-foreground">{hint}</p> : null}

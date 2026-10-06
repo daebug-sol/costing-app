@@ -25,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useI18n } from "@/components/i18n-provider";
 import { useContainerWidth } from "@/hooks/use-container-width";
 import {
   chartBottomMargin,
@@ -41,12 +42,6 @@ import {
 import { cn } from "@/lib/utils";
 import { formatIDR, formatIDRCompact } from "@/lib/utils/format";
 
-const chartConfig = {
-  projectedIn: { label: "Cash-in", color: "var(--chart-2)" },
-  projectedOut: { label: "Cash-out", color: "var(--chart-1)" },
-  runningBalance: { label: "Saldo berjalan", color: "var(--chart-4)" },
-} satisfies ChartConfig;
-
 const CHART_FRAME_CLASS = "aspect-auto h-72 w-full min-w-0";
 
 export function CashflowTimelineChart({
@@ -56,6 +51,12 @@ export function CashflowTimelineChart({
   data: DashboardCashflowProjectionPayload;
   compact?: boolean;
 }) {
+  const { t } = useI18n();
+  const chartConfig = {
+    projectedIn: { label: t("dashboard.legend.cashIn"), color: "var(--chart-2)" },
+    projectedOut: { label: t("dashboard.legend.cashOut"), color: "var(--chart-1)" },
+    runningBalance: { label: t("dashboard.legend.runningBalance"), color: "var(--chart-4)" },
+  } satisfies ChartConfig;
   const { ref, tier } = useContainerWidth<HTMLDivElement>();
   const scale = buildCashflowTimelineScale(data.series);
   const xAngle = chartXAxisAngle(tier, scale.rows.length);
@@ -64,7 +65,7 @@ export function CashflowTimelineChart({
   if (scale.rows.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Belum ada quotation booked untuk timeline cashflow.
+        {t("dashboard.cashflow.empty")}
       </p>
     );
   }
@@ -75,7 +76,7 @@ export function CashflowTimelineChart({
         ref={ref}
         className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
       >
-        <ChartContainer config={chartConfig} className={CHART_FRAME_CLASS} aria-label="Cashflow timeline dengan saldo berjalan">
+        <ChartContainer config={chartConfig} className={CHART_FRAME_CLASS} aria-label={t("dashboard.cashflow.chartLabel")}>
           <ComposedChart
             data={scale.rows}
             accessibilityLayer
@@ -139,10 +140,10 @@ export function CashflowTimelineChart({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Bulan</TableHead>
+              <TableHead>{t("common.month")}</TableHead>
               <TableHead className="text-right">In</TableHead>
               <TableHead className="text-right">Out</TableHead>
-              <TableHead className="text-right">Net</TableHead>
+              <TableHead className="text-right">{t("dashboard.cashflow.net")}</TableHead>
               <TableHead className="text-right">Saldo</TableHead>
             </TableRow>
           </TableHeader>

@@ -19,6 +19,15 @@ output), exports, and trust in financial numbers. Follow these rules.
 - **Code, comments, identifiers, file names: English.** Do not localize
   variable names.
 
+**Language switcher.** Users can switch the UI between Indonesian (`id`,
+default) and English (`en`) from the navbar toggle or Pengaturan → Tampilan.
+The choice is device-local (`localStorage` key `costing-locale`) and sets
+`<html lang>`. Strings live in `lib/i18n/messages.ts` — Indonesian is the source
+of truth and `en` must provide every key (enforced by the type and
+`lib/i18n/messages.test.ts`). In components use `const { t } = useI18n()` and
+`t("namespace.key", { name })`; never hard-code new user-facing text in a
+translated screen. Screens not yet migrated stay Indonesian.
+
 If a screen needs both languages explicitly (e.g. a quotation cover page),
 put the Indonesian string first.
 

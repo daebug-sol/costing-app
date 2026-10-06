@@ -1,8 +1,7 @@
 "use client";
 
-import { FileSpreadsheet, Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -86,12 +85,6 @@ const FORMULA_REF_CELL_CLASSES = [
   "bg-violet-100/80 text-violet-900 dark:bg-violet-500/20 dark:text-violet-200",
   "bg-fuchsia-100/80 text-fuchsia-900 dark:bg-fuchsia-500/20 dark:text-fuchsia-200",
 ] as const;
-
-function hashToToneIndex(key: string): number {
-  let h = 0;
-  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
-  return h % FORMULA_REF_CELL_CLASSES.length;
-}
 
 /** Spreadsheet cell focus — inset outline avoids broken ring on table borders (UI-HARNESS: clear state). */
 function getGridCellInteractionClasses(opts: {
@@ -376,8 +369,8 @@ export function CustomDatabasePanel({
   const pendingFocusRef = useRef<{ rowId: string; columnId: string } | null>(null);
   const skipBlurCommitRef = useRef(false);
 
-  const rows = table?.rows ?? [];
-  const columns = table?.columns ?? [];
+  const rows = useMemo(() => table?.rows ?? [], [table]);
+  const columns = useMemo(() => table?.columns ?? [], [table]);
 
   const focusCellInput = useCallback(
     (rowId: string, columnId: string) => {
@@ -1078,7 +1071,7 @@ export function CustomDatabasePanel({
         <table className="min-w-full border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
-              {columns.map((col, idx) => (
+              {columns.map((col) => (
                 <th
                   key={col.id}
                   onMouseDownCapture={(e) => {

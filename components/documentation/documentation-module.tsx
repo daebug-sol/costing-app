@@ -511,7 +511,7 @@ export function DocumentationModule() {
       stampPath: q.stampPath ?? "",
       items: itemsFromApi(q),
     });
-  }, []);
+  }, [setDocumentationUi]);
 
   useEffect(() => {
     let cancelled = false;
@@ -596,7 +596,7 @@ export function DocumentationModule() {
     } finally {
       setCreating(false);
     }
-  }, [creating, loadList, loadQuotation, router]);
+  }, [creating, loadList, loadQuotation, router, setDocumentationUi]);
 
   const handleToggleSelect = useCallback((id: string, checked: boolean) => {
     setSelectedIds((prev) => {
@@ -793,7 +793,6 @@ export function DocumentationModule() {
   }, [form.ttdApproved, settings?.presetTtdApproved]);
 
   const mergedPayloadForDoc = useMemo(() => {
-    const base = quotation ?? ({} as QuotationApi);
     return {
       status: form.status,
       noSurat: form.noSurat || null,
@@ -840,7 +839,7 @@ export function DocumentationModule() {
         totalPrice: it.qty * it.unitPrice,
       })),
     };
-  }, [quotation, form, previewTotals]);
+  }, [form, previewTotals]);
 
   const mergedDocForExport = useMemo(() => {
     if (!settings) return null;

@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useI18n } from "@/components/i18n-provider";
 import { useContainerWidth } from "@/hooks/use-container-width";
 import {
   chartBottomMargin,
@@ -28,11 +29,6 @@ import {
 import type { DashboardRevenueTrendPayload } from "@/lib/dashboard-contract";
 import { formatIDR, formatIDRCompact } from "@/lib/utils/format";
 
-const chartConfig = {
-  bookedRevenue: { label: "Booked", color: "var(--chart-2)" },
-  potentialRevenue: { label: "Potential", color: "var(--chart-1)" },
-} satisfies ChartConfig;
-
 const CHART_FRAME_CLASS = "aspect-auto h-72 w-full min-w-0";
 
 export function RevenueTrendChart({
@@ -42,6 +38,11 @@ export function RevenueTrendChart({
   data: DashboardRevenueTrendPayload;
   compact?: boolean;
 }) {
+  const { t } = useI18n();
+  const chartConfig = {
+    bookedRevenue: { label: t("dashboard.legend.booked"), color: "var(--chart-2)" },
+    potentialRevenue: { label: t("dashboard.legend.potential"), color: "var(--chart-1)" },
+  } satisfies ChartConfig;
   const { ref, tier } = useContainerWidth<HTMLDivElement>();
   const xAngle = chartXAxisAngle(tier, data.series.length);
   const valueFormatter = tier === "wide" ? formatIDR : formatIDRCompact;
@@ -49,7 +50,7 @@ export function RevenueTrendChart({
   if (data.series.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Belum ada quotation untuk membentuk tren pendapatan.
+        {t("dashboard.revenueTrend.empty")}
       </p>
     );
   }
@@ -60,7 +61,7 @@ export function RevenueTrendChart({
         ref={ref}
         className="min-w-0 rounded-none border border-border/80 bg-gradient-to-b from-muted/20 to-background p-3"
       >
-        <ChartContainer config={chartConfig} className={CHART_FRAME_CLASS} aria-label="Tren revenue booked dan potential">
+        <ChartContainer config={chartConfig} className={CHART_FRAME_CLASS} aria-label={t("dashboard.revenueTrend.chartLabel")}>
           <AreaChart
             data={data.series}
             accessibilityLayer
@@ -123,8 +124,8 @@ export function RevenueTrendChart({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Bulan</TableHead>
-              <TableHead className="text-right">Booked</TableHead>
+              <TableHead>{t("common.month")}</TableHead>
+              <TableHead className="text-right">{t("dashboard.legend.booked")}</TableHead>
               <TableHead className="text-right">Potential</TableHead>
             </TableRow>
           </TableHeader>

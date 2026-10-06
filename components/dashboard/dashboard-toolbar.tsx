@@ -2,16 +2,18 @@
 
 import { RefreshCw } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import { useI18n } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DashboardProjectScopeOption, DashboardRange } from "@/lib/dashboard-contract";
+import type { MessageKey } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils";
 
-const RANGE_OPTIONS: Array<{ value: DashboardRange; label: string }> = [
-  { value: "mtd", label: "Bulan ini" },
-  { value: "ytd", label: "Tahun berjalan" },
-  { value: "12m", label: "12 bulan" },
-  { value: "all", label: "Semua waktu" },
+const RANGE_OPTIONS: Array<{ value: DashboardRange; labelKey: MessageKey }> = [
+  { value: "mtd", labelKey: "dashboard.range.mtd" },
+  { value: "ytd", labelKey: "dashboard.range.ytd" },
+  { value: "12m", labelKey: "dashboard.range.12m" },
+  { value: "all", labelKey: "dashboard.range.all" },
 ];
 
 function asDashboardRange(value: string): DashboardRange {
@@ -43,6 +45,7 @@ export function DashboardToolbar({
   align = "center",
   surface = "bar",
 }: DashboardToolbarProps) {
+  const { t } = useI18n();
   const shouldReduceMotion = useReducedMotion();
   const onPanel = surface === "panel";
 
@@ -65,11 +68,11 @@ export function DashboardToolbar({
         onValueChange={(value) => onProjectChange(value === "__all__" ? null : value)}
       >
         <SelectTrigger size="sm" className="min-w-0 w-full max-w-48 sm:w-auto">
-          <SelectValue placeholder="Semua proyek" />
+          <SelectValue placeholder={t("dashboard.toolbar.allProjects")} />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            <SelectItem value="__all__">Semua proyek</SelectItem>
+            <SelectItem value="__all__">{t("dashboard.toolbar.allProjects")}</SelectItem>
             {scopeOptions.map((option) => (
               <SelectItem key={option.id} value={option.id}>
                 {option.name}
@@ -81,13 +84,13 @@ export function DashboardToolbar({
 
       <Select value={range} onValueChange={(value) => onRangeChange(asDashboardRange(value))}>
         <SelectTrigger size="sm" className="min-w-28">
-          <SelectValue placeholder="Periode" />
+          <SelectValue placeholder={t("dashboard.toolbar.period")} />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
             {RANGE_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                {t(option.labelKey)}
               </SelectItem>
             ))}
           </SelectGroup>
@@ -103,7 +106,7 @@ export function DashboardToolbar({
         disabled={loading}
       >
         <RefreshCw data-icon="inline-start" className={loading ? "animate-spin" : undefined} />
-        Muat ulang
+        {t("common.refresh")}
       </Button>
     </motion.div>
   );

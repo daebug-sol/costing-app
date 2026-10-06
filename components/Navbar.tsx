@@ -11,21 +11,25 @@ import { Menu, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/components/i18n-provider";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { MessageKey } from "@/lib/i18n/messages";
 import { canSeeNavHref } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useCostingStore } from "@/store/costingStore";
 
 const navItems = [
-  { href: "/", label: "Dashboard" },
-  { href: "/database", label: "Database" },
-  { href: "/costing", label: "Costing" },
-  { href: "/documentation", label: "Documentation" },
-  { href: "/help", label: "Help" },
-] as const;
+  { href: "/", labelKey: "nav.dashboard" },
+  { href: "/database", labelKey: "nav.database" },
+  { href: "/costing", labelKey: "nav.costing" },
+  { href: "/documentation", labelKey: "nav.documentation" },
+  { href: "/help", labelKey: "nav.help" },
+] as const satisfies ReadonlyArray<{ href: string; labelKey: MessageKey }>;
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useI18n();
   const pathname = usePathname();
   const role = useCostingStore((s) => s.role);
   const permissions = useCostingStore((s) => s.permissions);
@@ -51,16 +55,16 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav
       className="flex flex-col gap-1 md:flex-row md:items-center md:gap-0.5"
-      aria-label="Main"
+      aria-label={t("nav.mainLabel")}
     >
-      {visible.map(({ href, label }) => (
+      {visible.map(({ href, labelKey }) => (
         <Link
           key={href}
           href={href}
           onClick={onNavigate}
           className={linkClass(href)}
         >
-          {label}
+          {t(labelKey)}
         </Link>
       ))}
       {isOperator ? (
@@ -69,7 +73,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           onClick={onNavigate}
           className={linkClass("/operator")}
         >
-          Operator
+          {t("nav.operator")}
         </Link>
       ) : null}
     </nav>
@@ -77,6 +81,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function AuthControls() {
+  const { t } = useI18n();
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     return (
       <>
@@ -84,7 +89,7 @@ function AuthControls() {
           Dev mode
         </Badge>
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/settings">Pengaturan</Link>
+          <Link href="/settings">{t("nav.settings")}</Link>
         </Button>
       </>
     );
@@ -102,7 +107,7 @@ function AuthControls() {
         <UserButton>
           <UserButton.MenuItems>
             <UserButton.Link
-              label="User Settings"
+              label={t("nav.userSettings")}
               labelIcon={<Settings className="size-4" aria-hidden />}
               href="/settings"
             />
@@ -114,11 +119,11 @@ function AuthControls() {
       <Show when="signed-out">
         <SignInButton mode="modal">
           <Button variant="outline" size="sm">
-            Masuk
+            {t("nav.signIn")}
           </Button>
         </SignInButton>
         <SignUpButton mode="modal">
-          <Button size="sm">Daftar</Button>
+          <Button size="sm">{t("nav.signUp")}</Button>
         </SignUpButton>
       </Show>
     </>
@@ -126,6 +131,7 @@ function AuthControls() {
 }
 
 export function Navbar() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const loadOrgModules = useCostingStore((s) => s.loadOrgModules);
 
@@ -150,6 +156,7 @@ export function Navbar() {
         </div>
 
         <div className="flex shrink-0 items-center justify-end gap-2 md:min-w-[200px]">
+          <LanguageSwitcher />
           <AuthControls />
 
           <Button
@@ -158,7 +165,7 @@ export function Navbar() {
             size="icon"
             className="md:hidden"
             aria-expanded={open}
-            aria-label={open ? "Close menu" : "Open menu"}
+            aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")}
             onClick={() => setOpen((v) => !v)}
           >
             {open ? <X data-icon="inline-start" /> : <Menu data-icon="inline-start" />}

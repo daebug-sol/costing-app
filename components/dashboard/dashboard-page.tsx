@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChartInsightBlock } from "@/components/dashboard/chart-insight-block";
+import { useI18n } from "@/components/i18n-provider";
 import { ClientListWidget } from "@/components/dashboard/client-list-widget";
 import { DashboardStickyToolbar } from "@/components/dashboard/dashboard-sticky-toolbar";
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
@@ -22,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { PillTabsList, PillTabsTrigger } from "@/components/ui/pill-tabs";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import type { DashboardApiResponse, DashboardRange } from "@/lib/dashboard-contract";
+import type { MessageKey } from "@/lib/i18n/messages";
 import { buildMtdBookedDelta, buildTrendDelta, buildYtdBookedDelta } from "@/lib/dashboard-ui-mappers";
 import { cn } from "@/lib/utils";
 import { formatIDR, formatPercent } from "@/lib/utils/format";
@@ -62,11 +64,14 @@ const RevenueTrendChart = dynamic(
 );
 
 const SECONDARY_KPI_LABELS = [
-  { label: "Total proyek", key: "totalProjects" as const },
-  { label: "Quotation pending", key: "pendingQuotation" as const },
-  { label: "Win rate", key: "winRatePct" as const },
-  { label: "Eksposur pajak (PPN + PPh)", key: "taxExposure" as const },
-] as const;
+  { labelKey: "dashboard.kpi.totalProjects", key: "totalProjects" },
+  { labelKey: "dashboard.kpi.pendingQuotation", key: "pendingQuotation" },
+  { labelKey: "dashboard.kpi.winRate", key: "winRatePct" },
+  { labelKey: "dashboard.kpi.taxExposure", key: "taxExposure" },
+] as const satisfies ReadonlyArray<{ labelKey: MessageKey; key: string }>;
+
+const NOT_FOUND = "notFound";
+const LOAD_FAILED = "loadFailed";
 
 function SecondaryKpiBar({
   kpis,
@@ -75,6 +80,8 @@ function SecondaryKpiBar({
   kpis: DashboardApiResponse["kpis"] | undefined;
   className?: string;
 }) {
+  const { t } = useI18n();
+
   return (
     <div
       className={cn(
@@ -93,8 +100,8 @@ function SecondaryKpiBar({
           value = kpis?.[item.key] ?? 0;
         }
         return (
-          <div key={item.label} className="min-w-0 px-3 py-3 sm:px-4">
-            <p className="text-xs text-muted-foreground">{item.label}</p>
+          <div key={item.key} className="min-w-0 px-3 py-3 sm:px-4">
+            <p className="text-xs text-muted-foreground">{t(item.labelKey)}</p>
             <p className="tabular-money mt-0.5 text-sm font-semibold text-foreground">{value}</p>
           </div>
         );
@@ -104,11 +111,12 @@ function SecondaryKpiBar({
 }
 
 export function DashboardPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [data, setData] = useState<DashboardApiResponse | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<typeof NOT_FOUND | typeof LOAD_FAILED | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [range, setRange] = useState<DashboardRange>("all");
   const [activeTab, setActiveTab] = useState("finansial");
@@ -142,9 +150,9 @@ export function DashboardPage() {
 
         if (response.status === 404) {
           setSelectedProjectId(null);
-          throw new Error("Proyek tidak ditemukan");
+          throw new Error(NOT_FOUND);
         }
-        if (!response.ok) throw new Error("Gagal memuat dashboard");
+        if (!response.ok) throw new Error(LOAD_FAILED);
 
         const payload = (await response.json()) as DashboardApiResponse;
         setData(payload);
@@ -154,8 +162,7 @@ export function DashboardPage() {
         }
       } catch (loadError) {
         if (loadError instanceof DOMException && loadError.name === "AbortError") return;
-        const message = loadError instanceof Error ? loadError.message : "Gagal memuat dashboard";
-        setError(message);
+        setError(loadError instanceof Error && loadError.message === NOT_FOUND ? NOT_FOUND : LOAD_FAILED);
       } finally {
         if (!controller.signal.aborted) {
           setInitialLoading(false);
@@ -179,9 +186,9 @@ export function DashboardPage() {
       .then(async (response) => {
         if (response.status === 404) {
           setSelectedProjectId(null);
-          throw new Error("Proyek tidak ditemukan");
+          throw new Error(NOT_FOUND);
         }
-        if (!response.ok) throw new Error("Gagal memuat dashboard");
+        if (!response.ok) throw new Error(LOAD_FAILED);
         return response.json() as Promise<DashboardApiResponse>;
       })
       .then((payload) => {
@@ -191,8 +198,7 @@ export function DashboardPage() {
         }
       })
       .catch((loadError) => {
-        const message = loadError instanceof Error ? loadError.message : "Gagal memuat dashboard";
-        setError(message);
+        setError(loadError instanceof Error && loadError.message === NOT_FOUND ? NOT_FOUND : LOAD_FAILED);
       })
       .finally(() => setRefreshing(false));
   }, [range, selectedProjectId]);
@@ -201,7 +207,7 @@ export function DashboardPage() {
   const chartLoading = initialLoading && !data;
 
   const kpis = data?.kpis;
-  const trendSeries = data?.discountMarginTrend.series ?? [];
+  const trendSeries = useMemo(() => data?.discountMarginTrend.series ?? [], [data]);
   const ytdBookedDelta = useMemo(
     () => buildYtdBookedDelta(trendSeries, kpis?.bookedRevenueYtd ?? 0),
     [trendSeries, kpis?.bookedRevenueYtd]
@@ -228,13 +234,16 @@ export function DashboardPage() {
     onRefresh: refresh,
   };
 
+  const errorMessage =
+    error === NOT_FOUND ? t("dashboard.error.notFound") : t("dashboard.error.load");
+
   if (error && !data) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <p className="text-foreground">{error}</p>
+        <p className="text-foreground">{errorMessage}</p>
         <Button type="button" className="mt-4 gap-2" onClick={refresh}>
           <RefreshCw className="size-4" />
-          Coba lagi
+          {t("common.retry")}
         </Button>
       </div>
     );
@@ -242,9 +251,9 @@ export function DashboardPage() {
 
   return (
     <PageShell
-      eyebrow="Ringkasan"
-      title="Dashboard"
-      description="Ringkasan finansial proyek dan quotation untuk estimasi, sales, dan manajemen."
+      eyebrow={t("dashboard.eyebrow")}
+      title={t("dashboard.title")}
+      description={t("dashboard.description")}
       contentClassName="gap-6 pt-8 pb-6 sm:pt-10 sm:pb-8"
       actions={<DashboardToolbar {...toolbarProps} align="center" surface="panel" />}
     >
@@ -256,7 +265,7 @@ export function DashboardPage() {
 
       {error ? (
         <div className="rounded-none border border-warning/35 bg-warning-muted px-4 py-3 text-xs text-warning">
-          {error}. Menampilkan data terakhir yang tersedia.
+          {t("dashboard.error.staleData", { error: errorMessage })}
         </div>
       ) : null}
 
@@ -268,45 +277,45 @@ export function DashboardPage() {
         ) : (
           <>
         <KpiStatCard
-          title="Pendapatan booked YTD"
+          title={t("dashboard.kpi.bookedYtd")}
           value={kpis?.bookedRevenueYtd ?? 0}
           formatter={formatIDR}
           deltaPct={ytdBookedDelta}
-          deltaLabel="vs bulan lalu"
-          hint="Nilai bersih setelah diskon"
+          deltaLabel={t("dashboard.kpi.vsLastMonth")}
+          hint={t("dashboard.kpi.bookedYtdHint")}
         />
         <KpiStatCard
-          title="Pendapatan booked MTD"
+          title={t("dashboard.kpi.bookedMtd")}
           value={kpis?.bookedRevenueMtd ?? 0}
           formatter={formatIDR}
           deltaPct={mtdBookedDelta}
-          deltaLabel="vs bulan sebelumnya"
+          deltaLabel={t("dashboard.kpi.vsPrevMonth")}
         />
         <KpiStatCard
-          title="Margin kotor tertimbang"
+          title={t("dashboard.kpi.margin")}
           value={kpis?.weightedGrossMarginPct ?? 0}
           formatter={formatPercent}
           deltaPct={marginDelta}
-          deltaLabel="vs periode sebelumnya"
+          deltaLabel={t("dashboard.kpi.vsPrevPeriod")}
         />
         <KpiStatCard
-          title="Nilai pipeline"
+          title={t("dashboard.kpi.pipeline")}
           value={kpis?.pipelineValue ?? 0}
           formatter={formatIDR}
-          hint="Draft quotation pada periode aktif"
+          hint={t("dashboard.kpi.pipelineHint")}
         />
         <KpiStatCard
-          title="Kebocoran diskon"
+          title={t("dashboard.kpi.leakage")}
           value={kpis?.discountLeakageValue ?? 0}
           formatter={formatIDR}
           deltaPct={leakageDelta}
-          deltaLabel="vs periode sebelumnya"
+          deltaLabel={t("dashboard.kpi.vsPrevPeriod")}
         />
           </>
         )}
       </section>
 
-      <section aria-label="KPI pendukung">
+      <section aria-label={t("dashboard.kpi.secondaryLabel")}>
         <SecondaryKpiBar kpis={kpis} />
       </section>
 
@@ -319,7 +328,7 @@ export function DashboardPage() {
           id="dashboard-insight-heading"
           className="mb-4 text-base font-semibold text-foreground"
         >
-          Insight utama
+          {t("dashboard.insight.heading")}
         </h2>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -329,30 +338,30 @@ export function DashboardPage() {
               layoutId="dashboard-insight-pill"
               data-testid="dashboard-tab-finansial"
             >
-              Finansial
+              {t("dashboard.tab.financial")}
             </PillTabsTrigger>
             <PillTabsTrigger
               value="penjualan"
               layoutId="dashboard-insight-pill"
               data-testid="dashboard-tab-penjualan"
             >
-              Penjualan
+              {t("dashboard.tab.sales")}
             </PillTabsTrigger>
             <PillTabsTrigger
               value="costing"
               layoutId="dashboard-insight-pill"
               data-testid="dashboard-tab-costing"
             >
-              Costing
+              {t("dashboard.tab.costing")}
             </PillTabsTrigger>
           </PillTabsList>
 
           {activeTab === "finansial" ? (
           <TabsContent value="finansial" className="mt-4 space-y-4">
             <ChartInsightBlock
-              title="Profit bridge"
+              title={t("dashboard.profitBridge.title")}
               loading={chartLoading}
-              detailDescription="Tabel tahap profit bridge untuk review aksesibilitas."
+              detailDescription={t("dashboard.profitBridge.detail")}
               detailContent={
                 data?.sankey.links.length ? (
                   <ProfitBridgeChart sankey={data.sankey} />
@@ -364,18 +373,18 @@ export function DashboardPage() {
               ) : (
                 <EmptyState
                   icon={Wallet}
-                  title="Belum ada data profit bridge"
-                  description="Tambahkan data costing dan quotation untuk melihat alur profit."
-                  actionLabel="Buka Costing"
+                  title={t("dashboard.profitBridge.emptyTitle")}
+                  description={t("dashboard.profitBridge.emptyDescription")}
+                  actionLabel={t("common.openCosting")}
                   onAction={goToCosting}
                 />
               )}
             </ChartInsightBlock>
 
             <ChartInsightBlock
-              title="Cashflow timeline"
+              title={t("dashboard.cashflow.title")}
               loading={chartLoading}
-              detailDescription="Tabel bulanan cashflow dan saldo berjalan."
+              detailDescription={t("dashboard.cashflow.detail")}
               detailContent={
                 data?.cashflowProjection.series.length ? (
                   <CashflowTimelineChart data={data.cashflowProjection} />
@@ -387,9 +396,9 @@ export function DashboardPage() {
               ) : (
                 <EmptyState
                   icon={Wallet}
-                  title="Belum ada proyeksi cashflow"
-                  description="Setidaknya satu quotation booked dibutuhkan untuk menampilkan timeline."
-                  actionLabel="Buka Costing"
+                  title={t("dashboard.cashflow.emptyTitle")}
+                  description={t("dashboard.cashflow.emptyDescription")}
+                  actionLabel={t("common.openCosting")}
                   onAction={goToCosting}
                 />
               )}
@@ -400,19 +409,19 @@ export function DashboardPage() {
           {activeTab === "penjualan" ? (
           <TabsContent value="penjualan" className="mt-4 space-y-4">
             <div className="grid gap-4 lg:grid-cols-2">
-              <ChartInsightBlock title="Quotation funnel" loading={chartLoading}>
+              <ChartInsightBlock title={t("dashboard.funnel.title")} loading={chartLoading}>
                 {data ? <QuotationFunnel data={data.quotationFunnel} /> : null}
               </ChartInsightBlock>
 
-              <ChartInsightBlock title="Status distribution" loading={chartLoading}>
+              <ChartInsightBlock title={t("dashboard.statusDistribution.title")} loading={chartLoading}>
                 {data ? <StatusDistribution data={data.statusDistribution} /> : null}
               </ChartInsightBlock>
             </div>
 
             <ChartInsightBlock
-              title="Sales leaderboard"
+              title={t("dashboard.leaderboard.title")}
               loading={chartLoading}
-              detailDescription="Daftar lengkap performa per principal."
+              detailDescription={t("dashboard.leaderboard.detail")}
               detailContent={data ? <SalesLeaderboard data={data.salesLeaderboard} /> : null}
             >
               {data ? <SalesLeaderboard data={data.salesLeaderboard} maxRows={5} /> : null}
@@ -420,7 +429,7 @@ export function DashboardPage() {
 
             <ClientListWidget />
 
-            <ChartInsightBlock title="Quotation aging" loading={chartLoading}>
+            <ChartInsightBlock title={t("dashboard.aging.title")} loading={chartLoading}>
               {data ? <QuotationAgingTable data={data.quotationAging} /> : null}
             </ChartInsightBlock>
           </TabsContent>
@@ -429,18 +438,18 @@ export function DashboardPage() {
           {activeTab === "costing" ? (
           <TabsContent value="costing" className="mt-4 space-y-4">
             <ChartInsightBlock
-              title="Cost breakdown"
+              title={t("dashboard.costBreakdown.title")}
               loading={chartLoading}
-              detailDescription="Tabel breakdown material lengkap."
+              detailDescription={t("dashboard.costBreakdown.detail")}
               detailContent={data ? <CostBreakdownChart costingData={data.costingData} /> : null}
             >
               {data ? <CostBreakdownChart costingData={data.costingData} compact /> : null}
             </ChartInsightBlock>
 
             <ChartInsightBlock
-              title="Revenue trend"
+              title={t("dashboard.revenueTrend.title")}
               loading={chartLoading}
-              detailDescription="Tabel tren revenue per bulan."
+              detailDescription={t("dashboard.revenueTrend.detail")}
               detailContent={data ? <RevenueTrendChart data={data.revenueTrend} /> : null}
             >
               {data ? <RevenueTrendChart data={data.revenueTrend} compact /> : null}

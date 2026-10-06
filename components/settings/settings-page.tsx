@@ -3,6 +3,7 @@
 import { Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useI18n } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -68,7 +69,11 @@ async function readErr(res: Response): Promise<string> {
   return res.statusText || "Request failed";
 }
 
+/** Sentinel so the translated fallback is resolved at render time. */
+const LOAD_FAILED = "__load_failed__";
+
 export function SettingsPage() {
+  const { t } = useI18n();
   const [row, setRow] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +96,7 @@ export function SettingsPage() {
       });
       void syncOrgCaps().catch(() => undefined);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal memuat");
+      setError(e instanceof Error ? e.message : LOAD_FAILED);
     } finally {
       setLoading(false);
     }
@@ -107,7 +112,7 @@ export function SettingsPage() {
 
   const put = async (partial: Record<string, unknown>, card: string) => {
     if (!canWrite) {
-      toastError("Anda tidak punya izin mengubah pengaturan");
+      toastError(t("settings.noPermission"));
       return;
     }
     setSaving(card);
@@ -120,9 +125,9 @@ export function SettingsPage() {
       if (!r.ok) throw new Error(await readErr(r));
       setRow(await r.json());
       void syncOrgCaps().catch(() => undefined);
-      toastSuccess("Pengaturan disimpan");
+      toastSuccess(t("settings.saved"));
     } catch (e) {
-      toastError(e instanceof Error ? e.message : "Gagal menyimpan");
+      toastError(e instanceof Error ? e.message : t("settings.saveFailed"));
     } finally {
       setSaving(null);
     }
@@ -132,17 +137,19 @@ export function SettingsPage() {
     return (
       <PageShell
         width="narrow"
-        eyebrow="Konfigurasi"
-        title="Pengaturan"
-        description="Profil perusahaan, default costing, forex, dan syarat penawaran"
+        eyebrow={t("settings.eyebrow")}
+        title={t("settings.title")}
+        description={t("settings.description")}
         contentClassName="flex flex-col gap-6 lg:py-8"
       >
         <ThemeSettingsCard />
         <div className="rounded-lg border border-border bg-card p-6 text-center">
-          <p className="text-foreground">{error}</p>
+          <p className="text-foreground">
+            {error === LOAD_FAILED ? t("settings.loadFailed") : error}
+          </p>
           <Button type="button" className="mt-4 gap-2" onClick={() => void load()}>
             <RefreshCw className="size-4" />
-            Coba lagi
+            {t("common.retry")}
           </Button>
         </div>
       </PageShell>
@@ -153,9 +160,9 @@ export function SettingsPage() {
     return (
       <PageShell
         width="narrow"
-        eyebrow="Konfigurasi"
-        title="Pengaturan"
-        description="Profil perusahaan, default costing, forex, dan syarat penawaran"
+        eyebrow={t("settings.eyebrow")}
+        title={t("settings.title")}
+        description={t("settings.description")}
         contentClassName="flex flex-col gap-6 lg:py-8"
       >
         <ThemeSettingsCard />
@@ -178,21 +185,18 @@ export function SettingsPage() {
   return (
     <PageShell
       width="narrow"
-      eyebrow="Konfigurasi"
-      title="Pengaturan"
-      description="Profil perusahaan, default costing, forex, dan syarat penawaran"
+      eyebrow={t("settings.eyebrow")}
+      title={t("settings.title")}
+      description={t("settings.description")}
       contentClassName="flex flex-col gap-6 lg:py-8"
     >
       {!row.onboardingComplete ? (
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Selamat datang — setup organisasi</CardTitle>
+            <CardTitle className="text-lg">{t("settings.onboarding.title")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
-            <p>
-              Lengkapi nama perusahaan dan kurs forex default di bawah. Data ini
-              dipakai untuk quotation dan database harga organisasi Anda.
-            </p>
+            <p>{t("settings.onboarding.body")}</p>
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"
@@ -203,12 +207,12 @@ export function SettingsPage() {
                 {saving === "onboarding" ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
-                  "Tandai setup selesai"
+                  t("settings.onboarding.markDone")
                 )}
               </Button>
               <Button type="button" size="sm" variant="outline" asChild>
                 <Link href="/help/mulai-cepat/orientasi-aplikasi">
-                  Buka panduan Help
+                  {t("settings.onboarding.openHelp")}
                 </Link>
               </Button>
             </div>
@@ -220,8 +224,7 @@ export function SettingsPage() {
 
       {!canWrite ? (
         <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Peran Anda ({actorRole}) hanya dapat melihat pengaturan. Hubungi owner
-          atau admin untuk mengubah data organisasi.
+          {t("settings.readOnly", { role: actorRole })}
         </p>
       ) : null}
 
@@ -229,7 +232,7 @@ export function SettingsPage() {
 
       <Card size="sm" className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg">Profil perusahaan</CardTitle>
+          <CardTitle className="text-lg">{t("settings.companyProfile")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">

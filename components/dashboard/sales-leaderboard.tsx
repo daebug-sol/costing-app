@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import {
   Table,
   TableBody,
@@ -19,11 +20,13 @@ export function SalesLeaderboard({
   /** Limit visible rows for inline summary; full list in detail sheet. */
   maxRows?: number;
 }) {
+  const { t } = useI18n();
+
   if (data.rows.length === 0) {
-    return <p className="text-sm text-muted-foreground">Belum ada data performa untuk periode ini.</p>;
+    return <p className="text-sm text-muted-foreground">{t("dashboard.leaderboard.empty")}</p>;
   }
 
-  const principalLabel = data.mode === "salesman" ? "Salesman" : "Klien";
+  const principalLabel = data.mode === "salesman" ? t("common.salesman") : t("common.client");
   const visibleRows = maxRows ? data.rows.slice(0, maxRows) : data.rows;
   const hiddenCount = maxRows ? Math.max(0, data.rows.length - maxRows) : 0;
 
@@ -31,18 +34,18 @@ export function SalesLeaderboard({
     <div className="space-y-3" data-testid="sales-leaderboard">
       <p className="text-xs text-muted-foreground">
         {data.mode === "salesman"
-          ? "Performa disusun berdasarkan atribusi salesman pada quotation."
-          : "Salesman belum tersedia; performa memakai konsentrasi klien sebagai fallback."}
+          ? t("dashboard.leaderboard.bySalesman")
+          : t("dashboard.leaderboard.byClient")}
       </p>
       <div className="rounded-none border border-border/70">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>{principalLabel}</TableHead>
-              <TableHead className="text-right">Booked</TableHead>
-              <TableHead className="text-right">Win rate</TableHead>
-              <TableHead className="text-right">Avg margin</TableHead>
-              <TableHead className="text-right">Pipeline</TableHead>
+              <TableHead className="text-right">{t("dashboard.leaderboard.booked")}</TableHead>
+              <TableHead className="text-right">{t("dashboard.leaderboard.winRate")}</TableHead>
+              <TableHead className="text-right">{t("dashboard.leaderboard.avgMargin")}</TableHead>
+              <TableHead className="text-right">{t("dashboard.leaderboard.pipeline")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

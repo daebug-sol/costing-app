@@ -17,7 +17,7 @@ export type AhuRecalcParams = {
   nSections?: number;
   /** AHU section arrangement; metadata only until Phase 3b formula. */
   sectionLayout?: AhuSectionLayout;
-  /** Scope modular: full AHU vs sub-assembly terpilih. */
+  /** Scope modular: full AHU vs kelompok terpilih. */
   costingScope?: CostingScope;
   accessDoor?: {
     qty?: number;

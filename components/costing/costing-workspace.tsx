@@ -53,6 +53,7 @@ import {
 } from "@/components/costing/costing-shell";
 import { ContextualHelpLink } from "@/components/help/contextual-help-link";
 import { EmptyState } from "@/components/empty-state";
+import { useI18n } from "@/components/i18n-provider";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -320,6 +321,7 @@ function AhuSegmentEditor({
   resetSegmentMarkup,
   showToast,
 }: AhuEditorProps) {
+  const { t } = useI18n();
   const sortedSections = useMemo(
     () => sortSections(seg.sections ?? []),
     [seg.sections]
@@ -719,9 +721,7 @@ function AhuSegmentEditor({
               Modul costing AHU
             </h4>
             <p className="text-muted-foreground max-w-xl text-xs leading-relaxed">
-              Full AHU menghitung semua blok. Matikan untuk memilih sub-assembly
-              saja (mis. coil atau damper); isi parameter di bawah sesuai modul
-              yang aktif, lalu Hitung ulang.
+              {t("costing.scope.fullAhuHint")}
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Switch
@@ -739,7 +739,7 @@ function AhuSegmentEditor({
             {!scope.isFullAhu && (
               <div className="bg-muted/30 rounded-lg border border-border p-3">
                 <p className="text-muted-foreground mb-2 text-xs font-medium">
-                  Sub-assembly yang dihitung
+                  {t("costing.scope.selectedGroups")}
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {AHU_COSTING_MODULE_TOGGLES.map(({ key, label }) => {

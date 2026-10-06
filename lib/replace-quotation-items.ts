@@ -8,7 +8,6 @@ export async function replaceQuotationItems(
   inputs: ParsedQuotationItemInput[],
   tx?: Prisma.TransactionClient
 ) {
-  const db = tx ?? prisma;
 
   const run = async (trx: Prisma.TransactionClient) => {
     const existing = await trx.quotationItem.findMany({ where: { quotationId } });
