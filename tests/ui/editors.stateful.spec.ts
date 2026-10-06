@@ -53,4 +53,29 @@ test.describe("Stateful editors", () => {
       await request.delete(`/api/custom-db/${id}`);
     }
   });
+
+  test("costing workspace creates a project and opens the AHU editor tabs", async ({ page, request }) => {
+    await page.goto("/costing");
+    await page.waitForLoadState("networkidle");
+    const created = page.waitForResponse(
+      (r) => r.url().endsWith("/api/projects") && r.request().method() === "POST"
+    );
+    await page.getByRole("button", { name: "Proyek baru" }).click();
+    await page.getByLabel("Nama proyek").fill(`E2E costing ${Date.now()}`);
+    await page.getByRole("button", { name: "Buat", exact: true }).click();
+    const { id } = (await (await created).json()) as { id: string };
+
+    try {
+      await page.getByRole("button", { name: "Tambah metode costing" }).click();
+      await page.getByRole("menuitem", { name: "AHU otomatis" }).click();
+
+      await expect(page.getByRole("tab", { name: "Unit & hitung" })).toBeVisible({ timeout: 30_000 });
+      await page.getByRole("tab", { name: "Parameter modul" }).click();
+      await expect(page.getByRole("tab", { name: "Parameter modul", selected: true })).toBeVisible();
+      await page.getByRole("tab", { name: "Ringkasan" }).click();
+      await expect(page.getByRole("tab", { name: "Ringkasan", selected: true })).toBeVisible();
+    } finally {
+      await request.delete(`/api/projects/${id}`);
+    }
+  });
 });

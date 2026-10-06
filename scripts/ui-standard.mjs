@@ -115,7 +115,6 @@ rule("route segments have error.tsx + loading.tsx", missing);
 // Lower a ceiling (or delete the entry) when a file is decomposed. Do not raise them.
 const MAX_LINES = Number(process.env.UI_MAX_LINES ?? 1500);
 const LEGACY_CEILING = {
-  "components/costing/costing-workspace.tsx": 3178,
 };
 rule(
   `no component file over ${MAX_LINES} lines (legacy files may not grow)`,
