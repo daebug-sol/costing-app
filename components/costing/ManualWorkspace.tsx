@@ -64,6 +64,7 @@ import {
 import { formatIDR } from "@/lib/utils/format";
 import { computeCostSummary, finite } from "@/lib/cost-summary";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/confirm-dialog";
 import { useCostingStore } from "@/store/costingStore";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
 
@@ -211,6 +212,7 @@ export function ManualWorkspace({
   collapseAllManualSignal = 0,
   expandAllManualSignal = 0,
 }: ManualWorkspaceProps) {
+  const [confirm, confirmDialog] = useConfirm();
   const currentProject = useCostingStore((s) => s.currentProject);
   const loadProject = useCostingStore((s) => s.loadProject);
   const updateProject = useCostingStore((s) => s.updateProject);
@@ -658,6 +660,7 @@ export function ManualWorkspace({
     <div
       className={cn("space-y-4", !embedded && "mx-auto max-w-6xl")}
     >
+      {confirmDialog}
       {toast && (
         <div className="bg-card border-border fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-lg border px-4 py-2 text-sm">
           {toast}
@@ -826,13 +829,12 @@ export function ManualWorkspace({
                           aria-label={`Hapus kelompok ${g.name}`}
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={() => {
-                            if (
-                              window.confirm(
-                                "Hapus kelompok ini beserta baris di dalamnya?"
-                              )
-                            ) {
-                              void removeGroup(g.id);
-                            }
+                            void confirm({
+                              title: `Hapus kelompok ${g.name}?`,
+                              description: "Semua baris di dalam kelompok ikut terhapus.",
+                            }).then((ok) => {
+                              if (ok) void removeGroup(g.id);
+                            });
                           }}
                         >
                           <Trash2 className="size-4" />

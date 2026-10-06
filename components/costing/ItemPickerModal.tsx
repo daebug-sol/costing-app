@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -81,6 +82,8 @@ export function ItemPickerModal({
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [qtyByKey, setQtyByKey] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [newGroupOpen, setNewGroupOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
 
   const unifiedRows: UnifiedRow[] = useMemo(() => {
     return catalog.map((item) => ({
@@ -233,18 +236,54 @@ export function ItemPickerModal({
   const selectGroupValue = (v: string) => {
     if (v === "__create__") {
       if (!onCreateGroup) return;
-      const name = window.prompt("Nama grup baru?");
-      if (!name?.trim()) return;
-      void (async () => {
-        const id = await onCreateGroup(name.trim());
-        if (id) setSelectedGroupId(id);
-      })();
+      setNewGroupName("");
+      setNewGroupOpen(true);
       return;
     }
     setSelectedGroupId(v);
   };
 
+  const submitNewGroup = async () => {
+    const name = newGroupName.trim();
+    if (!name || !onCreateGroup) return;
+    setNewGroupOpen(false);
+    const id = await onCreateGroup(name);
+    if (id) setSelectedGroupId(id);
+  };
+
   return (
+    <>
+    <Dialog open={newGroupOpen} onOpenChange={setNewGroupOpen}>
+      <DialogContent className="sm:max-w-sm">
+        <form
+          className="grid gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submitNewGroup();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Grup baru</DialogTitle>
+            <DialogDescription>Beri nama grup untuk item yang dipilih.</DialogDescription>
+          </DialogHeader>
+          <Label htmlFor="new-group-name">Nama grup</Label>
+          <Input
+            id="new-group-name"
+            autoFocus
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+          />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setNewGroupOpen(false)}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={!newGroupName.trim()}>
+              Buat grup
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[min(90vh,900px)] max-h-[90vh] w-[min(100vw-2rem,1400px)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(90rem,calc(100vw-2rem))]">
         <DialogHeader className="border-b border-border px-6 py-4">
@@ -424,5 +463,6 @@ export function ItemPickerModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

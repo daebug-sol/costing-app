@@ -52,6 +52,7 @@ import { computeQuotationTotals } from "@/lib/quotation-financials";
 import { formatIDR } from "@/lib/utils/format";
 import { toastError, toastSuccess } from "@/store/toastStore";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
+import { useConfirm } from "@/components/confirm-dialog";
 
 const SPEC_MAX_CHARS = 4000;
 
@@ -278,6 +279,7 @@ function fmtDateInput(iso: string) {
 }
 
 export function DocumentationModule() {
+  const [confirm, confirmDialog] = useConfirm();
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromProject = searchParams.get("fromProject");
@@ -609,13 +611,11 @@ export function DocumentationModule() {
 
   const handleBulkDelete = useCallback(async () => {
     if (selectedIds.size === 0) return;
-    if (
-      !confirm(
-        `Hapus ${selectedIds.size} file penawaran yang dipilih? Tindakan ini tidak bisa dibatalkan.`
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: `Hapus ${selectedIds.size} file penawaran?`,
+      description: "Tindakan ini tidak bisa dibatalkan.",
+    });
+    if (!ok) return;
     setDeletingBulk(true);
     try {
       const r = await fetch("/api/quotations/bulk-delete", {
@@ -634,7 +634,7 @@ export function DocumentationModule() {
     } finally {
       setDeletingBulk(false);
     }
-  }, [selectedIds, loadList]);
+  }, [selectedIds, loadList, confirm]);
 
   const openQuotation = useCallback(
     (id: string) => {
@@ -1236,6 +1236,7 @@ export function DocumentationModule() {
 
   return (
     <div className="bg-muted relative flex h-[calc(100vh-3.5rem)] min-h-0 flex-col overflow-hidden">
+      {confirmDialog}
       <div className="bg-card/95 border-border z-30 flex shrink-0 flex-col gap-2 border-b px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           <Button

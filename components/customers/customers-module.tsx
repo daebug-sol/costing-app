@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toastError, toastSuccess } from "@/store/toastStore";
+import { useConfirm } from "@/components/confirm-dialog";
 
 type Customer = {
   id: string;
@@ -52,6 +53,7 @@ async function readErr(res: Response): Promise<string> {
 }
 
 export function CustomersModule() {
+  const [confirm, confirmDialog] = useConfirm();
   const [rows, setRows] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -134,7 +136,7 @@ export function CustomersModule() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Hapus pelanggan ini?")) return;
+    if (!(await confirm({ title: "Hapus pelanggan ini?", description: "Data pelanggan akan dihapus permanen." }))) return;
     try {
       const r = await fetch(`/api/customers/${id}`, { method: "DELETE" });
       if (!r.ok) throw new Error(await readErr(r));
@@ -154,6 +156,7 @@ export function CustomersModule() {
       description="Data master pelanggan untuk penawaran, sales order, invoice, dan pembayaran"
       contentClassName="space-y-6"
     >
+      {confirmDialog}
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">

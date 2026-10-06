@@ -133,6 +133,7 @@ import {
 import { formatIDR, formatNumber, parseIDR } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 import { AssemblyTypeBadge } from "@/components/costing/assembly-type-badge";
+import { useConfirm } from "@/components/confirm-dialog";
 import { ManualWorkspace } from "@/components/costing/ManualWorkspace";
 import {
   useCostingStore,
@@ -1718,6 +1719,7 @@ function AhuSegmentEditor({
 }
 
 export function CostingWorkspace() {
+  const [confirm, confirmDialog] = useConfirm();
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectFromUrl = searchParams.get("project");
@@ -2242,6 +2244,7 @@ export function CostingWorkspace() {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden border-t border-border bg-background">
+      {confirmDialog}
       {toast && (
         <div className="bg-card border-border fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-lg border px-4 py-2 text-sm">
           {toast}
@@ -2718,14 +2721,15 @@ export function CostingWorkspace() {
                                     aria-label={`Hapus item ${seg.title}`}
                                     onPointerDown={(e) => e.stopPropagation()}
                                     onClick={() => {
-                                      if (
-                                        window.confirm(
-                                          "Hapus item ini beserta isinya?"
-                                        )
-                                      )
-                                        deleteSegment(seg.id).catch((e) =>
-                                          showToast(String(e))
-                                        );
+                                      void confirm({
+                                        title: `Hapus item ${seg.title}?`,
+                                        description: "Item beserta isinya akan dihapus.",
+                                      }).then((ok) => {
+                                        if (ok)
+                                          deleteSegment(seg.id).catch((e) =>
+                                            showToast(String(e))
+                                          );
+                                      });
                                     }}
                                   >
                                     <Trash2 className="size-4" />
