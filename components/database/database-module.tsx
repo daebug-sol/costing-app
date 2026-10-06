@@ -566,7 +566,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
                         size="icon-sm"
                         variant="ghost"
                         className="text-muted-foreground"
-                        aria-label="Edit"
+                        aria-label={`Edit ${m.name}`}
                         onClick={() => openEdit(m)}
                       >
                         <Pencil className="size-4" />
@@ -576,7 +576,7 @@ function MaterialsPanel({ show }: { show: (t: "success" | "error", m: string) =>
                         size="icon-sm"
                         variant="ghost"
                         className="text-destructive"
-                        aria-label="Hapus"
+                        aria-label={`Hapus ${m.name}`}
                         onClick={() => setDeleteTarget(m)}
                       >
                         <Trash2 className="size-4" />
@@ -1111,7 +1111,7 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
                         size="icon-sm"
                         variant="ghost"
                         onClick={() => openEdit(p)}
-                        aria-label="Edit"
+                        aria-label={`Edit ${p.name}`}
                       >
                         <Pencil className="size-4" />
                       </Button>
@@ -1121,7 +1121,7 @@ function ProfilesPanel({ show }: { show: (t: "success" | "error", m: string) => 
                         variant="ghost"
                         className="text-destructive"
                         onClick={() => setDeleteTarget(p)}
-                        aria-label="Hapus"
+                        aria-label={`Hapus ${p.name}`}
                       >
                         <Trash2 className="size-4" />
                       </Button>
@@ -1713,7 +1713,7 @@ function ComponentsPanel({
                         size="icon-sm"
                         variant="ghost"
                         onClick={() => openEdit(c)}
-                        aria-label="Edit"
+                        aria-label={`Edit ${c.name}`}
                       >
                         <Pencil className="size-4" />
                       </Button>
@@ -1723,7 +1723,7 @@ function ComponentsPanel({
                         variant="ghost"
                         className="text-destructive"
                         onClick={() => setDeleteTarget(c)}
-                        aria-label="Hapus"
+                        aria-label={`Hapus ${c.name}`}
                       >
                         <Trash2 className="size-4" />
                       </Button>

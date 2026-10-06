@@ -1735,6 +1735,7 @@ export function DocumentationModule() {
                                 variant="ghost"
                                 size="icon"
                                 className="size-8"
+                                aria-label="Hapus baris"
                                 onClick={() => removeLine(it.localId)}
                               >
                                 <X className="size-4" />

@@ -968,6 +968,7 @@ export function ManualWorkspace({
                                               size="icon"
                                               className="size-7 text-amber-700"
                                               title="Kembalikan harga DB"
+                                              aria-label={`Kembalikan harga DB untuk ${row.name}`}
                                               onClick={() =>
                                                 void applyPriceOverride(
                                                   row.id,
@@ -988,6 +989,7 @@ export function ManualWorkspace({
                                             variant="ghost"
                                             size="icon"
                                             className="size-8 text-muted-foreground"
+                                            aria-label={`Hapus baris ${row.name}`}
                                             onClick={() =>
                                               setDeleteItemId(row.id)
                                             }
