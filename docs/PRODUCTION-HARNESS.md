@@ -20,7 +20,7 @@ Verify in code and deployment; update status as you ship features.
 
 | Area | Target state for SaaS | Status | Verified |
 |------|------------------------|--------|----------|
-| **Auth** | Real user accounts (email/OAuth/SSO); sessions; password or IdP policies. | ✅ Clerk (`@clerk/nextjs`), middleware route protection, `lib/auth.ts` | Code + CI; staging login pending manual |
+| **Auth** | Real user accounts (email/OAuth/SSO); sessions; password or IdP policies. | ✅ Clerk (`@clerk/nextjs`), proxy (`proxy.ts`) route protection, `lib/auth.ts` | Code + CI; staging login pending manual |
 | **Multi-tenancy** | `organizationId` on tenant-owned models; **every** query scoped; no cross-tenant leakage in APIs. | ✅ `Organization` model, `lib/tenant-context.ts`, nested route verifiers, isolation tests | Automated tests PASS; staging IDOR walk pending |
 | **Database** | Hosted Postgres with backups, PITR if required; migrations in CI. | ✅ Postgres datasource, `docker-compose.yml`, migrate in CI/build | Neon backup enablement pending manual |
 | **Secrets** | Only in environment / vault on the host; rotateable; never in git. | ✅ `.env.example` template; no secrets in repo | Grep audit PASS |
