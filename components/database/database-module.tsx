@@ -1,5 +1,6 @@
 "use client";
 
+import { toastError, toastSuccess } from "@/store/toastStore";
 import { useI18n } from "@/components/i18n-provider";
 import {
   Download,
@@ -49,7 +50,6 @@ import { useCostingStore } from "@/store/costingStore";
 import { CustomDatabasePanel } from "./custom-database-panel";
 import { DatabaseExplorer } from "./database-explorer";
 
-type ToastState = { type: "success" | "error"; message: string } | null;
 
 async function readErr(res: Response): Promise<string> {
   try {
@@ -62,16 +62,11 @@ async function readErr(res: Response): Promise<string> {
 }
 
 function useToast() {
-  const [toast, setToast] = useState<ToastState>(null);
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4500);
-    return () => clearTimeout(t);
-  }, [toast]);
   const show = useCallback((type: "success" | "error", message: string) => {
-    setToast({ type, message });
+    if (type === "success") toastSuccess(message);
+    else toastError(message);
   }, []);
-  return { toast, show };
+  return { show };
 }
 
 function DatabaseRowDeleteDialog({
@@ -1909,7 +1904,7 @@ function ComponentsPanel({
 /* ——— Root ——— */
 
 export function DatabaseModule() {
-  const { toast, show } = useToast();
+  const { show } = useToast();
   const modules = useCostingStore((s) => s.modules);
   const loadOrgModules = useCostingStore((s) => s.loadOrgModules);
   const ahuModuleEnabled = modules.ahu;
@@ -1932,23 +1927,6 @@ export function DatabaseModule() {
 
   return (
     <div className="relative">
-      {toast && (
-        <div
-          className="fixed bottom-6 left-1/2 z-[100] max-w-md -translate-x-1/2 px-4"
-          role="status"
-        >
-          <div
-            className={
-              toast.type === "success"
-                ? "rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-lg"
-                : "rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-lg"
-            }
-          >
-            {toast.message}
-          </div>
-        </div>
-      )}
-
       <Tabs value={activeTab} onValueChange={setDatabaseActiveTab} className="w-full">
         {ahuModuleEnabled ? (
           <TabsList className="mb-6 inline-flex h-auto rounded-full border border-primary/20 bg-muted/70 p-1">

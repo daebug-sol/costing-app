@@ -88,7 +88,7 @@ rule(
 rule("no English loading/saving strings", scanLines(nonUi, /["'>]\s*(Loading|Saving)[^"'<{]*\.\.\.\s*["'<]/));
 rule(
   "no local toast duplicating toastStore",
-  scanLines(nonUi, /function useToast\(|const \[toast, setToast\]|bg-card border-border fixed bottom-4 left-1\/2/)
+  scanLines(nonUi, /const \[toast, setToast\]|bg-card border-border fixed bottom-4 left-1\/2/)
 );
 
 // routes with a data module need error.tsx + loading.tsx

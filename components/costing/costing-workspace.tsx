@@ -1,5 +1,6 @@
 "use client";
 
+import { toastError } from "@/store/toastStore";
 import {
   DndContext,
   type DragEndEvent,
@@ -1790,11 +1791,7 @@ export function CostingWorkspace() {
   const [addQty, setAddQty] = useState("1");
   const [addPrice, setAddPrice] = useState("0");
 
-  const [toast, setToast] = useState<string | null>(null);
-  const showToast = (m: string) => {
-    setToast(m);
-    setTimeout(() => setToast(null), 3500);
-  };
+  const showToast = (m: string) => toastError(m);
 
   /** Flat manual segment (default “Kelompok utama”). */
   const addManualItem = () => {
@@ -2247,11 +2244,6 @@ export function CostingWorkspace() {
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden border-t border-border bg-background">
       {confirmDialog}
-      {toast && (
-        <div className="bg-card border-border fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-lg border px-4 py-2 text-sm">
-          {toast}
-        </div>
-      )}
 
       <PageHeader
         variant="band"

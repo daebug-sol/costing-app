@@ -1,5 +1,6 @@
 "use client";
 
+import { toastError } from "@/store/toastStore";
 import { useI18n } from "@/components/i18n-provider";
 import {
   DndContext,
@@ -227,11 +228,7 @@ export function ManualWorkspace({
   const [pickerLockGroupId, setPickerLockGroupId] = useState<string | null>(
     null
   );
-  const [toast, setToast] = useState<string | null>(null);
-  const showToast = (m: string) => {
-    setToast(m);
-    setTimeout(() => setToast(null), 3500);
-  };
+  const showToast = (m: string) => toastError(m);
 
   const [useEsk, setUseEsk] = useState(true);
   const [useAsu, setUseAsu] = useState(true);
@@ -663,11 +660,6 @@ export function ManualWorkspace({
       className={cn("space-y-4", !embedded && "mx-auto max-w-6xl")}
     >
       {confirmDialog}
-      {toast && (
-        <div className="bg-card border-border fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-lg border px-4 py-2 text-sm">
-          {toast}
-        </div>
-      )}
 
       {(!embedded || (!loading && !isManualEmpty)) && (
         <div
