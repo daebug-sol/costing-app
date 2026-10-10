@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
 import { requirePermission } from "@/lib/permissions";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { deleteOrganizationData } from "@/lib/tenant-queries";
 
 export async function DELETE(request: Request) {
@@ -9,6 +10,14 @@ export async function DELETE(request: Request) {
   const denied = requirePermission(guard.role, "org:danger");
   if (denied) return denied;
   const { orgId, userId } = guard;
+
+  const limited = await enforceRateLimit({
+    orgId,
+    bucket: "org-delete",
+    limit: 3,
+    windowMs: 60 * 60_000,
+  });
+  if (limited) return limited;
 
   try {
     const body = (await request.json().catch(() => ({}))) as {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
 import { generateDeliveryOrderPdf } from "@/lib/generators/deliveryOrderPdf";
 import { prisma } from "@/lib/prisma";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { requireDeliveryOrderInOrg } from "@/lib/tenant-context";
 import { getOrCreateSettings } from "@/lib/tenant-queries";
 
@@ -11,6 +12,14 @@ export async function GET(_request: Request, context: Ctx) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
   const { orgId } = guard;
+
+  const limited = await enforceRateLimit({
+    orgId,
+    bucket: "delivery-order-pdf",
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (limited) return limited;
 
   try {
     const { id } = await context.params;

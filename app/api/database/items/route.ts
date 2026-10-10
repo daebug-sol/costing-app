@@ -2,17 +2,20 @@ import { NextResponse } from "next/server";
 import { hasColumnKey } from "@/lib/custom-db";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
+import { tenantWhere } from "@/lib/tenant-queries";
 
 export async function GET() {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
+  const { orgId } = guard;
 
   try {
     const [materials, profiles, components, customRows] = await Promise.all([
-      prisma.materialPrice.findMany({ orderBy: { code: "asc" } }),
-      prisma.profileData.findMany({ orderBy: { code: "asc" } }),
-      prisma.componentCatalog.findMany({ orderBy: { code: "asc" } }),
+      prisma.materialPrice.findMany({ where: tenantWhere.materials(orgId), orderBy: { code: "asc" } }),
+      prisma.profileData.findMany({ where: tenantWhere.profiles(orgId), orderBy: { code: "asc" } }),
+      prisma.componentCatalog.findMany({ where: tenantWhere.components(orgId), orderBy: { code: "asc" } }),
       prisma.customDbRow.findMany({
+        where: { table: tenantWhere.customTables(orgId) },
         include: {
           cells: true,
           table: { include: { columns: true } },

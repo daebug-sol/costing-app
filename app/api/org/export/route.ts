@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { exportOrgData } from "@/lib/tenant-queries";
 
 export async function GET() {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
   const { orgId } = guard;
+
+  const limited = await enforceRateLimit({
+    orgId,
+    bucket: "org-export",
+    limit: 3,
+    windowMs: 60_000,
+  });
+  if (limited) return limited;
 
   try {
     const payload = await exportOrgData(orgId);

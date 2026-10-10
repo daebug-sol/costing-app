@@ -10,7 +10,7 @@ import { normalizeCostingScope } from "@/lib/costing-scope";
 import { requireAhuModule } from "@/lib/org-modules";
 import { prisma } from "@/lib/prisma";
 import { rollupProjectFinancials } from "@/lib/project-rollup";
-import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { requireProjectInOrg, requireSegmentInOrg } from "@/lib/tenant-context";
 
 type Ctx = { params: Promise<{ id: string; segmentId: string }> };
@@ -25,13 +25,13 @@ export async function POST(request: Request, context: Ctx) {
   const ahuGate = await requireAhuModule(orgId);
   if (!ahuGate.ok) return ahuGate.response;
 
-  const rate = checkRateLimit(rateLimitKey([orgId, "recalculate"]), 20, 60_000);
-  if (!rate.ok) {
-    return NextResponse.json(
-      { error: "Too many requests" },
-      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } }
-    );
-  }
+  const limited = await enforceRateLimit({
+    orgId,
+    bucket: "recalculate",
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (limited) return limited;
 
   try {
     const { id: projectId, segmentId } = await context.params;
