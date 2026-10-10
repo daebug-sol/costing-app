@@ -92,7 +92,7 @@ export async function POST(request: Request, context: Ctx) {
         );
       }
 
-      const resolved = await resolveManualSource(sourceType, sourceId);
+      const resolved = await resolveManualSource(sourceType, sourceId, orgId);
       if (!resolved) {
         return NextResponse.json(
           { error: `Unknown source: ${sourceType} ${sourceId}` },
