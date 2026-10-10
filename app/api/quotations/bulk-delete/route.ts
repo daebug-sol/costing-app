@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       );
     }
     const result = await prisma.quotation.deleteMany({
-      where: { id: { in: ids } },
+      where: { id: { in: ids }, organizationId: guard.orgId },
     });
     return NextResponse.json({ deleted: result.count });
   } catch (e) {

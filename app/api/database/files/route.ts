@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildColumnId, sanitizeColumnId } from "@/lib/custom-db";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requireFolderInOrg } from "@/lib/tenant-context";
 import { requirePermission } from "@/lib/permissions";
 import {
   ensureDefaultFolders,
@@ -47,6 +48,9 @@ export async function GET(request: Request) {
     }
 
     await ensureDefaultFolders(orgId);
+
+    const folderCheck = await requireFolderInOrg(folderId, orgId);
+    if (!folderCheck.ok) return folderCheck.response;
 
     if (scopeParam === "custom") {
       const tables = await prisma.customDbTable.findMany({

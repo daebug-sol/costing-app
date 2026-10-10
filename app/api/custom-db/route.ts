@@ -3,6 +3,7 @@ import { buildColumnId, sanitizeColumnId } from "@/lib/custom-db";
 import { defaultCustomFolderId, ensureDefaultFolders } from "@/lib/database-folders";
 import { prisma } from "@/lib/prisma";
 import { guardApiRoute } from "@/lib/api-guard";
+import { requireFolderInOrg } from "@/lib/tenant-context";
 import { requirePermission } from "@/lib/permissions";
 
 const DEFAULT_COLUMNS = [
@@ -64,6 +65,8 @@ export async function POST(request: Request) {
     };
     const name = String(body.name ?? "").trim() || "Custom Database";
     const folderId = String(body.folderId ?? "").trim() || defaultCustomFolderId(orgId);
+    const folderCheck = await requireFolderInOrg(folderId, orgId);
+    if (!folderCheck.ok) return folderCheck.response;
     const dynamicColumns = (Array.isArray(body.columns) ? body.columns : [])
       .map((c, idx) => {
         const base = sanitizeColumnId(String(c.header ?? ""));
