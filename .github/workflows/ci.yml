@@ -58,6 +58,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Tenant isolation (integration)
+        run: npm run test:isolation
+
       - name: Build
         run: npm run build
         env:
