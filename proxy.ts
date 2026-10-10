@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { isAuthBypassed } from "@/lib/auth";
 
 const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
@@ -12,8 +13,7 @@ function bypassMiddleware() {
   return NextResponse.next();
 }
 
-export default process.env.AUTH_BYPASS === "true" ||
-  (!process.env.CLERK_SECRET_KEY && process.env.NODE_ENV !== "production")
+export default isAuthBypassed()
   ? bypassMiddleware
   : clerkMiddleware(async (auth, request) => {
       if (!isPublicRoute(request)) {

@@ -25,7 +25,7 @@ cp .env.example .env
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | No | — | Optional | Recommended | Scaffold skips when unset |
 | `SENTRY_ORG` / `SENTRY_PROJECT` | No | — | Optional | Recommended | For source maps upload |
 | `UPSTASH_REDIS_REST_URL` / `TOKEN` | No | — | Optional | Recommended | In-memory fallback when unset |
-| `AUTH_BYPASS` | **Never prod** | — | **Do not set** | **Do not set** | CI/test only (`true` + `TEST_USER_ID` + `TEST_ORG_ID`) |
+| `AUTH_BYPASS` | **Never prod** | — | **Do not set** | **Do not set** | CI/test only (`true` + `TEST_USER_ID` + `TEST_ORG_ID`) Ignored on any Vercel deployment (`VERCEL` set); self-hosted deployments must never set it. |
 | `OPERATOR_USER_IDS` | No* | Optional | Recommended | Recommended | Comma-separated Clerk user IDs for `/operator` UI; empty/unset = no operator UI access |
 | `OPERATOR_API_KEY` | No* | Optional | Optional | Recommended for scripts | Bearer key for `/api/operator/*`; empty/unset = key auth disabled |
 
