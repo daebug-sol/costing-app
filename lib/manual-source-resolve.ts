@@ -11,11 +11,12 @@ export type ResolvedManualSource = {
 
 export async function resolveManualSource(
   sourceType: string,
-  sourceId: string
+  sourceId: string,
+  orgId: string
 ): Promise<ResolvedManualSource | null> {
   if (sourceType === "material") {
-    const m = await prisma.materialPrice.findUnique({
-      where: { id: sourceId },
+    const m = await prisma.materialPrice.findFirst({
+      where: { id: sourceId, organizationId: orgId },
     });
     if (!m) return null;
     return {
@@ -27,8 +28,8 @@ export async function resolveManualSource(
     };
   }
   if (sourceType === "profile") {
-    const p = await prisma.profileData.findUnique({
-      where: { id: sourceId },
+    const p = await prisma.profileData.findFirst({
+      where: { id: sourceId, organizationId: orgId },
     });
     if (!p) return null;
     return {
@@ -40,8 +41,8 @@ export async function resolveManualSource(
     };
   }
   if (sourceType === "component") {
-    const c = await prisma.componentCatalog.findUnique({
-      where: { id: sourceId },
+    const c = await prisma.componentCatalog.findFirst({
+      where: { id: sourceId, organizationId: orgId },
     });
     if (!c) return null;
     return {
@@ -53,8 +54,8 @@ export async function resolveManualSource(
     };
   }
   if (sourceType === "custom") {
-    const row = await prisma.customDbRow.findUnique({
-      where: { id: sourceId },
+    const row = await prisma.customDbRow.findFirst({
+      where: { id: sourceId, table: { organizationId: orgId } },
       include: { cells: { include: { column: true } } },
     });
     if (!row) return null;
