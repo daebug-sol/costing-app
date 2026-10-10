@@ -10,7 +10,7 @@ import {
 } from "@/lib/custom-db";
 import { resolveImportColumnId } from "@/lib/excel-column-match";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 type ImportRow = Record<string, unknown>;
 
@@ -37,13 +37,14 @@ export async function POST(request: Request) {
   if (denied) return denied;
   const { orgId } = guard;
 
-  const rate = checkRateLimit(rateLimitKey([orgId, "custom-db-import"]), 5, 60_000);
-  if (!rate.ok) {
-    return NextResponse.json(
-      { error: "Too many import requests" },
-      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } }
-    );
-  }
+  const limited = await enforceRateLimit({
+    orgId,
+    bucket: "custom-db-import",
+    limit: 5,
+    windowMs: 60_000,
+    message: "Too many import requests",
+  });
+  if (limited) return limited;
 
   try {
     const body = (await request.json()) as {

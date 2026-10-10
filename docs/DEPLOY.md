@@ -24,7 +24,7 @@ cp .env.example .env
 | `NODE_ENV` | Yes | `development` | `production` | `production` | |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | No | — | Optional | Recommended | Scaffold skips when unset |
 | `SENTRY_ORG` / `SENTRY_PROJECT` | No | — | Optional | Recommended | For source maps upload |
-| `UPSTASH_REDIS_REST_URL` / `TOKEN` | No | — | Optional | Recommended | In-memory fallback when unset |
+| `UPSTASH_REDIS_REST_URL` / `TOKEN` | No | — | Optional | Recommended | Shared rate-limit counters across serverless instances. When unset (or Upstash is unreachable) limits are per-instance in-memory, so **set these in production** |
 | `AUTH_BYPASS` | **Never prod** | — | **Do not set** | **Do not set** | CI/test only (`true` + `TEST_USER_ID` + `TEST_ORG_ID`) Ignored on any Vercel deployment (`VERCEL` set); self-hosted deployments must never set it. |
 | `OPERATOR_USER_IDS` | No* | Optional | Recommended | Recommended | Comma-separated Clerk user IDs for `/operator` UI; empty/unset = no operator UI access |
 | `OPERATOR_API_KEY` | No* | Optional | Optional | Recommended for scripts | Bearer key for `/api/operator/*`; empty/unset = key auth disabled |
