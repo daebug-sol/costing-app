@@ -70,7 +70,7 @@
 - Produces: CSS variables `--font-sans` (DM Sans), `--font-dot` (Doto), Tailwind utilities `font-sans`, `font-dot`; `--font-display` kept pointing at `--font-dot` so existing `font-display` users keep compiling.
 
 - [ ] **Step 1: In `layout.tsx`** replace `Inter` with `DM_Sans` (weights 400, 500, 600, 700, `variable: "--font-sans"`) and `Cormorant_Garamond` with `Doto` (weights 400, 900, `variable: "--font-dot"`, fallback monospace); keep Plex Mono; update the `className` list.
-- [ ] **Step 2: In `globals.css`** map `--font-dot` in `@theme inline` and point `--font-display` at it. Under `html[data-palette="professional"]` and `warm` restore the previous font look is not required (fonts are global).
+- [ ] **Step 2: In `globals.css`** map `--font-dot` in `@theme inline` and point `--font-display` at it. Fonts are global; the professional and warm palettes also get the new fonts.
 - [ ] **Step 3: Run** `grep -rn "font-display" app components` and confirm each use still reads acceptably as a dot font (list them in the PR description; fix any that are body-length text by switching to `font-sans`).
 - [ ] **Step 4: Run** `npm run typecheck && npm run build`. Expected: success, fonts self-hosted by `next/font`.
 - [ ] **Step 5: Commit** `feat(theme): DM Sans and Doto fonts`.
@@ -100,7 +100,7 @@
 
 - [ ] **Step 1: Card:** apply the tone variants, `rounded-2xl`, remove `shadow-sm`, add a small square marker before `CardTitle` (`before:` pseudo-element in `bg-current`, 6px, `mr-2`), keep uppercase and tracking.
 - [ ] **Step 2: Button, Badge, Input, Tabs, Table:** pill-shaped primary and tab triggers (`rounded-full`), 8px radius inputs, table header row on `bg-surface-inset` with uppercase 12px muted labels, rows with a hairline divider; badges use `signal` and `positive` tones for danger and success. Keep every existing variant name and prop.
-- [ ] **Step 3: Navbar and shell:** brand wordmark in `font-dot` uppercase; active link is an ink pill (`bg-primary text-primary-foreground`); page background carries the faint dot grid via `bg-[radial-gradient(...)]` is forbidden by the no-gradient rule, so draw it with an SVG data-URI `background-image` defined once as `.bg-dot-grid` in `globals.css` using `--canvas-grid`.
+- [ ] **Step 3: Navbar and shell:** brand wordmark in `font-dot` uppercase; active link is an ink pill (`bg-primary text-primary-foreground`); page background carries the faint dot grid through a single `.bg-dot-grid` class in `globals.css` (SVG data-URI `background-image`, not a CSS gradient, colored by `--canvas-grid`).
 - [ ] **Step 4: Run** `npm run lint && npm run typecheck && npm test && npm run ui:standard`. Expected: all pass.
 - [ ] **Step 5: Commit** `feat(ui): dotmatrix base components and navigation`.
 
