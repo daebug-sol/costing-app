@@ -12,6 +12,7 @@ import { groupByMonthAndDay } from "@/lib/group-by-month-day";
 import { useConfirm } from "@/components/confirm-dialog";
 import { useCostingStore, type CostingSegmentDetail } from "@/store/costingStore";
 import { EMPTY_BOOL_MAP, mergeOpenSegmentsForProject, useUiWorkflowStore } from "@/store/uiWorkflowStore";
+import { costingErrorMessage } from "@/lib/costing-error-message";
 import { catKey } from "./costing-workspace-shared";
 
 export function useCostingWorkspace() {
@@ -176,10 +177,33 @@ export function useCostingWorkspace() {
     loadProjects().catch((e) => showToast(String(e)));
   }, [loadProjects]);
 
+  const [projectLoad, setProjectLoad] = useState<"loading" | "ready" | "error">(
+    "loading"
+  );
+
   useEffect(() => {
     if (!projectFromUrl) return;
-    loadProject(projectFromUrl).catch((e) => showToast(String(e)));
+    let cancelled = false;
+    const alreadyLoaded =
+      useCostingStore.getState().currentProject?.id === projectFromUrl;
+    setProjectLoad(alreadyLoaded ? "ready" : "loading");
+    loadProject(projectFromUrl)
+      .then(() => {
+        if (!cancelled) setProjectLoad("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setProjectLoad("error");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [projectFromUrl, loadProject]);
+
+  const openProject = useCallback(
+    (id: string) => router.push(`/costing?project=${encodeURIComponent(id)}`),
+    [router]
+  );
+  const closeProject = useCallback(() => router.push("/costing"), [router]);
 
   useEffect(() => {
     if (!currentProject) return;
@@ -348,8 +372,10 @@ export function useCostingWorkspace() {
       await createProject(newName.trim());
       setNewOpen(false);
       setNewName("");
+      const createdId = useCostingStore.getState().currentProject?.id;
+      if (createdId) openProject(createdId);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Failed");
+      showToast(costingErrorMessage(e));
     }
   };
 
@@ -407,7 +433,7 @@ export function useCostingWorkspace() {
       await loadProject(currentProject.id);
       setAddOpen(false);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Failed");
+      showToast(costingErrorMessage(e));
     }
   };
 
@@ -628,6 +654,9 @@ export function useCostingWorkspace() {
     persistMargins,
     persistToggles,
     handleCreate,
+    projectLoad,
+    openProject,
+    closeProject,
     patchSegment,
     saveAhuParams,
     saveAhuParamsAndRecalculate,
