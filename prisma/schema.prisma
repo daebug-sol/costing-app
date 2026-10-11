@@ -46,6 +46,8 @@ model OrganizationMember {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   userId         String
   role           String       @default("member")
+  /** Personal monthly sales target in IDR (dashboard home); null = not set. */
+  monthlyTarget  Float?
   createdAt      DateTime     @default(now())
 
   @@unique([organizationId, userId])
