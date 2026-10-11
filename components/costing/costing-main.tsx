@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { formatIDR } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
+import { costingErrorMessage } from "@/lib/costing-error-message";
 import { AssemblyTypeBadge } from "@/components/costing/assembly-type-badge";
 import { ManualWorkspace } from "@/components/costing/ManualWorkspace";
 import { SortableCostingSegment } from "./costing-workspace-shared";
@@ -112,7 +113,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                   onBlur={(e) =>
                     updateProject({
                       qty: Math.max(1, Math.floor(Number(e.target.value) || 1)),
-                    }).catch((err) => showToast(String(err)))
+                    }).catch((err) => showToast(costingErrorMessage(err)))
                   }
                 />
               </div>
@@ -169,7 +170,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                     {ahuModuleEnabled ? (
                       <DropdownMenuItem
                         onClick={() =>
-                          addSegment("ahu").catch((e) => showToast(String(e)))
+                          addSegment("ahu").catch((e) => showToast(costingErrorMessage(e)))
                         }
                       >
                         AHU otomatis
@@ -302,7 +303,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                                       }).then((ok) => {
                                         if (ok)
                                           deleteSegment(seg.id).catch((e) =>
-                                            showToast(String(e))
+                                            showToast(costingErrorMessage(e))
                                           );
                                       });
                                     }}
@@ -638,7 +639,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                     variant="secondary"
                     onClick={() =>
                       updateProject({ status: "draft" }).catch((e) =>
-                        showToast(String(e))
+                        showToast(costingErrorMessage(e))
                       )
                     }
                   >
@@ -648,7 +649,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                     type="button"
                     onClick={() =>
                       updateProject({ status: "finalized" }).catch((e) =>
-                        showToast(String(e))
+                        showToast(costingErrorMessage(e))
                       )
                     }
                   >

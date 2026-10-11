@@ -4,6 +4,6 @@ const DEFAULT_MESSAGE = "Terjadi kesalahan. Coba lagi.";
 export function costingErrorMessage(e: unknown, fallback = DEFAULT_MESSAGE): string {
   const raw = e instanceof Error ? e.message : typeof e === "string" ? e : "";
   const text = raw.trim();
-  if (!text || /^\w*Error:/.test(text)) return fallback;
+  if (!text || /^\w*Error:|failed to fetch|networkerror|load failed/i.test(text)) return fallback;
   return text;
 }

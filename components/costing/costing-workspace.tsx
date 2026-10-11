@@ -15,12 +15,7 @@ import { useCostingWorkspace } from "./use-costing-workspace";
 export function CostingWorkspace() {
   const { t } = useI18n();
   const ed = useCostingWorkspace();
-  const { confirmDialog, projectFromUrl, currentProject, projectLoad, closeProject } = ed;
-
-  // Only show a project's editor when the store really holds the URL's project;
-  // never render a stale project under a different ?project= id.
-  const projectReady =
-    projectFromUrl && currentProject?.id === projectFromUrl && projectLoad !== "error";
+  const { confirmDialog, projectView, closeProject } = ed;
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden border-t border-border bg-background">
@@ -37,11 +32,11 @@ export function CostingWorkspace() {
       />
 
       <div className="app-page-gutter-wide flex min-h-0 flex-1 flex-col overflow-hidden py-4 sm:py-5 lg:py-6">
-        {!projectFromUrl ? (
+        {projectView === "list" ? (
           <CostingProjectList ed={ed} />
-        ) : projectReady ? (
+        ) : projectView === "ready" ? (
           <CostingMain ed={ed} />
-        ) : projectLoad === "error" ? (
+        ) : projectView === "error" ? (
           <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
             <EmptyState
               icon={FolderKanban}
@@ -55,7 +50,9 @@ export function CostingWorkspace() {
         ) : (
           <div
             className="bg-card space-y-3 rounded-xl border border-border p-6 shadow-sm"
+            role="status"
             aria-busy="true"
+            aria-label="Memuat proyek"
           >
             <Skeleton className="h-6 w-56" />
             <Skeleton className="h-4 w-40" />

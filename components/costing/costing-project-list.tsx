@@ -56,13 +56,13 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
             className="h-8 shrink-0 gap-1"
             onClick={() => setNewOpen(true)}
           >
-            <Plus className="size-3.5" />
+            <Plus className="size-3.5" aria-hidden />
             {t("costing.list.newProject")}
           </Button>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
           <div className="relative">
-            <Search className="text-muted-foreground absolute left-2 top-1/2 size-3.5 -translate-y-1/2" />
+            <Search aria-hidden className="text-muted-foreground absolute left-2 top-1/2 size-3.5 -translate-y-1/2" />
             <Input
               aria-label={t("costing.list.searchPlaceholder")}
               placeholder={t("costing.list.searchPlaceholder")}
@@ -72,7 +72,7 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
             />
           </div>
           <div className="space-y-1">
-            <Label className="sr-only">Status</Label>
+            <Label className="sr-only">{t("costing.list.filter.status")}</Label>
             <Select
               value={statusFilter}
               onValueChange={(v) =>
@@ -81,29 +81,29 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
                 })
               }
             >
-              <SelectTrigger className="h-8 w-full text-xs" aria-label="Status">
+              <SelectTrigger className="h-8 w-full text-xs" aria-label={t("costing.list.filter.status")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua status</SelectItem>
+                <SelectItem value="all">{t("costing.list.filter.statusAll")}</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="finalized">Final</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="sr-only">Bulan (update)</Label>
+            <Label className="sr-only">{t("costing.list.filter.month")}</Label>
             <Select
               value={monthFilter || "all"}
               onValueChange={(v) =>
                 setCostingSidebar({ monthFilter: v === "all" ? "" : v })
               }
             >
-              <SelectTrigger className="h-8 w-full text-xs" aria-label="Bulan (update)">
-                <SelectValue placeholder="Semua bulan" />
+              <SelectTrigger className="h-8 w-full text-xs" aria-label={t("costing.list.filter.month")}>
+                <SelectValue placeholder={t("costing.list.filter.monthAll")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua bulan</SelectItem>
+                <SelectItem value="all">{t("costing.list.filter.monthAll")}</SelectItem>
                 {availableMonths.map((m) => (
                   <SelectItem key={m.value} value={m.value}>
                     {m.label}
@@ -113,10 +113,10 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="sr-only">Tanggal (update)</Label>
+            <Label className="sr-only">{t("costing.list.filter.date")}</Label>
             <Input
               type="date"
-              aria-label="Tanggal (update)"
+              aria-label={t("costing.list.filter.date")}
               className="h-8 text-xs"
               value={dateFilter}
               onChange={(e) => setCostingSidebar({ dateFilter: e.target.value })}
@@ -165,7 +165,7 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
             actionLabel={t("costing.list.newProject")}
             onAction={() => setNewOpen(true)}
             className="py-8"
-            secondaryActionLabel="Bantuan"
+            secondaryActionLabel={t("costing.list.help")}
             onSecondaryAction={() =>
               router.push("/help/costing/proyek-dan-segment")
             }
@@ -194,7 +194,7 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
                               {p.name}
                             </span>
                             <Badge variant="outline" className="text-2xs">
-                              {p.segmentCount} item
+                              {t("costing.list.itemCount", { count: p.segmentCount })}
                             </Badge>
                           </div>
                           <div className="mt-0.5 text-xs text-muted-foreground">

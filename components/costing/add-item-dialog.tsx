@@ -30,7 +30,7 @@ export function AddItemDialog({ ed }: { ed: CostingWorkspaceState }) {
           <DialogHeader>
             <DialogTitle>{t("costing.addRow.title")}</DialogTitle>
             <DialogDescription>
-              Tambahkan baris manual pada section yang dipilih.
+              {t("costing.addRow.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-2">

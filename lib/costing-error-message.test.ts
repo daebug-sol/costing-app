@@ -25,3 +25,14 @@ describe("costingErrorMessage", () => {
     expect(costingErrorMessage(undefined, "Gagal menyimpan")).toBe("Gagal menyimpan");
   });
 });
+
+describe("costingErrorMessage network errors", () => {
+  it("hides raw browser fetch failures", () => {
+    expect(costingErrorMessage(new Error("Failed to fetch"))).toBe(
+      "Terjadi kesalahan. Coba lagi."
+    );
+    expect(costingErrorMessage(new Error("NetworkError when attempting to fetch resource."))).toBe(
+      "Terjadi kesalahan. Coba lagi."
+    );
+  });
+});
