@@ -1,14 +1,7 @@
 "use client";
 
-import { dashboardChartPlotClass } from "@/components/dashboard/dashboard-surface-styles";
+import { DotMeter } from "@/components/dot/dot-meter";
 import { useMemo, useState } from "react";
-import { Cell, Pie, PieChart } from "recharts";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
 import {
   Table,
   TableBody,
@@ -19,31 +12,20 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useI18n } from "@/components/i18n-provider";
-import { useContainerWidth } from "@/hooks/use-container-width";
 import type { DashboardStatusDistribution } from "@/lib/dashboard-contract";
 import { formatIDR } from "@/lib/utils/format";
-
-const COLORS = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-];
 
 type Mode = "quotation" | "project";
 
 export function StatusDistribution({ data }: { data: DashboardStatusDistribution }) {
   const { t } = useI18n();
-  const chartConfig = {
-    value: { label: t("common.value") },
-  } satisfies ChartConfig;
-  const { ref, isCompact } = useContainerWidth<HTMLDivElement>();
   const [mode, setMode] = useState<Mode>("quotation");
   const rows = useMemo(
     () => (mode === "quotation" ? data.quotationStatus : data.projectStatus),
     [data.projectStatus, data.quotationStatus, mode]
   );
+
+  const total = rows.reduce((sum, row) => sum + row.count, 0);
 
   if (rows.length === 0) {
     return <p className="text-sm text-muted-foreground">{t("dashboard.statusDistribution.empty")}</p>;
@@ -62,55 +44,26 @@ export function StatusDistribution({ data }: { data: DashboardStatusDistribution
         </TabsList>
       </Tabs>
 
-      <div
-        ref={ref}
-        className={dashboardChartPlotClass}
-      >
-        <ChartContainer config={chartConfig} className="aspect-auto h-64 w-full min-w-0">
-          <PieChart accessibilityLayer>
-            <Pie
-              data={rows}
-              dataKey="count"
-              nameKey="status"
-              innerRadius={isCompact ? 44 : 58}
-              outerRadius={isCompact ? 68 : 95}
-              paddingAngle={2}
-            >
-              {rows.map((row, index) => (
-                <Cell key={row.status} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  formatter={(value, name, item) => (
-                    <div className="flex w-full flex-col gap-0.5">
-                      <span>{String(name)}</span>
-                      <span className="tabular-money">{t("dashboard.itemCount", { count: Number(value) })}</span>
-                      <span className="tabular-money text-muted-foreground">
-                        {formatIDR(Number(item.payload?.value ?? 0))}
-                      </span>
-                    </div>
-                  )}
-                />
-              }
-            />
-          </PieChart>
-        </ChartContainer>
-        <ul className="mt-3 flex flex-col gap-1 text-xs text-muted-foreground">
-          {rows.map((row, index) => (
-            <li key={row.status} className="flex min-w-0 items-center gap-2">
-              <span
-                className="size-2 shrink-0 rounded-[2px]"
-                style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                aria-hidden
+      <ul className="flex flex-col gap-3" aria-label={t("dashboard.statusDistribution.title")}>
+        {rows.map((row) => {
+          const share = total > 0 ? (row.count / total) * 100 : 0;
+          return (
+            <li key={row.status} className="flex flex-col gap-1">
+              <div className="flex min-w-0 items-baseline justify-between gap-2 text-sm">
+                <span className="min-w-0 truncate capitalize">{row.status}</span>
+                <span className="tabular-money shrink-0 text-muted-foreground">
+                  {row.count} · {Math.round(share)}%
+                </span>
+              </div>
+              <DotMeter
+                value={share}
+                cols={32}
+                label={`${row.status}: ${Math.round(share)}%`}
               />
-              <span className="min-w-0 flex-1 truncate capitalize">{row.status}</span>
-              <span className="tabular-money shrink-0">{row.count}</span>
             </li>
-          ))}
-        </ul>
-      </div>
+          );
+        })}
+      </ul>
 
       <div className="rounded-none border border-border/70">
         <Table>

@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PixelPattern } from "@/components/dot/pixel-pattern";
 import { useI18n } from "@/components/i18n-provider";
 import { useContainerWidth } from "@/hooks/use-container-width";
 import {
@@ -41,8 +42,8 @@ export function RevenueTrendChart({
 }) {
   const { t } = useI18n();
   const chartConfig = {
-    bookedRevenue: { label: t("dashboard.legend.booked"), color: "var(--chart-2)" },
-    potentialRevenue: { label: t("dashboard.legend.potential"), color: "var(--chart-1)" },
+    bookedRevenue: { label: t("dashboard.legend.booked"), color: "var(--foreground)" },
+    potentialRevenue: { label: t("dashboard.legend.potential"), color: "var(--muted-foreground)" },
   } satisfies ChartConfig;
   const { ref, tier } = useContainerWidth<HTMLDivElement>();
   const xAngle = chartXAxisAngle(tier, data.series.length);
@@ -68,6 +69,10 @@ export function RevenueTrendChart({
             accessibilityLayer
             margin={{ top: 12, right: 8, left: 4, bottom: chartBottomMargin(tier, xAngle !== 0) }}
           >
+            <defs>
+              <PixelPattern id="px-booked" className="fill-foreground" />
+              <PixelPattern id="px-potential" className="fill-muted-foreground/60" />
+            </defs>
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="month"
@@ -91,16 +96,16 @@ export function RevenueTrendChart({
               type="monotone"
               dataKey="bookedRevenue"
               stroke="var(--color-bookedRevenue)"
-              fill="var(--color-bookedRevenue)"
-              fillOpacity={0.28}
+              fill="url(#px-booked)"
+              fillOpacity={0.85}
               strokeWidth={2}
             />
             <Area
               type="monotone"
               dataKey="potentialRevenue"
               stroke="var(--color-potentialRevenue)"
-              fill="var(--color-potentialRevenue)"
-              fillOpacity={0.18}
+              fill="url(#px-potential)"
+              fillOpacity={0.7}
               strokeWidth={2}
             />
             <ChartLegend

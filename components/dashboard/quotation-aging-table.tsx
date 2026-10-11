@@ -48,7 +48,7 @@ export function QuotationAgingTable({ data }: { data: DashboardQuotationAging })
                 <TableCell>
                   <Badge variant={statusVariant(row.status)}>{row.status}</Badge>
                   {row.isExpired ? (
-                    <span className="ml-2 text-xs font-medium text-rose-600">{t("dashboard.aging.validityExpired")}</span>
+                    <span className="ml-2 text-xs font-medium text-signal">{t("dashboard.aging.validityExpired")}</span>
                   ) : null}
                 </TableCell>
                 <TableCell className="tabular-money text-right">{row.ageDays} hari</TableCell>

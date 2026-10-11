@@ -85,7 +85,7 @@ export function GreetingCard({
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Button asChild>
+          <Button asChild className="bg-inverse-foreground text-inverse hover:bg-inverse-foreground/90">
             <Link href="/costing">{t("dashboard.personal.cta.newCosting")}</Link>
           </Button>
         </div>

@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { RefreshCw, Wallet } from "lucide-react";
+import { ChevronDown, RefreshCw, Wallet } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -23,6 +23,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
 import { TableLoadingSkeleton } from "@/components/table-loading-skeleton";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PillTabsList, PillTabsTrigger } from "@/components/ui/pill-tabs";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import type { DashboardApiResponse, DashboardRange } from "@/lib/dashboard-contract";
@@ -281,7 +282,10 @@ export function DashboardPage() {
         <TableLoadingSkeleton columns={4} rows={2} />
       ) : data ? (
         <>
-          <section className="grid min-w-0 gap-4 lg:grid-cols-2" data-testid="dashboard-personal-home">
+          <section
+            className={cn("grid min-w-0 gap-4", isSelfView && "lg:grid-cols-2")}
+            data-testid="dashboard-personal-home"
+          >
             <GreetingCard name={data.scope.viewerName} personal={data.personal} now={now} />
             {isSelfView ? (
               <TargetCard
@@ -325,40 +329,10 @@ export function DashboardPage() {
             >
               {t("dashboard.tab.sales")}
             </PillTabsTrigger>
-            <PillTabsTrigger
-              value="costing"
-              layoutId="dashboard-insight-pill"
-              data-testid="dashboard-tab-costing"
-            >
-              {t("dashboard.tab.costing")}
-            </PillTabsTrigger>
           </PillTabsList>
 
           {activeTab === "finansial" ? (
           <TabsContent value="finansial" className="mt-4 space-y-4">
-            <ChartInsightBlock
-              title={t("dashboard.profitBridge.title")}
-              loading={chartLoading}
-              detailDescription={t("dashboard.profitBridge.detail")}
-              detailContent={
-                data?.sankey.links.length ? (
-                  <ProfitBridgeChart sankey={data.sankey} />
-                ) : null
-              }
-            >
-              {data?.sankey.links.length ? (
-                <ProfitBridgeChart sankey={data.sankey} compact />
-              ) : (
-                <EmptyState
-                  icon={Wallet}
-                  title={t("dashboard.profitBridge.emptyTitle")}
-                  description={t("dashboard.profitBridge.emptyDescription")}
-                  actionLabel={t("common.openCosting")}
-                  onAction={goToCosting}
-                />
-              )}
-            </ChartInsightBlock>
-
             <ChartInsightBlock
               title={t("dashboard.cashflow.title")}
               loading={chartLoading}
@@ -380,6 +354,15 @@ export function DashboardPage() {
                   onAction={goToCosting}
                 />
               )}
+            </ChartInsightBlock>
+
+            <ChartInsightBlock
+              title={t("dashboard.revenueTrend.title")}
+              loading={chartLoading}
+              detailDescription={t("dashboard.revenueTrend.detail")}
+              detailContent={data ? <RevenueTrendChart data={data.revenueTrend} /> : null}
+            >
+              {data ? <RevenueTrendChart data={data.revenueTrend} compact /> : null}
             </ChartInsightBlock>
           </TabsContent>
           ) : null}
@@ -404,8 +387,40 @@ export function DashboardPage() {
           </TabsContent>
           ) : null}
 
-          {activeTab === "costing" ? (
-          <TabsContent value="costing" className="mt-4 space-y-4">
+        </Tabs>
+
+        <Collapsible className="mt-6 border-t border-border pt-4" data-testid="dashboard-cost-analysis">
+          <CollapsibleTrigger asChild>
+            <Button type="button" variant="ghost" className="group gap-2">
+              <ChevronDown className="size-4 transition-transform group-data-[state=open]:rotate-180" aria-hidden />
+              {t("dashboard.costAnalysis.title")}
+              <span className="text-xs font-normal text-muted-foreground">{t("dashboard.costAnalysis.hint")}</span>
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-4 space-y-4">
+            <ChartInsightBlock
+              title={t("dashboard.profitBridge.title")}
+              loading={chartLoading}
+              detailDescription={t("dashboard.profitBridge.detail")}
+              detailContent={
+                data?.sankey.links.length ? (
+                  <ProfitBridgeChart sankey={data.sankey} />
+                ) : null
+              }
+            >
+              {data?.sankey.links.length ? (
+                <ProfitBridgeChart sankey={data.sankey} compact />
+              ) : (
+                <EmptyState
+                  icon={Wallet}
+                  title={t("dashboard.profitBridge.emptyTitle")}
+                  description={t("dashboard.profitBridge.emptyDescription")}
+                  actionLabel={t("common.openCosting")}
+                  onAction={goToCosting}
+                />
+              )}
+            </ChartInsightBlock>
+
             <ChartInsightBlock
               title={t("dashboard.costBreakdown.title")}
               loading={chartLoading}
@@ -415,17 +430,8 @@ export function DashboardPage() {
               {data ? <CostBreakdownChart costingData={data.costingData} compact /> : null}
             </ChartInsightBlock>
 
-            <ChartInsightBlock
-              title={t("dashboard.revenueTrend.title")}
-              loading={chartLoading}
-              detailDescription={t("dashboard.revenueTrend.detail")}
-              detailContent={data ? <RevenueTrendChart data={data.revenueTrend} /> : null}
-            >
-              {data ? <RevenueTrendChart data={data.revenueTrend} compact /> : null}
-            </ChartInsightBlock>
-          </TabsContent>
-          ) : null}
-        </Tabs>
+          </CollapsibleContent>
+        </Collapsible>
       </section>
     </PageShell>
   );

@@ -33,32 +33,32 @@ test.describe("Dashboard ('/')", () => {
     await expect(page.getByRole("heading", { level: 2, name: "Insight utama" })).toBeVisible();
     await expect(page.getByTestId("dashboard-tab-finansial")).toBeVisible();
     await expect(page.getByTestId("dashboard-tab-penjualan")).toBeVisible();
-    await expect(page.getByTestId("dashboard-tab-costing")).toBeVisible();
 
     await page.waitForLoadState("networkidle");
 
-    await expect(page.getByText("Profit bridge", { exact: true })).toBeVisible();
     await expect(page.getByText("Cashflow timeline", { exact: true })).toBeVisible();
-    await expect(
-      page.getByTestId("profit-bridge-chart").or(page.getByText(EMPTY_STATE)).first()
-    ).toBeVisible();
     await expect(
       page.getByTestId("cashflow-timeline-chart").or(page.getByText(EMPTY_STATE)).first()
     ).toBeVisible();
-
-    await page.getByTestId("dashboard-tab-penjualan").click();
-    for (const id of ["quotation-funnel", "status-distribution"]) {
+    for (const id of ["revenue-trend-chart"]) {
       await expect(page.getByTestId(id).or(page.getByText(EMPTY_STATE)).first()).toBeVisible();
     }
 
-    await page.getByTestId("dashboard-tab-costing").click();
-    for (const id of ["cost-breakdown-chart", "revenue-trend-chart"]) {
+    await page.getByRole("button", { name: /Analisis biaya/ }).click();
+    await expect(page.getByText("Profit bridge", { exact: true })).toBeVisible();
+    for (const id of ["profit-bridge-chart", "cost-breakdown-chart"]) {
+      await expect(page.getByTestId(id).or(page.getByText(EMPTY_STATE)).first()).toBeVisible();
+    }
+
+    await page.getByTestId("dashboard-tab-penjualan").click();
+    for (const id of ["quotation-funnel", "status-distribution"]) {
       await expect(page.getByTestId(id).or(page.getByText(EMPTY_STATE)).first()).toBeVisible();
     }
   });
 
   test("profit bridge table fallback in detail sheet", async ({ page }) => {
     await page.waitForLoadState("networkidle");
+    await page.getByRole("button", { name: /Analisis biaya/ }).click();
     const bridge = page.getByTestId("profit-bridge-chart");
     test.skip(!(await bridge.isVisible()), "needs seeded revenue data (profit bridge is empty)");
     const detailButton = page.getByRole("button", { name: "Lihat detail" }).first();
@@ -77,7 +77,6 @@ test.describe("Dashboard ('/')", () => {
 
   test("renders the personal home", async ({ page }) => {
     await expect(page.getByTestId("dashboard-greeting")).toContainText(/Selamat (pagi|siang|sore|malam)/);
-    await expect(page.getByTestId("dashboard-target")).toBeVisible();
     await expect(page.getByTestId("dashboard-follow-ups")).toBeVisible();
 
     const heroGrid = page.getByTestId("dashboard-hero-kpis");

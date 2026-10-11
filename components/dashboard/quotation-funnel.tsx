@@ -1,23 +1,11 @@
 "use client";
 
-import { dashboardChartPlotClass } from "@/components/dashboard/dashboard-surface-styles";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
+import { DotMeter } from "@/components/dot/dot-meter";
 import { useI18n } from "@/components/i18n-provider";
-import { useContainerWidth } from "@/hooks/use-container-width";
 import type { DashboardQuotationFunnel } from "@/lib/dashboard-contract";
 
 export function QuotationFunnel({ data }: { data: DashboardQuotationFunnel }) {
   const { t } = useI18n();
-  const chartConfig = {
-    count: { label: t("dashboard.funnel.countLabel"), color: "var(--chart-3)" },
-  } satisfies ChartConfig;
-  const { ref, isCompact } = useContainerWidth<HTMLDivElement>();
   const stages = [
     { stage: t("dashboard.funnel.draft"), count: data.draftCount },
     { stage: t("dashboard.funnel.finalized"), count: data.finalCount },
@@ -38,47 +26,20 @@ export function QuotationFunnel({ data }: { data: DashboardQuotationFunnel }) {
           </p>
         </div>
       </div>
-      <div
-        ref={ref}
-        className={dashboardChartPlotClass}
-      >
-        <ChartContainer config={chartConfig} className="aspect-auto h-64 w-full min-w-0">
-          <BarChart
-            data={stages}
-            layout={isCompact ? "vertical" : "horizontal"}
-            accessibilityLayer
-            margin={{ top: 8, right: 8, left: isCompact ? 4 : 8, bottom: 8 }}
-          >
-            <CartesianGrid vertical={isCompact} horizontal={!isCompact} />
-            {isCompact ? (
-              <>
-                <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-                <YAxis
-                  type="category"
-                  dataKey="stage"
-                  tickLine={false}
-                  axisLine={false}
-                  width={72}
-                  tick={{ fontSize: 10 }}
-                />
-              </>
-            ) : (
-              <>
-                <XAxis dataKey="stage" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} />
-              </>
-            )}
-            <Bar dataKey="count" fill="var(--color-count)" radius={4} />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  formatter={(value) => <span className="tabular-money">{Number(value)}</span>}
-                />
-              }
-            />
-          </BarChart>
-        </ChartContainer>
-      </div>
+      <ul className="flex flex-col gap-3" aria-label={t("dashboard.funnel.title")}>
+        {stages.map((stage) => {
+          const share = data.totalCount > 0 ? (stage.count / data.totalCount) * 100 : 0;
+          return (
+            <li key={stage.stage} className="flex flex-col gap-1">
+              <div className="flex items-baseline justify-between gap-2 text-sm">
+                <span>{stage.stage}</span>
+                <span className="tabular-money text-muted-foreground">{stage.count}</span>
+              </div>
+              <DotMeter value={share} cols={32} label={`${stage.stage}: ${stage.count}`} />
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
