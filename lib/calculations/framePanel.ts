@@ -1,4 +1,5 @@
 import type { CalcLineItem, MaterialPrice, ProfileData } from "./types";
+import { resolveCostingFactors, type CostingFactors } from "./factors";
 import {
   finite,
   findMaterial,
@@ -9,7 +10,6 @@ import {
 const GI_CODE = "SGCC-1.0";
 const FOAM_CODE = "PU-FOAM";
 const GI_THICKNESS_M = 0.001;
-const LINER_WASTE = 1.05;
 
 function line(
   partial: Omit<CalcLineItem, "currency" | "wasteFactor" | "subtotal"> & {
@@ -44,7 +44,12 @@ export function calculateFramePanel(params: {
   nSections: number;
   profiles: ProfileData[];
   materials: MaterialPrice[];
+  /** Org waste factors; omitted keys use the workbook defaults. */
+  factors?: Partial<CostingFactors>;
 }): CalcLineItem[] {
+  const { profileWaste: pw, linerWaste: lw } = resolveCostingFactors(
+    params.factors
+  );
   const H = finite(params.H, 0);
   const W = finite(params.W, 0);
   const D = finite(params.D, 0);
@@ -70,15 +75,15 @@ export function calculateFramePanel(params: {
 
   if (pentapost) {
     const r = ppRate(pentapost);
-    const qh = finite((H / 1000) * 1.05 * 4, 0);
-    const qw = finite((W / 1000) * 1.05 * 4, 0);
-    const qd = finite((D / 1000) * 1.05 * 4, 0);
+    const qh = finite((H / 1000) * pw * 4, 0);
+    const qw = finite((W / 1000) * pw * 4, 0);
+    const qd = finite((D / 1000) * pw * 4, 0);
     items.push(
       line({
         description: `Pentapost H (${pentapost.code})`,
         uom: "m",
         qty: qh,
-        qtyFormula: `(${H}/1000)*1.05*4`,
+        qtyFormula: `(${H}/1000)*${pw}*4`,
         unitPrice: r,
         componentRef: pentapost.code,
       }),
@@ -86,7 +91,7 @@ export function calculateFramePanel(params: {
         description: `Pentapost W (${pentapost.code})`,
         uom: "m",
         qty: qw,
-        qtyFormula: `(${W}/1000)*1.05*4`,
+        qtyFormula: `(${W}/1000)*${pw}*4`,
         unitPrice: r,
         componentRef: pentapost.code,
       }),
@@ -94,7 +99,7 @@ export function calculateFramePanel(params: {
         description: `Pentapost D (${pentapost.code})`,
         uom: "m",
         qty: qd,
-        qtyFormula: `(${D}/1000)*1.05*4`,
+        qtyFormula: `(${D}/1000)*${pw}*4`,
         unitPrice: r,
         componentRef: pentapost.code,
       })
@@ -104,14 +109,14 @@ export function calculateFramePanel(params: {
   if (interpost) {
     const r = ppRate(interpost);
     // Base Interpost qty only (*2); uniform nSec scale applied to all lines below.
-    const qh = finite((H / 1000) * 1.05 * 2, 0);
-    const qw = finite((W / 1000) * 1.05 * 2, 0);
+    const qh = finite((H / 1000) * pw * 2, 0);
+    const qw = finite((W / 1000) * pw * 2, 0);
     items.push(
       line({
         description: `Interpost H (${interpost.code})`,
         uom: "m",
         qty: qh,
-        qtyFormula: `(${H}/1000)*1.05*2`,
+        qtyFormula: `(${H}/1000)*${pw}*2`,
         unitPrice: r,
         componentRef: interpost.code,
       }),
@@ -119,7 +124,7 @@ export function calculateFramePanel(params: {
         description: `Interpost W (${interpost.code})`,
         uom: "m",
         qty: qw,
-        qtyFormula: `(${W}/1000)*1.05*2`,
+        qtyFormula: `(${W}/1000)*${pw}*2`,
         unitPrice: r,
         componentRef: interpost.code,
       })
@@ -162,24 +167,24 @@ export function calculateFramePanel(params: {
       line({
         description: `Panel clip H (${clip.code})`,
         uom: "m",
-        qty: finite((H / 1000) * 1.05 * 8, 0),
-        qtyFormula: `(${H}/1000)*1.05*8`,
+        qty: finite((H / 1000) * pw * 8, 0),
+        qtyFormula: `(${H}/1000)*${pw}*8`,
         unitPrice: r,
         componentRef: clip.code,
       }),
       line({
         description: `Panel clip W (${clip.code})`,
         uom: "m",
-        qty: finite((W / 1000) * 1.05 * 8, 0),
-        qtyFormula: `(${W}/1000)*1.05*8`,
+        qty: finite((W / 1000) * pw * 8, 0),
+        qtyFormula: `(${W}/1000)*${pw}*8`,
         unitPrice: r,
         componentRef: clip.code,
       }),
       line({
         description: `Panel clip D (${clip.code})`,
         uom: "m",
-        qty: finite((D / 1000) * 1.05 * 8, 0),
-        qtyFormula: `(${D}/1000)*1.05*8`,
+        qty: finite((D / 1000) * pw * 8, 0),
+        qtyFormula: `(${D}/1000)*${pw}*8`,
         unitPrice: r,
         componentRef: clip.code,
       })
@@ -187,14 +192,14 @@ export function calculateFramePanel(params: {
   }
 
   if (gasket) {
-    const qm = finite((2 * (H + W + H + D)) / 1000, 0) * 1.05;
+    const qm = finite((2 * (H + W + H + D)) / 1000, 0) * pw;
     const up = finite(gasket.pricePerM, 0);
     items.push(
       line({
         description: `Gasket perimeter (${gasket.code})`,
         uom: "m",
         qty: qm,
-        qtyFormula: `2*(${H}+${W}+${H}+${D})/1000*1.05`,
+        qtyFormula: `2*(${H}+${W}+${H}+${D})/1000*${pw}`,
         unitPrice: up,
         componentRef: gasket.code,
       })
@@ -202,14 +207,14 @@ export function calculateFramePanel(params: {
   }
 
   if (rubber) {
-    const qm = finite((2 * (H + W + H + D)) / 1000, 0) * 1.05;
+    const qm = finite((2 * (H + W + H + D)) / 1000, 0) * pw;
     const up = finite(rubber.pricePerM, 0);
     items.push(
       line({
         description: `Rubber insert (${rubber.code})`,
         uom: "m",
         qty: qm,
-        qtyFormula: `2*(${H}+${W}+${H}+${D})/1000*1.05`,
+        qtyFormula: `2*(${H}+${W}+${H}+${D})/1000*${pw}`,
         unitPrice: up,
         componentRef: rubber.code,
       })
@@ -219,7 +224,7 @@ export function calculateFramePanel(params: {
   if (gi) {
     const dens = finite(gi.density, 0);
     const pk = finite(gi.pricePerKg, 0);
-    const wf = LINER_WASTE;
+    const wf = lw;
 
     const frontBackArea = finite((H * W) / 1_000_000, 0);
     const kgFB =

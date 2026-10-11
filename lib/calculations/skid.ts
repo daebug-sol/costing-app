@@ -1,5 +1,6 @@
 import type { CalcLineItem, MaterialPrice } from "./types";
 import { finite, findMaterial } from "./types";
+import { resolveCostingFactors, type CostingFactors } from "./factors";
 
 const UNP_CODE = "UNP100-304";
 const STEEL_D = 7860;
@@ -35,7 +36,10 @@ export function calculateSkid(params: {
   /** Section count; scales every line qty. Default 1 preserves Excel parity. */
   nSections?: number;
   materials: MaterialPrice[];
+  /** Org waste factors; omitted keys use the workbook defaults. */
+  factors?: Partial<CostingFactors>;
 }): CalcLineItem[] {
+  const { plateWaste: pw } = resolveCostingFactors(params.factors);
   const W = finite(params.W, 0);
   const D = finite(params.D, 0);
   const nSec = Math.max(1, Math.floor(finite(params.nSections, 1)));
@@ -44,18 +48,18 @@ export function calculateSkid(params: {
   const sectionNote = nSec > 1 ? `nSections=${nSec}` : null;
 
   const kgLR =
-    0.003 * 0.1 * (D / 1000) * STEEL_D * 1.15 * 2 * nSec;
+    0.003 * 0.1 * (D / 1000) * STEEL_D * pw * 2 * nSec;
   const kgFB =
-    0.003 * 0.1 * (W / 1000) * STEEL_D * 1.15 * 2 * nSec;
+    0.003 * 0.1 * (W / 1000) * STEEL_D * pw * 2 * nSec;
   const kgCenter =
-    0.002 * 0.08 * (W / 1000) * STEEL_D * 1.15 * 2 * nSec;
+    0.002 * 0.08 * (W / 1000) * STEEL_D * pw * 2 * nSec;
 
   const items: CalcLineItem[] = [
     line({
       description: "UNP100 L/R skid (D direction)",
       uom: "kg",
       qty: finite(kgLR, 0),
-      qtyFormula: `0.003*0.1*(${D}/1000)*${STEEL_D}*1.15*2*${nSec}`,
+      qtyFormula: `0.003*0.1*(${D}/1000)*${STEEL_D}*${pw}*2*${nSec}`,
       unitPrice: pricePerKg,
       componentRef: UNP_CODE,
       notes: sectionNote,
@@ -64,7 +68,7 @@ export function calculateSkid(params: {
       description: "UNP100 F/B skid (W direction)",
       uom: "kg",
       qty: finite(kgFB, 0),
-      qtyFormula: `0.003*0.1*(${W}/1000)*${STEEL_D}*1.15*2*${nSec}`,
+      qtyFormula: `0.003*0.1*(${W}/1000)*${STEEL_D}*${pw}*2*${nSec}`,
       unitPrice: pricePerKg,
       componentRef: UNP_CODE,
       notes: sectionNote,
@@ -73,7 +77,7 @@ export function calculateSkid(params: {
       description: "Center support (W)",
       uom: "kg",
       qty: finite(kgCenter, 0),
-      qtyFormula: `0.002*0.08*(${W}/1000)*${STEEL_D}*1.15*2*${nSec}`,
+      qtyFormula: `0.002*0.08*(${W}/1000)*${STEEL_D}*${pw}*2*${nSec}`,
       unitPrice: pricePerKg,
       componentRef: UNP_CODE,
       notes: sectionNote,

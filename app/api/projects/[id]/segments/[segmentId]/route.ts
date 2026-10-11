@@ -113,7 +113,20 @@ export async function PUT(request: Request, context: Ctx) {
           typeof body.ahuRecalcParams === "object" &&
           !Array.isArray(body.ahuRecalcParams)
         ) {
-          const jsonText = JSON.stringify(body.ahuRecalcParams);
+          // costingFactors is server-managed (frozen at first calc): ignore any
+          // client value and carry over the stored one so PATCH can't drop it.
+          const prior = await tx.$queryRaw<
+            { ahuRecalcParams: { costingFactors?: unknown } | null }[]
+          >`SELECT "ahuRecalcParams" FROM "CostingSegment" WHERE "id" = ${segmentId}`;
+          const { costingFactors: _ignored, ...incoming } =
+            body.ahuRecalcParams as Record<string, unknown>;
+          void _ignored;
+          const storedFactors = prior[0]?.ahuRecalcParams?.costingFactors;
+          const jsonText = JSON.stringify(
+            storedFactors === undefined
+              ? incoming
+              : { ...incoming, costingFactors: storedFactors }
+          );
           await tx.$executeRaw`
             UPDATE "CostingSegment"
             SET "ahuRecalcParams" = ${jsonText}, "updatedAt" = ${now}

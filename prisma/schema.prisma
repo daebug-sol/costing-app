@@ -72,6 +72,10 @@ model AppSettings {
   defaultAsuransi    Float        @default(0.0)
   defaultMobilisasi  Float        @default(0.0)
   ppnRate            Float        @default(11.0)
+  /** Waste multipliers (>= 1) for AHU frame/skid/structure; snapshotted per segment on first calc. */
+  profileWasteFactor Float        @default(1.05)
+  linerWasteFactor   Float        @default(1.05)
+  plateWasteFactor   Float        @default(1.15)
   paymentTerms       String       @default("DP 50%, balance CBD")
   deliveryTerms      String       @default("Ex-work Cikarang")
   warrantyTerms      String       @default("12 months since delivery")
