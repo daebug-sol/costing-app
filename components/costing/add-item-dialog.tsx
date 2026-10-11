@@ -28,7 +28,7 @@ export function AddItemDialog({ ed }: { ed: CostingWorkspaceState }) {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Tambah baris item</DialogTitle>
+            <DialogTitle>{t("costing.addRow.title")}</DialogTitle>
             <DialogDescription>
               Tambahkan baris manual pada section yang dipilih.
             </DialogDescription>
@@ -48,7 +48,7 @@ export function AddItemDialog({ ed }: { ed: CostingWorkspaceState }) {
                 <Input value={addQty} onChange={(e) => setAddQty(e.target.value)} />
               </div>
               <div className="space-y-1">
-                <Label>Unit price</Label>
+                <Label>{t("costing.addRow.unitPrice")}</Label>
                 <Input
                   value={addPrice}
                   onChange={(e) => setAddPrice(e.target.value)}
@@ -62,10 +62,10 @@ export function AddItemDialog({ ed }: { ed: CostingWorkspaceState }) {
               variant="outline"
               onClick={() => setAddOpen(false)}
             >
-              Cancel
+              {t("costing.addRow.cancel")}
             </Button>
             <Button type="button" onClick={submitAddItem}>
-              Add
+              {t("costing.addRow.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>

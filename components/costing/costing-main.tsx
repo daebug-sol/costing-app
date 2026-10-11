@@ -627,7 +627,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                       </TableCell>
                     </TableRow>
                     <TableRow className="border-t-2 font-medium">
-                      <TableCell>Total cost</TableCell>
+                      <TableCell>{t("costing.summary.totalCost")}</TableCell>
                       <TableCell className="tabular-money text-right">
                         {formatIDR(totals.totalCost)}
                       </TableCell>
@@ -655,13 +655,13 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                       </TableCell>
                     </TableRow>
                     <TableRow className="bg-muted/50 border-t-2 text-base font-bold">
-                      <TableCell>SELLING PRICE</TableCell>
+                      <TableCell>{t("costing.summary.sellingPrice")}</TableCell>
                       <TableCell className="tabular-money text-right">
                         {formatIDR(totals.selling)}
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Per unit</TableCell>
+                      <TableCell>{t("costing.summary.perUnit")}</TableCell>
                       <TableCell className="tabular-money text-right">
                         {formatIDR(totals.perUnit)}
                       </TableCell>
