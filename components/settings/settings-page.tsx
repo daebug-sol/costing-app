@@ -42,6 +42,9 @@ type Settings = {
   defaultEskalasi: number;
   defaultAsuransi: number;
   ppnRate: number;
+  profileWasteFactor: number;
+  linerWasteFactor: number;
+  plateWasteFactor: number;
   paymentTerms: string;
   deliveryTerms: string;
   warrantyTerms: string;
@@ -519,6 +522,77 @@ export function SettingsPage() {
             }
           >
             {saving === "rates" ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              "Simpan"
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <Card size="sm" className="border-border ">
+        <CardHeader>
+          <CardTitle className="text-lg">Faktor waste costing AHU</CardTitle>
+          <p className="text-xs font-normal text-muted-foreground">
+            Pengali waste (1,00–2,00). Hanya berlaku untuk costing baru;
+            costing yang sudah dihitung tidak berubah.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {(
+              [
+                ["profileWasteFactor", "Waste profil rangka"],
+                ["linerWasteFactor", "Waste liner GI"],
+                ["plateWasteFactor", "Waste plat skid & struktur"],
+              ] as const
+            ).map(([key, label]) => {
+              const invalid = !(row[key] >= 1 && row[key] <= 2);
+              return (
+                <div key={key} className="space-y-1.5">
+                  <Label htmlFor={key}>{label}</Label>
+                  <Input
+                    id={key}
+                    type="number"
+                    step="0.01"
+                    min={1}
+                    max={2}
+                    className="tabular-nums"
+                    aria-invalid={invalid}
+                    value={row[key]}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      if (Number.isFinite(v))
+                        setRow({ ...row, [key]: v } as Settings);
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+        <CardFooter className="justify-end border-t bg-muted/40">
+          <Button
+            type="button"
+            disabled={
+              saving !== null ||
+              !canWrite ||
+              [row.profileWasteFactor, row.linerWasteFactor, row.plateWasteFactor].some(
+                (v) => !(v >= 1 && v <= 2)
+              )
+            }
+            onClick={() =>
+              void put(
+                {
+                  profileWasteFactor: row.profileWasteFactor,
+                  linerWasteFactor: row.linerWasteFactor,
+                  plateWasteFactor: row.plateWasteFactor,
+                },
+                "waste"
+              )
+            }
+          >
+            {saving === "waste" ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
               "Simpan"

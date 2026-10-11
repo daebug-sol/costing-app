@@ -5,7 +5,7 @@ import { computeAhuSegmentCostingBlocks } from "@/lib/ahu-segment-costing";
 import { guardApiRoute } from "@/lib/api-guard";
 import { requirePermission } from "@/lib/permissions";
 import { costingProjectDetailInclude } from "@/lib/costing-project-include";
-import { finite } from "@/lib/calculations";
+import { DEFAULT_COSTING_FACTORS, finite, resolveCostingFactors } from "@/lib/calculations";
 import { normalizeCostingScope } from "@/lib/costing-scope";
 import { requireAhuModule } from "@/lib/org-modules";
 import { prisma } from "@/lib/prisma";
@@ -93,6 +93,28 @@ export async function POST(request: Request, context: Ctx) {
 
     const scope = normalizeCostingScope(merged.costingScope);
 
+    // New-costings-only: freeze factors on first calc. Segments that already
+    // have sections predate this feature and keep the original workbook values.
+    let factors = merged.costingFactors
+      ? resolveCostingFactors(merged.costingFactors)
+      : null;
+    if (!factors) {
+      const hasPriorSections =
+        (await prisma.costingSection.count({ where: { segmentId } })) > 0;
+      if (hasPriorSections) {
+        factors = { ...DEFAULT_COSTING_FACTORS };
+      } else {
+        const s = await prisma.appSettings.findUnique({
+          where: { organizationId: orgId },
+        });
+        factors = resolveCostingFactors({
+          profileWaste: s?.profileWasteFactor,
+          linerWaste: s?.linerWasteFactor,
+          plateWaste: s?.plateWasteFactor,
+        });
+      }
+    }
+
     const rawBlocks = computeAhuSegmentCostingBlocks({
       dimH: H,
       dimW: W,
@@ -102,6 +124,7 @@ export async function POST(request: Request, context: Ctx) {
       nSections,
       scope,
       mergedParams: merged,
+      factors,
       materials,
       profiles,
       components,
@@ -172,7 +195,17 @@ export async function POST(request: Request, context: Ctx) {
 
       await tx.costingSegment.update({
         where: { id: segmentId },
-        data: { subtotal: segmentSub },
+        data: {
+          subtotal: segmentSub,
+          ahuRecalcParams: {
+            ...(segment.ahuRecalcParams &&
+            typeof segment.ahuRecalcParams === "object" &&
+            !Array.isArray(segment.ahuRecalcParams)
+              ? segment.ahuRecalcParams
+              : {}),
+            costingFactors: factors,
+          },
+        },
       });
     });
 

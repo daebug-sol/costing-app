@@ -25,6 +25,14 @@ export {
   ifBlank,
 } from "./excel-math";
 export { calculateFanMotor } from "./fanMotor";
+export {
+  COSTING_FACTOR_MAX,
+  COSTING_FACTOR_MIN,
+  DEFAULT_COSTING_FACTORS,
+  isValidCostingFactor,
+  resolveCostingFactors,
+} from "./factors";
+export type { CostingFactors } from "./factors";
 export { calculateFramePanel } from "./framePanel";
 export {
   calculateAccessDoor,

@@ -10,7 +10,8 @@ jest.mock("@/lib/prisma", () => ({
     profileData: { findMany: jest.fn() },
     componentCatalog: { findMany: jest.fn() },
     costingProject: { findUnique: jest.fn(), findFirst: jest.fn() },
-    costingSection: { deleteMany: jest.fn(), create: jest.fn() },
+    costingSection: { deleteMany: jest.fn(), create: jest.fn(), count: jest.fn(async () => 0) },
+    appSettings: { findUnique: jest.fn(async () => null) },
     $transaction: jest.fn(),
   },
 }));

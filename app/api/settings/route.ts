@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
 import { getOrgEntitlements } from "@/lib/org-entitlements";
 import { permissionsFor, requirePermission } from "@/lib/permissions";
+import { isValidCostingFactor } from "@/lib/calculations";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateSettings } from "@/lib/tenant-queries";
 
@@ -66,6 +67,9 @@ export async function PUT(request: Request) {
       defaultAsuransi?: number;
       defaultMobilisasi?: number;
       ppnRate?: number;
+      profileWasteFactor?: number;
+      linerWasteFactor?: number;
+      plateWasteFactor?: number;
       paymentTerms?: string;
       deliveryTerms?: string;
       warrantyTerms?: string;
@@ -108,6 +112,21 @@ export async function PUT(request: Request) {
     if (mb !== undefined) data.defaultMobilisasi = mb;
     const ppn = takeNum(body.ppnRate);
     if (ppn !== undefined) data.ppnRate = ppn;
+    for (const key of [
+      "profileWasteFactor",
+      "linerWasteFactor",
+      "plateWasteFactor",
+    ] as const) {
+      const f = takeNum(body[key]);
+      if (f === undefined) continue;
+      if (!isValidCostingFactor(f)) {
+        return NextResponse.json(
+          { error: `${key} must be between 1 and 2` },
+          { status: 400 }
+        );
+      }
+      data[key] = f;
+    }
     const vd = takeNum(body.validityDays);
     if (vd !== undefined) data.validityDays = Math.round(vd);
 

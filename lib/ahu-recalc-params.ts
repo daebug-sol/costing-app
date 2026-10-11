@@ -5,6 +5,7 @@
 
 import type { CostingScope } from "@/lib/costing-scope";
 import { normalizeCostingScope } from "@/lib/costing-scope";
+import type { CostingFactors } from "@/lib/calculations/factors";
 
 export type { CostingScope } from "@/lib/costing-scope";
 
@@ -15,6 +16,11 @@ export type AhuSectionLayout = "horizontal" | "vertical";
 
 export type AhuRecalcParams = {
   nSections?: number;
+  /**
+   * Waste factors frozen on the segment's first calculation. Server-managed:
+   * never taken from the request body, so later Settings edits only affect new segments.
+   */
+  costingFactors?: CostingFactors;
   /** AHU section arrangement; metadata only until Phase 3b formula. */
   sectionLayout?: AhuSectionLayout;
   /** Scope modular: full AHU vs kelompok terpilih. */
@@ -191,6 +197,7 @@ export function mergeRecalcParams(
 
   return {
     nSections: r.nSections ?? stored.nSections,
+    costingFactors: stored.costingFactors,
     sectionLayout,
     costingScope,
     accessDoor: Object.keys(accessDoor).length ? accessDoor : undefined,

@@ -18,6 +18,7 @@ import {
   finite,
   positiveOr,
   type CalcLineItem,
+  type CostingFactors,
 } from "@/lib/calculations";
 
 /** Urutan kategori di UI / quotation (sinkron dengan route recalculate). */
@@ -46,6 +47,8 @@ export type AhuSegmentCostingInput = {
   /** Scope efektif (sudah dinormalisasi). */
   scope: CostingScope;
   mergedParams: AhuRecalcParams;
+  /** Frozen per-segment waste factors; omitted → workbook defaults. */
+  factors?: Partial<CostingFactors>;
   materials: MaterialPrice[];
   profiles: ProfileData[];
   components: ComponentCatalog[];
@@ -79,6 +82,7 @@ export function computeAhuSegmentCostingBlocks(
         nSections: input.nSections,
         profiles: input.profiles,
         materials: input.materials,
+        factors: input.factors,
       })
     : [];
 
@@ -88,6 +92,7 @@ export function computeAhuSegmentCostingBlocks(
         D,
         nSections: input.nSections,
         materials: input.materials,
+        factors: input.factors,
       })
     : [];
 
@@ -98,6 +103,7 @@ export function computeAhuSegmentCostingBlocks(
         D,
         nSections: input.nSections,
         materials: input.materials,
+        factors: input.factors,
       })
     : [];
 
