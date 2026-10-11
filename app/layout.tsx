@@ -54,7 +54,7 @@ export default function RootLayout({
           {THEME_INIT_SCRIPT}
         </Script>
       </head>
-      <body className="min-h-full">
+      <body className="bg-dot-grid min-h-full">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
