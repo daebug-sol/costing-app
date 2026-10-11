@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { getDisplayName } from "@/lib/auth";
 import { isOperatorUserId } from "@/lib/operator-auth";
 import { permissionsFor } from "@/lib/permissions";
 
@@ -10,6 +11,7 @@ export async function GET() {
   const { role, userId, orgId } = guard;
   return NextResponse.json({
     userId,
+    displayName: await getDisplayName(),
     orgId,
     role,
     permissions: permissionsFor(role),

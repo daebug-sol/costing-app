@@ -198,8 +198,16 @@ export type DashboardSalesLeaderboard = {
   rows: DashboardSalesLeaderboardRow[];
 };
 
+export type DashboardScopeInfo = {
+  mode: "own" | "all" | "person";
+  salesman: string | null;
+  /** Names an owner/admin/ceo can switch to; empty for everyone else. */
+  options: string[];
+};
+
 export type DashboardApiResponse = {
   range: DashboardRange;
+  scope: DashboardScopeInfo;
   projectScope: DashboardProjectScope;
   kpis: DashboardKpis;
   costingData: DashboardCostingData;
@@ -217,6 +225,7 @@ export type DashboardApiResponse = {
 
 export const EMPTY_DASHBOARD_RESPONSE: DashboardApiResponse = {
   range: "all",
+  scope: { mode: "all", salesman: null, options: [] },
   projectScope: {
     selectedProjectId: null,
     options: [],

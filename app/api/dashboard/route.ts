@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
+import { getDisplayName } from "@/lib/auth";
+import { applySalesmanScope, listSalesmen, resolveSalesmanScope } from "@/lib/dashboard-scope";
 import { prisma } from "@/lib/prisma";
 import { buildDashboardAnalyticsPayload } from "@/lib/dashboard-analytics";
 import type { DashboardRange } from "@/lib/dashboard-contract";
@@ -12,7 +14,7 @@ function parseDashboardRange(value: string | null): DashboardRange {
 export async function GET(request: Request) {
   const guard = await guardApiRoute();
   if ("response" in guard) return guard.response;
-  const { orgId } = guard;
+  const { orgId, role } = guard;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -27,7 +29,7 @@ export async function GET(request: Request) {
       ? { projectId: selectedProjectId, organizationId: orgId }
       : { organizationId: orgId };
 
-    const [projects, quotations, settings, salesOrders, invoices] =
+    const [allProjects, allQuotations, settings, allSalesOrders, allInvoices] =
       await Promise.all([
       prisma.costingProject.findMany({
         where: projectWhere,
@@ -121,6 +123,7 @@ export async function GET(request: Request) {
           status: true,
           tanggal: true,
           grandTotal: true,
+          quotationId: true,
         },
       }),
       prisma.invoice.findMany({
@@ -129,6 +132,7 @@ export async function GET(request: Request) {
           id: true,
           invNumber: true,
           customerId: true,
+          salesOrderId: true,
           status: true,
           dueDate: true,
           tanggal: true,
@@ -138,6 +142,20 @@ export async function GET(request: Request) {
         },
       }),
     ]);
+
+    const scope = resolveSalesmanScope({
+      role,
+      requested: searchParams.get("salesman"),
+      displayName: await getDisplayName(),
+    });
+    const scoped = applySalesmanScope(scope, {
+      quotations: allQuotations,
+      salesOrders: allSalesOrders,
+      invoices: allInvoices,
+      projects: allProjects,
+    });
+    const { quotations, salesOrders, invoices, projects } = scoped;
+    const canPick = scope.mode !== "own";
 
     if (selectedProjectId && projects.length === 0) {
       return NextResponse.json(
@@ -165,7 +183,14 @@ export async function GET(request: Request) {
         paidTotal: inv.paidTotal,
       })),
     });
-    return NextResponse.json(payload);
+    return NextResponse.json({
+      ...payload,
+      scope: {
+        mode: scope.mode,
+        salesman: scope.salesman,
+        options: canPick ? listSalesmen(allQuotations) : [],
+      },
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Failed to load dashboard analytics" }, { status: 500 });

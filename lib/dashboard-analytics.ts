@@ -1087,6 +1087,7 @@ export function buildDashboardAnalyticsPayload(
 
   return {
     range,
+    scope: EMPTY_DASHBOARD_RESPONSE.scope,
     projectScope: {
       selectedProjectId,
       options: scopeOptions,

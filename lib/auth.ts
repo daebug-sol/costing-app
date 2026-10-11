@@ -46,3 +46,15 @@ export async function getClerkOrgId(): Promise<string | null> {
   const { orgId } = await auth();
   return orgId ?? null;
 }
+
+/** Signed-in user's display name (used to match `Quotation.salesman`); null when unknown. */
+export async function getDisplayName(): Promise<string | null> {
+  if (isAuthBypassed()) {
+    return process.env.TEST_USER_NAME?.trim() || null;
+  }
+  const { currentUser } = await import("@clerk/nextjs/server");
+  const user = await currentUser();
+  if (!user) return null;
+  const full = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+  return full || user.username || null;
+}
