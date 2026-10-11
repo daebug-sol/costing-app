@@ -12,6 +12,8 @@ export function QuotationFunnel({ data }: { data: DashboardQuotationFunnel }) {
     { stage: t("dashboard.funnel.approved"), count: data.approvedCount },
   ];
 
+  const peak = Math.max(...stages.map((s) => s.count));
+
   return (
     <div className="space-y-3" data-testid="quotation-funnel">
       <div className="grid grid-cols-2 gap-3 rounded-none border border-border/70 p-3 text-xs">
@@ -28,7 +30,7 @@ export function QuotationFunnel({ data }: { data: DashboardQuotationFunnel }) {
       </div>
       <ul className="flex flex-col gap-3" aria-label={t("dashboard.funnel.title")}>
         {stages.map((stage) => {
-          const share = data.totalCount > 0 ? (stage.count / data.totalCount) * 100 : 0;
+          const share = peak > 0 ? (stage.count / peak) * 100 : 0;
           return (
             <li key={stage.stage} className="flex flex-col gap-1">
               <div className="flex items-baseline justify-between gap-2 text-sm">
