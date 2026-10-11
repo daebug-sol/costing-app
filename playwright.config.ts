@@ -90,6 +90,7 @@ export default defineConfig({
       AUTH_BYPASS: "true",
       TEST_USER_ID: process.env.TEST_USER_ID ?? "test-user",
       TEST_ORG_ID: process.env.TEST_ORG_ID ?? "test-org",
+      TEST_USER_NAME: process.env.TEST_USER_NAME ?? "Rina W.",
     },
   },
 });

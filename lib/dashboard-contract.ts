@@ -198,6 +198,8 @@ export type DashboardSalesLeaderboard = {
   rows: DashboardSalesLeaderboardRow[];
 };
 
+import type { DashboardPersonal } from "@/lib/dashboard-personal";
+
 export type DashboardScopeInfo = {
   mode: "own" | "all" | "person";
   salesman: string | null;
@@ -208,6 +210,7 @@ export type DashboardScopeInfo = {
 export type DashboardApiResponse = {
   range: DashboardRange;
   scope: DashboardScopeInfo;
+  personal: DashboardPersonal;
   projectScope: DashboardProjectScope;
   kpis: DashboardKpis;
   costingData: DashboardCostingData;
@@ -226,6 +229,20 @@ export type DashboardApiResponse = {
 export const EMPTY_DASHBOARD_RESPONSE: DashboardApiResponse = {
   range: "all",
   scope: { mode: "all", salesman: null, options: [] },
+  personal: {
+    monthlyTarget: null,
+    bookedThisMonth: 0,
+    remaining: null,
+    progressPct: null,
+    idealPct: 0,
+    paceDeltaValue: null,
+    bestMonth: null,
+    daysLeftInMonth: 0,
+    newOrdersYesterday: 0,
+    expiringQuotationCount: 0,
+    followUpTotal: 0,
+    followUps: [],
+  },
   projectScope: {
     selectedProjectId: null,
     options: [],
