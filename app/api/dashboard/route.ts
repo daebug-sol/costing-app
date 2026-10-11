@@ -238,6 +238,7 @@ export async function GET(request: Request) {
       scope: {
         mode: scope.mode,
         salesman: scope.salesman,
+        viewerName: displayName ?? "",
         options: canPick ? listSalesmen(allQuotations) : [],
       },
     });

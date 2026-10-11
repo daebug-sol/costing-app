@@ -203,6 +203,8 @@ import type { DashboardPersonal } from "@/lib/dashboard-personal";
 export type DashboardScopeInfo = {
   mode: "own" | "all" | "person";
   salesman: string | null;
+  /** Signed-in member's display name, for the greeting. */
+  viewerName: string;
   /** Names an owner/admin/ceo can switch to; empty for everyone else. */
   options: string[];
 };
@@ -228,7 +230,7 @@ export type DashboardApiResponse = {
 
 export const EMPTY_DASHBOARD_RESPONSE: DashboardApiResponse = {
   range: "all",
-  scope: { mode: "all", salesman: null, options: [] },
+  scope: { mode: "all", salesman: null, viewerName: "", options: [] },
   personal: {
     monthlyTarget: null,
     bookedThisMonth: 0,

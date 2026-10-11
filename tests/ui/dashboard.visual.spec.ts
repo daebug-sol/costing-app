@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 /**
  * Visual / smoke spec for the Dashboard route ("/").
  *
- * Locks down compact IA: hero KPIs, tabbed insight panel, penjualan detail blocks.
+ * Locks down compact IA: personal home (greeting, target, KPIs, follow-ups), tabbed insight panel, penjualan detail blocks.
  * Chart pixels are masked; table fallbacks verified via detail sheet or tabs.
  */
 
@@ -20,9 +20,7 @@ test.describe("Dashboard ('/')", () => {
       page.getByRole("heading", { level: 1, name: "Dashboard" })
     ).toBeVisible();
     // Wait for KPI skeletons to resolve (first dev-server compile can be slow).
-    await expect(
-      page.getByTestId("dashboard-hero-kpis").getByText("Pendapatan booked YTD", { exact: true })
-    ).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId("dashboard-greeting")).toBeVisible({ timeout: 60_000 });
   });
 
   test("renders heading, tabs, and primary regions", async ({ page }) => {
@@ -49,7 +47,7 @@ test.describe("Dashboard ('/')", () => {
     ).toBeVisible();
 
     await page.getByTestId("dashboard-tab-penjualan").click();
-    for (const id of ["quotation-funnel", "status-distribution", "sales-leaderboard"]) {
+    for (const id of ["quotation-funnel", "status-distribution"]) {
       await expect(page.getByTestId(id).or(page.getByText(EMPTY_STATE)).first()).toBeVisible();
     }
 
@@ -77,25 +75,14 @@ test.describe("Dashboard ('/')", () => {
     ).toBeVisible();
   });
 
-  test("renders new KPI strips", async ({ page }) => {
-    const heroLabels = [
-      "Pendapatan booked YTD",
-      "Pendapatan booked MTD",
-      "Margin kotor tertimbang",
-      "Nilai pipeline",
-      "Kebocoran diskon",
-    ];
-    const secondaryLabels = ["Total proyek", "Quotation pending", "Win rate", "Eksposur pajak (PPN + PPh)"];
+  test("renders the personal home", async ({ page }) => {
+    await expect(page.getByTestId("dashboard-greeting")).toContainText(/Selamat (pagi|siang|sore|malam)/);
+    await expect(page.getByTestId("dashboard-target")).toBeVisible();
+    await expect(page.getByTestId("dashboard-follow-ups")).toBeVisible();
 
     const heroGrid = page.getByTestId("dashboard-hero-kpis");
-
-    for (const label of heroLabels) {
+    for (const label of ["Penjualan", "Win rate", "Margin", "Pipeline terbuka"]) {
       await expect(heroGrid.getByText(label, { exact: true })).toBeVisible();
-    }
-
-    const secondaryGrid = page.getByTestId("dashboard-secondary-kpis");
-    for (const label of secondaryLabels) {
-      await expect(secondaryGrid.getByText(label, { exact: true })).toBeVisible();
     }
   });
 
@@ -106,6 +93,9 @@ test.describe("Dashboard ('/')", () => {
       fullPage: true,
       mask: [
         page.locator(".tabular-money"),
+        page.getByTestId("dashboard-personal-home"),
+        page.getByTestId("dashboard-hero-kpis"),
+        page.getByTestId("dashboard-follow-ups"),
         page.locator("[data-testid='profit-bridge-chart']"),
         page.locator("[data-testid='cost-breakdown-chart']"),
         page.locator("[data-testid='cashflow-timeline-chart']"),

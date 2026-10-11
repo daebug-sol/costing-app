@@ -64,3 +64,16 @@ export function formatPercent(value: number): string {
     }).format(value) + "%"
   );
 }
+
+const shortNumber = (n: number) =>
+  new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
+
+/** Dashboard-friendly rupiah: "Rp 270 jt", "Rp 1,4 M"; full rupiah below one million. */
+export function formatRpShort(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000_000) return `${sign}Rp ${shortNumber(abs / 1_000_000_000)} M`;
+  if (abs >= 1_000_000) return `${sign}Rp ${shortNumber(abs / 1_000_000)} jt`;
+  return formatIDR(value).replace(/ /g, " ");
+}

@@ -11,10 +11,13 @@ import { DashboardStickyToolbar } from "@/components/dashboard/dashboard-sticky-
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
 import { dashboardSegmentClass } from "@/components/dashboard/dashboard-surface-styles";
 import { useDashboardToolbarStuck } from "@/hooks/use-dashboard-toolbar-stuck";
-import { KpiStatCard } from "@/components/dashboard/kpi-stat-card";
+import { FollowUpList } from "@/components/dashboard/personal/follow-up-list";
+import { GreetingCard } from "@/components/dashboard/personal/greeting-card";
+import { PersonalKpis, type PersonalKpi } from "@/components/dashboard/personal/personal-kpis";
+import { ScopeSwitcher } from "@/components/dashboard/personal/scope-switcher";
+import { TargetCard } from "@/components/dashboard/personal/target-card";
 import { QuotationAgingTable } from "@/components/dashboard/quotation-aging-table";
 import { QuotationFunnel } from "@/components/dashboard/quotation-funnel";
-import { SalesLeaderboard } from "@/components/dashboard/sales-leaderboard";
 import { StatusDistribution } from "@/components/dashboard/status-distribution";
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
@@ -23,10 +26,9 @@ import { Button } from "@/components/ui/button";
 import { PillTabsList, PillTabsTrigger } from "@/components/ui/pill-tabs";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import type { DashboardApiResponse, DashboardRange } from "@/lib/dashboard-contract";
-import type { MessageKey } from "@/lib/i18n/messages";
-import { buildMtdBookedDelta, buildTrendDelta, buildYtdBookedDelta } from "@/lib/dashboard-ui-mappers";
+import { buildMtdBookedDelta, buildTrendDelta } from "@/lib/dashboard-ui-mappers";
 import { cn } from "@/lib/utils";
-import { formatIDR, formatPercent } from "@/lib/utils/format";
+import { formatPercent, formatRpShort } from "@/lib/utils/format";
 
 const chartPaneFallback = (
   <div className="flex min-h-[180px] items-center justify-center">
@@ -63,52 +65,8 @@ const RevenueTrendChart = dynamic(
   { ssr: false, loading: () => chartPaneFallback }
 );
 
-const SECONDARY_KPI_LABELS = [
-  { labelKey: "dashboard.kpi.totalProjects", key: "totalProjects" },
-  { labelKey: "dashboard.kpi.pendingQuotation", key: "pendingQuotation" },
-  { labelKey: "dashboard.kpi.winRate", key: "winRatePct" },
-  { labelKey: "dashboard.kpi.taxExposure", key: "taxExposure" },
-] as const satisfies ReadonlyArray<{ labelKey: MessageKey; key: string }>;
-
 const NOT_FOUND = "notFound";
 const LOAD_FAILED = "loadFailed";
-
-function SecondaryKpiBar({
-  kpis,
-  className,
-}: {
-  kpis: DashboardApiResponse["kpis"] | undefined;
-  className?: string;
-}) {
-  const { t } = useI18n();
-
-  return (
-    <div
-      className={cn(
-        "grid grid-cols-2 divide-x divide-y divide-border rounded-none border border-border bg-card sm:grid-cols-4 sm:divide-y-0",
-        className
-      )}
-      data-testid="dashboard-secondary-kpis"
-    >
-      {SECONDARY_KPI_LABELS.map((item) => {
-        let value: string | number = 0;
-        if (item.key === "winRatePct") {
-          value = formatPercent(kpis?.winRatePct ?? 0);
-        } else if (item.key === "taxExposure") {
-          value = formatIDR((kpis?.taxExposurePpn ?? 0) + (kpis?.taxExposurePph ?? 0));
-        } else {
-          value = kpis?.[item.key] ?? 0;
-        }
-        return (
-          <div key={item.key} className="min-w-0 px-3 py-3 sm:px-4">
-            <p className="text-xs text-muted-foreground">{t(item.labelKey)}</p>
-            <p className="tabular-money mt-0.5 text-sm font-semibold text-foreground">{value}</p>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export function DashboardPage() {
   const { t } = useI18n();
@@ -119,6 +77,8 @@ export function DashboardPage() {
   const [error, setError] = useState<typeof NOT_FOUND | typeof LOAD_FAILED | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [range, setRange] = useState<DashboardRange>("all");
+  const [salesman, setSalesman] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [activeTab, setActiveTab] = useState("finansial");
   const hasLoadedOnceRef = useRef(false);
 
@@ -143,6 +103,7 @@ export function DashboardPage() {
         const params = new URLSearchParams();
         if (selectedProjectId) params.set("projectId", selectedProjectId);
         params.set("range", range);
+        if (salesman) params.set("salesman", salesman);
         const query = params.toString();
         const response = await fetch(`/api/dashboard${query ? `?${query}` : ""}`, {
           signal: controller.signal,
@@ -173,7 +134,7 @@ export function DashboardPage() {
 
     void loadDashboard();
     return () => controller.abort();
-  }, [range, selectedProjectId]);
+  }, [range, selectedProjectId, salesman, reloadKey]);
 
   const refresh = useCallback(() => {
     setRefreshing(true);
@@ -181,6 +142,7 @@ export function DashboardPage() {
     const params = new URLSearchParams();
     if (selectedProjectId) params.set("projectId", selectedProjectId);
     params.set("range", range);
+    if (salesman) params.set("salesman", salesman);
     const query = params.toString();
     void fetch(`/api/dashboard${query ? `?${query}` : ""}`)
       .then(async (response) => {
@@ -201,26 +163,66 @@ export function DashboardPage() {
         setError(loadError instanceof Error && loadError.message === NOT_FOUND ? NOT_FOUND : LOAD_FAILED);
       })
       .finally(() => setRefreshing(false));
-  }, [range, selectedProjectId]);
+  }, [range, selectedProjectId, salesman]);
 
   const loading = initialLoading;
   const chartLoading = initialLoading && !data;
 
   const kpis = data?.kpis;
   const trendSeries = useMemo(() => data?.discountMarginTrend.series ?? [], [data]);
-  const ytdBookedDelta = useMemo(
-    () => buildYtdBookedDelta(trendSeries, kpis?.bookedRevenueYtd ?? 0),
-    [trendSeries, kpis?.bookedRevenueYtd]
-  );
   const mtdBookedDelta = useMemo(() => buildMtdBookedDelta(trendSeries), [trendSeries]);
   const marginDelta = useMemo(
     () => buildTrendDelta(trendSeries, "weightedMarginPct"),
     [trendSeries]
   );
-  const leakageDelta = useMemo(
-    () => buildTrendDelta(trendSeries, "discountLeakage"),
-    [trendSeries]
-  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh the clock whenever new data arrives
+  const now = useMemo(() => new Date(), [data]);
+  const isSelfView =
+    !!data &&
+    (data.scope.mode === "own" ||
+      (data.scope.mode === "person" &&
+        data.scope.salesman?.trim().toLowerCase() === data.scope.viewerName.trim().toLowerCase()));
+
+  const personalKpis = useMemo<PersonalKpi[]>(() => {
+    if (!kpis) return [];
+    const direction = (delta: number): "up" | "down" | "flat" =>
+      delta > 0 ? "up" : delta < 0 ? "down" : "flat";
+    const booked = trendSeries.map((p) => p.bookedRevenue);
+    return [
+      {
+        key: "sales",
+        title: t("dashboard.personal.kpi.sales"),
+        value: formatRpShort(kpis.bookedRevenueMtd),
+        note: t("dashboard.personal.kpi.salesNote", { delta: `${mtdBookedDelta >= 0 ? "+" : ""}${formatPercent(mtdBookedDelta)}` }),
+        trend: { data: booked, direction: direction(mtdBookedDelta) },
+      },
+      {
+        key: "winRate",
+        title: t("dashboard.personal.kpi.winRate"),
+        value: formatPercent(kpis.winRatePct),
+        note: t("dashboard.personal.kpi.winRateNote", {
+          approved: data?.quotationFunnel.approvedCount ?? 0,
+          total: data?.quotationFunnel.totalCount ?? 0,
+        }),
+      },
+      {
+        key: "margin",
+        title: t("dashboard.personal.kpi.margin"),
+        value: formatPercent(kpis.weightedGrossMarginPct),
+        note: t("dashboard.personal.kpi.marginNote"),
+        trend: {
+          data: trendSeries.map((p) => p.weightedMarginPct),
+          direction: direction(marginDelta),
+        },
+      },
+      {
+        key: "pipeline",
+        title: t("dashboard.personal.kpi.pipeline"),
+        value: formatRpShort(kpis.pipelineValue),
+        note: t("dashboard.personal.kpi.pipelineNote", { count: kpis.pendingQuotation }),
+      },
+    ];
+  }, [kpis, trendSeries, mtdBookedDelta, marginDelta, data, t]);
 
   const { sentinelRef, isStuck } = useDashboardToolbarStuck();
 
@@ -269,55 +271,31 @@ export function DashboardPage() {
         </div>
       ) : null}
 
-      <section className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-5" data-testid="dashboard-hero-kpis">
-        {loading && !kpis ? (
-          <div className="col-span-full">
-            <TableLoadingSkeleton columns={5} rows={2} />
-          </div>
-        ) : (
-          <>
-        <KpiStatCard
-          title={t("dashboard.kpi.bookedYtd")}
-          value={kpis?.bookedRevenueYtd ?? 0}
-          formatter={formatIDR}
-          deltaPct={ytdBookedDelta}
-          deltaLabel={t("dashboard.kpi.vsLastMonth")}
-          hint={t("dashboard.kpi.bookedYtdHint")}
-        />
-        <KpiStatCard
-          title={t("dashboard.kpi.bookedMtd")}
-          value={kpis?.bookedRevenueMtd ?? 0}
-          formatter={formatIDR}
-          deltaPct={mtdBookedDelta}
-          deltaLabel={t("dashboard.kpi.vsPrevMonth")}
-        />
-        <KpiStatCard
-          title={t("dashboard.kpi.margin")}
-          value={kpis?.weightedGrossMarginPct ?? 0}
-          formatter={formatPercent}
-          deltaPct={marginDelta}
-          deltaLabel={t("dashboard.kpi.vsPrevPeriod")}
-        />
-        <KpiStatCard
-          title={t("dashboard.kpi.pipeline")}
-          value={kpis?.pipelineValue ?? 0}
-          formatter={formatIDR}
-          hint={t("dashboard.kpi.pipelineHint")}
-        />
-        <KpiStatCard
-          title={t("dashboard.kpi.leakage")}
-          value={kpis?.discountLeakageValue ?? 0}
-          formatter={formatIDR}
-          deltaPct={leakageDelta}
-          deltaLabel={t("dashboard.kpi.vsPrevPeriod")}
-        />
-          </>
-        )}
-      </section>
+      {data?.scope.options.length ? (
+        <div className="flex justify-end">
+          <ScopeSwitcher options={data.scope.options} value={salesman} onChange={setSalesman} />
+        </div>
+      ) : null}
 
-      <section aria-label={t("dashboard.kpi.secondaryLabel")}>
-        <SecondaryKpiBar kpis={kpis} />
-      </section>
+      {loading && !data ? (
+        <TableLoadingSkeleton columns={4} rows={2} />
+      ) : data ? (
+        <>
+          <section className="grid min-w-0 gap-4 lg:grid-cols-2" data-testid="dashboard-personal-home">
+            <GreetingCard name={data.scope.viewerName} personal={data.personal} now={now} />
+            {isSelfView ? (
+              <TargetCard
+                personal={data.personal}
+                canEditTarget
+                onSaved={() => setReloadKey((k) => k + 1)}
+                now={now}
+              />
+            ) : null}
+          </section>
+          <PersonalKpis items={personalKpis} />
+          <FollowUpList items={data.personal.followUps} total={data.personal.followUpTotal} />
+        </>
+      ) : null}
 
       <section
         className={cn("min-w-0 p-4 sm:p-6", dashboardSegmentClass)}
@@ -417,15 +395,6 @@ export function DashboardPage() {
                 {data ? <StatusDistribution data={data.statusDistribution} /> : null}
               </ChartInsightBlock>
             </div>
-
-            <ChartInsightBlock
-              title={t("dashboard.leaderboard.title")}
-              loading={chartLoading}
-              detailDescription={t("dashboard.leaderboard.detail")}
-              detailContent={data ? <SalesLeaderboard data={data.salesLeaderboard} /> : null}
-            >
-              {data ? <SalesLeaderboard data={data.salesLeaderboard} maxRows={5} /> : null}
-            </ChartInsightBlock>
 
             <ClientListWidget />
 
