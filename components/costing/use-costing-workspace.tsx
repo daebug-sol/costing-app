@@ -12,6 +12,8 @@ import { groupByMonthAndDay } from "@/lib/group-by-month-day";
 import { useConfirm } from "@/components/confirm-dialog";
 import { useCostingStore, type CostingSegmentDetail } from "@/store/costingStore";
 import { EMPTY_BOOL_MAP, mergeOpenSegmentsForProject, useUiWorkflowStore } from "@/store/uiWorkflowStore";
+import { costingErrorMessage } from "@/lib/costing-error-message";
+import { resolveProjectView, type ProjectLoadState } from "@/lib/costing-project-view";
 import { catKey } from "./costing-workspace-shared";
 
 export function useCostingWorkspace() {
@@ -45,7 +47,6 @@ export function useCostingWorkspace() {
   const statusFilter = useUiWorkflowStore((s) => s.costing.sidebar.statusFilter);
   const monthFilter = useUiWorkflowStore((s) => s.costing.sidebar.monthFilter);
   const dateFilter = useUiWorkflowStore((s) => s.costing.sidebar.dateFilter);
-  const sidebarCollapsed = useUiWorkflowStore((s) => s.costing.sidebar.collapsed);
   const setCostingSidebar = useUiWorkflowStore((s) => s.setCostingSidebar);
   const setCostingOpenSegments = useUiWorkflowStore(
     (s) => s.setCostingOpenSegments
@@ -88,7 +89,7 @@ export function useCostingWorkspace() {
 
   /** Flat manual segment (default “Kelompok utama”). */
   const addManualItem = () => {
-    addSegment("manual").catch((e) => showToast(String(e)));
+    addSegment("manual").catch((e) => showToast(costingErrorMessage(e)));
   };
 
   /**
@@ -119,7 +120,7 @@ export function useCostingWorkspace() {
         showToast(j?.error ?? "Gagal membuat item grup");
       }
     } catch (e) {
-      showToast(String(e));
+      showToast(costingErrorMessage(e));
     }
   };
 
@@ -173,13 +174,54 @@ export function useCostingWorkspace() {
   }, []);
 
   useEffect(() => {
-    loadProjects().catch((e) => showToast(String(e)));
+    loadProjects().catch((e) => showToast(costingErrorMessage(e)));
   }, [loadProjects]);
+
+  const [projectLoad, setProjectLoad] = useState<ProjectLoadState>(null);
+  const storeProjectId = currentProject?.id ?? null;
+  const projectView = resolveProjectView(projectFromUrl, projectLoad, storeProjectId);
+  const loadingUrlId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!projectFromUrl) return;
-    loadProject(projectFromUrl).catch((e) => showToast(String(e)));
+    let cancelled = false;
+    loadingUrlId.current = projectFromUrl;
+    loadProject(projectFromUrl)
+      .then(() => {
+        if (!cancelled) setProjectLoad({ id: projectFromUrl, status: "ready" });
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setProjectLoad({ id: projectFromUrl, status: "error" });
+        // The project may already be on screen from the store: keep it and say why the refresh failed.
+        if (useCostingStore.getState().currentProject?.id === projectFromUrl) {
+          showToast(costingErrorMessage(e));
+        }
+      })
+      .finally(() => {
+        if (loadingUrlId.current === projectFromUrl) loadingUrlId.current = null;
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [projectFromUrl, loadProject]);
+
+  // A slower, superseded load can overwrite the store after the URL's own load finished.
+  // Re-sync so the editor never sticks on the skeleton.
+  useEffect(() => {
+    if (!projectFromUrl || loadingUrlId.current === projectFromUrl) return;
+    if (storeProjectId && storeProjectId !== projectFromUrl) {
+      loadProject(projectFromUrl).catch(() =>
+        setProjectLoad({ id: projectFromUrl, status: "error" })
+      );
+    }
+  }, [projectFromUrl, storeProjectId, loadProject]);
+
+  const openProject = useCallback(
+    (id: string) => router.push(`/costing?project=${encodeURIComponent(id)}`),
+    [router]
+  );
+  const closeProject = useCallback(() => router.push("/costing"), [router]);
 
   useEffect(() => {
     if (!currentProject) return;
@@ -348,8 +390,10 @@ export function useCostingWorkspace() {
       await createProject(newName.trim());
       setNewOpen(false);
       setNewName("");
+      const createdId = useCostingStore.getState().currentProject?.id;
+      if (createdId) openProject(createdId);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Failed");
+      showToast(costingErrorMessage(e));
     }
   };
 
@@ -357,7 +401,7 @@ export function useCostingWorkspace() {
     segmentId: string,
     patch: Record<string, unknown>
   ) => {
-    updateSegment(segmentId, patch).catch((e) => showToast(String(e)));
+    updateSegment(segmentId, patch).catch((e) => showToast(costingErrorMessage(e)));
   };
 
   const saveAhuParams = useCallback(
@@ -407,7 +451,7 @@ export function useCostingWorkspace() {
       await loadProject(currentProject.id);
       setAddOpen(false);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Failed");
+      showToast(costingErrorMessage(e));
     }
   };
 
@@ -519,7 +563,7 @@ export function useCostingWorkspace() {
     const newIndex = ids.indexOf(String(over.id));
     if (oldIndex < 0 || newIndex < 0) return;
     const next = arrayMove(ids, oldIndex, newIndex);
-    reorderSegments(next).catch((e) => showToast(String(e)));
+    reorderSegments(next).catch((e) => showToast(costingErrorMessage(e)));
   };
 
   const onSegmentDragCancel = () => {
@@ -565,7 +609,6 @@ export function useCostingWorkspace() {
     statusFilter,
     monthFilter,
     dateFilter,
-    sidebarCollapsed,
     setCostingSidebar,
     setCostingOpenSegments,
     patchCostingOpenSegment,
@@ -628,6 +671,9 @@ export function useCostingWorkspace() {
     persistMargins,
     persistToggles,
     handleCreate,
+    projectView,
+    openProject,
+    closeProject,
     patchSegment,
     saveAhuParams,
     saveAhuParamsAndRecalculate,

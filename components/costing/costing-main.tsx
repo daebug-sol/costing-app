@@ -4,7 +4,7 @@ import { useI18n } from "@/components/i18n-provider";
 import { AhuSegmentEditor } from "./ahu-segment-editor";
 import { DndContext, DragOverlay, closestCenter, defaultDropAnimation } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ChevronDown, ChevronRight, FolderKanban, GripVertical, PanelLeftOpen, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, FolderKanban, GripVertical, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { CostingLevelHeading, CostingShell } from "@/components/costing/costing-shell";
 import { EmptyState } from "@/components/empty-state";
@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { formatIDR } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
+import { costingErrorMessage } from "@/lib/costing-error-message";
 import { AssemblyTypeBadge } from "@/components/costing/assembly-type-badge";
 import { ManualWorkspace } from "@/components/costing/ManualWorkspace";
 import { SortableCostingSegment } from "./costing-workspace-shared";
@@ -27,7 +28,6 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
   const { t } = useI18n();
   const {
     confirm,
-    router,
     currentProject,
     isCalculating,
     isLoading,
@@ -39,8 +39,6 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
     setSectionOverride,
     resetSegmentMarkup,
     ahuModuleEnabled,
-    sidebarCollapsed,
-    setCostingSidebar,
     patchCostingOpenSegment,
     projectSummaryOpenByProject,
     patchCostingProjectSummaryOpen,
@@ -90,49 +88,15 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
         onScroll={currentProject ? onMainScroll : undefined}
         className="bg-card relative min-h-0 min-w-0 overflow-y-auto rounded-xl border border-border p-5 shadow-sm lg:p-6"
       >
-        {sidebarCollapsed ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="absolute left-3 top-3 z-10 size-8"
-                aria-label="Tampilkan daftar proyek"
-                onClick={() => setCostingSidebar({ collapsed: false })}
-              >
-                <PanelLeftOpen className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Tampilkan daftar proyek</TooltipContent>
-          </Tooltip>
-        ) : null}
-        {!currentProject ? (
-          <EmptyState
-            icon={FolderKanban}
-            title="Pilih atau buat proyek"
-            description={
-              sidebarCollapsed
-                ? 'Buka daftar proyek dengan tombol di kiri atas, atau buat proyek baru dari halaman ini setelah daftar dibuka.'
-                : 'Pilih proyek di daftar kiri, atau buat baru dengan tombol "Proyek baru" di pojok atas daftar.'
-            }
-            className={cn(
-              "h-[min(480px,calc(100vh-8rem))]",
-              sidebarCollapsed && "pt-10"
-            )}
-            secondaryActionLabel="Bantuan"
-            onSecondaryAction={() =>
-              router.push("/help/costing/proyek-dan-segment")
-            }
-          />
-        ) : (
-          <div
-            className={cn(
-              "mx-auto space-y-4",
-              sidebarCollapsed ? "max-w-none" : "max-w-6xl",
-              sidebarCollapsed && "pt-10"
-            )}
-          >
+        {!currentProject ? null : (
+          <div className="mx-auto max-w-none space-y-4">
+            <Link
+              href="/costing"
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring -ml-1 inline-flex items-center gap-1 rounded-md px-1 text-xs focus-visible:ring-2 focus-visible:outline-none"
+            >
+              <ChevronLeft className="size-3.5" aria-hidden />
+              {t("costing.project.back")}
+            </Link>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">
@@ -149,7 +113,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                   onBlur={(e) =>
                     updateProject({
                       qty: Math.max(1, Math.floor(Number(e.target.value) || 1)),
-                    }).catch((err) => showToast(String(err)))
+                    }).catch((err) => showToast(costingErrorMessage(err)))
                   }
                 />
               </div>
@@ -206,7 +170,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                     {ahuModuleEnabled ? (
                       <DropdownMenuItem
                         onClick={() =>
-                          addSegment("ahu").catch((e) => showToast(String(e)))
+                          addSegment("ahu").catch((e) => showToast(costingErrorMessage(e)))
                         }
                       >
                         AHU otomatis
@@ -339,7 +303,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                                       }).then((ok) => {
                                         if (ok)
                                           deleteSegment(seg.id).catch((e) =>
-                                            showToast(String(e))
+                                            showToast(costingErrorMessage(e))
                                           );
                                       });
                                     }}
@@ -627,7 +591,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                       </TableCell>
                     </TableRow>
                     <TableRow className="border-t-2 font-medium">
-                      <TableCell>Total cost</TableCell>
+                      <TableCell>{t("costing.summary.totalCost")}</TableCell>
                       <TableCell className="tabular-money text-right">
                         {formatIDR(totals.totalCost)}
                       </TableCell>
@@ -655,13 +619,13 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                       </TableCell>
                     </TableRow>
                     <TableRow className="bg-muted/50 border-t-2 text-base font-bold">
-                      <TableCell>SELLING PRICE</TableCell>
+                      <TableCell>{t("costing.summary.sellingPrice")}</TableCell>
                       <TableCell className="tabular-money text-right">
                         {formatIDR(totals.selling)}
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Per unit</TableCell>
+                      <TableCell>{t("costing.summary.perUnit")}</TableCell>
                       <TableCell className="tabular-money text-right">
                         {formatIDR(totals.perUnit)}
                       </TableCell>
@@ -675,7 +639,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                     variant="secondary"
                     onClick={() =>
                       updateProject({ status: "draft" }).catch((e) =>
-                        showToast(String(e))
+                        showToast(costingErrorMessage(e))
                       )
                     }
                   >
@@ -685,7 +649,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                     type="button"
                     onClick={() =>
                       updateProject({ status: "finalized" }).catch((e) =>
-                        showToast(String(e))
+                        showToast(costingErrorMessage(e))
                       )
                     }
                   >

@@ -11,7 +11,7 @@ export const proyekDanSegment: HelpLesson = {
   steps: [
     {
       title: "Buka Costing",
-      body: "Workspace Costing menampilkan daftar proyek di sisi kiri dan editor segment di kanan. Mulai dari daftar kosong dengan menambahkan proyek.",
+      body: "Halaman Costing menampilkan daftar proyek. Buka satu proyek untuk mengedit segment, dan gunakan tautan Semua proyek untuk kembali ke daftar. Mulai dari daftar kosong dengan menambahkan proyek.",
       deepLink: "/costing",
       demoId: "create-project",
       uiHint: "Navbar → Costing",

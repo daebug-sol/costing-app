@@ -11,7 +11,7 @@ export const editSelCosting: HelpLesson = {
   steps: [
     {
       title: "Pilih proyek dan segment",
-      body: "Buka proyek di daftar kiri, lalu pilih segment yang akan diedit. Grid menampilkan baris biaya dan formula terkait.",
+      body: "Buka proyek dari daftar proyek di halaman Costing, lalu pilih segment yang akan diedit. Grid menampilkan baris biaya dan formula terkait.",
       deepLink: "/costing",
       demoId: "edit-cell",
     },
