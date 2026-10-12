@@ -72,8 +72,9 @@ function HelpLink({ className }: { className?: string }) {
           size="icon"
           asChild
           className={className}
+          aria-label={t("nav.helpAria")}
         >
-          <Link href="/help" aria-label={t("nav.helpAria")}>
+          <Link href="/help">
             <CircleHelp aria-hidden />
           </Link>
         </Button>
