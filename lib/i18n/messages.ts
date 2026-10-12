@@ -112,7 +112,7 @@ const id = {
   "nav.dashboard": "Dashboard",
   "nav.database": "Database",
   "nav.costing": "Costing",
-  "nav.documentation": "Documentation",
+  "nav.documentation": "Dokumentasi",
   "nav.help": "Help",
   "nav.operator": "Operator",
   "nav.settings": "Pengaturan",
@@ -122,6 +122,8 @@ const id = {
   "nav.openMenu": "Buka menu",
   "nav.closeMenu": "Tutup menu",
   "nav.mainLabel": "Navigasi utama",
+  "nav.helpAria": "Bantuan",
+  "nav.bottomLabel": "Navigasi bawah",
 
   // --- dashboard: page
   "dashboard.eyebrow": "Ringkasan",
@@ -441,6 +443,8 @@ const en: Record<MessageKey, string> = {
   "nav.openMenu": "Open menu",
   "nav.closeMenu": "Close menu",
   "nav.mainLabel": "Main navigation",
+  "nav.helpAria": "Help",
+  "nav.bottomLabel": "Bottom navigation",
 
   // --- dashboard: page
   "dashboard.eyebrow": "Overview",
