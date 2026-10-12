@@ -1,5 +1,6 @@
 "use client";
 
+import { costingErrorMessage } from "@/lib/costing-error-message";
 import { ChevronDown, ChevronRight, Lock, Pencil } from "lucide-react";
 import { useI18n } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
@@ -135,7 +136,7 @@ export function AhuSheet({ ed }: { ed: AhuEditor }) {
                                       return n;
                                     });
                                     resetItem(row.id).catch((e) =>
-                                      showToast(String(e))
+                                      showToast(costingErrorMessage(e))
                                     );
                                   }}
                                 >

@@ -1,5 +1,6 @@
 "use client";
 
+import { costingErrorMessage } from "@/lib/costing-error-message";
 import { toastError } from "@/store/toastStore";
 import { useI18n } from "@/components/i18n-provider";
 import {
@@ -289,7 +290,7 @@ export function ManualWorkspace({
       try {
         await loadManual();
       } catch (e) {
-        showToast(String(e));
+        showToast(costingErrorMessage(e));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -477,7 +478,7 @@ export function ManualWorkspace({
         );
         await loadManual();
       } catch (e) {
-        showToast(String(e));
+        showToast(costingErrorMessage(e));
       }
       return;
     }
@@ -515,7 +516,7 @@ export function ManualWorkspace({
         await loadManual();
         await loadProject(projectId);
       } catch (e) {
-        showToast(String(e));
+        showToast(costingErrorMessage(e));
       }
     }
   };
@@ -653,6 +654,108 @@ export function ManualWorkspace({
     await loadProject(projectId);
   };
 
+  const renderQtyInput = (row: ManualItem, className = "tabular-money ml-auto h-8 w-24 text-right") => (
+    <Input
+      className={className}
+      value={
+        qtyDraft[row.id] ??
+        String(row.qty)
+      }
+      onChange={(e) =>
+        setQtyDraft((q) => ({
+          ...q,
+          [row.id]: e.target.value,
+        }))
+      }
+      onKeyDown={(e) => {
+        if (e.key === "Enter")
+          e.currentTarget.blur();
+      }}
+      onBlur={(e) => {
+        const v = Number(
+          e.currentTarget.value
+        );
+        if (!Number.isFinite(v) || v <= 0)
+          return;
+        setQtyDraft((q) => {
+          const n = { ...q };
+          delete n[row.id];
+          return n;
+        });
+        void updateItemQty(row.id, v);
+      }}
+    />
+  );
+
+  const renderPriceControl = (row: ManualItem) => (
+    <>
+    {priceEditId === row.id ? (
+      <div className="flex items-center justify-end gap-1">
+        <Input
+          className="tabular-money h-8 w-28 text-right"
+          value={priceDraft}
+          autoFocus
+          onChange={(e) =>
+            setPriceDraft(e.target.value)
+          }
+          onBlur={() => {
+            const v = Number(priceDraft);
+            if (Number.isFinite(v) && v >= 0)
+              void applyPriceOverride(
+                row.id,
+                v
+              );
+            else setPriceEditId(null);
+          }}
+        />
+      </div>
+    ) : (
+      <button
+        type="button"
+        className={cn(
+          "tabular-money inline-flex items-center gap-1 hover:underline",
+          row.overridePrice != null
+            ? "text-amber-700"
+            : ""
+        )}
+        onClick={() => {
+          setPriceEditId(row.id);
+          setPriceDraft(
+            String(
+              row.overridePrice ??
+                row.basePrice
+            )
+          );
+        }}
+      >
+        {formatIDR(
+          row.overridePrice ??
+            row.basePrice
+        )}
+        <Pencil className="size-3 opacity-60" />
+      </button>
+    )}
+    {row.overridePrice != null ? (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-7 text-amber-700"
+        title="Kembalikan harga DB"
+        aria-label={`Kembalikan harga DB untuk ${row.name}`}
+        onClick={() =>
+          void applyPriceOverride(
+            row.id,
+            null
+          )
+        }
+      >
+        <RotateCcw className="size-3.5" />
+      </Button>
+    ) : null}
+    </>
+  );
+
   if (!currentProject) return null;
 
   return (
@@ -661,7 +764,7 @@ export function ManualWorkspace({
     >
       {confirmDialog}
 
-      {(!embedded || (!loading && !isManualEmpty)) && (
+      {!embedded && (
         <div
           className={cn(
             "flex flex-wrap items-center gap-2",
@@ -671,35 +774,11 @@ export function ManualWorkspace({
           {!embedded && (
             <div>
               <h2 className="text-lg font-semibold text-foreground">
-                Project: {currentProject.name}
+                Proyek: {currentProject.name}
               </h2>
               <AssemblyTypeBadge variant="manual" className="mt-1" />
             </div>
           )}
-          {!loading && !isManualEmpty ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="outline"
-                  aria-label="Tambah item atau item grup"
-                >
-                  <Plus className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => void ensureDefaultAndOpenPicker()}
-                >
-                  Tambah item
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => void createKelompok()}>
-                  Tambah item grup
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
         </div>
       )}
 
@@ -713,28 +792,15 @@ export function ManualWorkspace({
           <p className="text-muted-foreground text-sm">
             Belum ada item untuk saat ini.
           </p>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                aria-label="Tambah item atau item grup"
-              >
-                <Plus className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center">
-              <DropdownMenuItem
-                onClick={() => void ensureDefaultAndOpenPicker()}
-              >
-                Tambah item
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => void createKelompok()}>
-                Tambah item grup
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button type="button" onClick={() => void ensureDefaultAndOpenPicker()}>
+              <Plus data-icon="inline-start" aria-hidden />
+              {t("costing.manual.addRow")}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => void createKelompok()}>
+              {t("costing.manual.addGroup")}
+            </Button>
+          </div>
         </div>
       ) : (
         <DndContext
@@ -812,7 +878,7 @@ export function ManualWorkspace({
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={() => openPickerForGroup(g.id)}
                         >
-                          + Tambah item
+                          + {t("costing.manual.addRow")}
                         </Button>
                         <Button
                           type="button"
@@ -841,20 +907,21 @@ export function ManualWorkspace({
                             items={itemIds}
                             strategy={verticalListSortingStrategy}
                           >
+                            <div className="hidden md:block">
                             <Table>
                               <TableHeader>
                                 <TableRow className="hover:bg-transparent">
                                   <TableHead className="w-10" />
-                                  <TableHead>Nama item</TableHead>
-                                  <TableHead className="w-16">UOM</TableHead>
+                                  <TableHead>{t("costing.manual.colName")}</TableHead>
+                                  <TableHead className="w-20">{t("costing.manual.colUnit")}</TableHead>
                                   <TableHead className="w-28 text-right">
                                     Qty
                                   </TableHead>
                                   <TableHead className="text-right">
-                                    Harga
+                                    {t("costing.manual.colUnitPrice")}
                                   </TableHead>
                                   <TableHead className="text-right">
-                                    Total
+                                    {t("costing.manual.colSubtotal")}
                                   </TableHead>
                                   <TableHead className="w-10" />
                                 </TableRow>
@@ -877,102 +944,10 @@ export function ManualWorkspace({
                                           {row.uom}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                          <Input
-                                            className="tabular-money ml-auto h-8 w-24 text-right"
-                                            value={
-                                              qtyDraft[row.id] ??
-                                              String(row.qty)
-                                            }
-                                            onChange={(e) =>
-                                              setQtyDraft((q) => ({
-                                                ...q,
-                                                [row.id]: e.target.value,
-                                              }))
-                                            }
-                                            onKeyDown={(e) => {
-                                              if (e.key === "Enter")
-                                                e.currentTarget.blur();
-                                            }}
-                                            onBlur={(e) => {
-                                              const v = Number(
-                                                e.currentTarget.value
-                                              );
-                                              if (!Number.isFinite(v) || v <= 0)
-                                                return;
-                                              setQtyDraft((q) => {
-                                                const n = { ...q };
-                                                delete n[row.id];
-                                                return n;
-                                              });
-                                              void updateItemQty(row.id, v);
-                                            }}
-                                          />
+                                          {renderQtyInput(row)}
                                         </TableCell>
                                         <TableCell className="text-right text-sm">
-                                          {priceEditId === row.id ? (
-                                            <div className="flex items-center justify-end gap-1">
-                                              <Input
-                                                className="tabular-money h-8 w-28 text-right"
-                                                value={priceDraft}
-                                                autoFocus
-                                                onChange={(e) =>
-                                                  setPriceDraft(e.target.value)
-                                                }
-                                                onBlur={() => {
-                                                  const v = Number(priceDraft);
-                                                  if (Number.isFinite(v) && v >= 0)
-                                                    void applyPriceOverride(
-                                                      row.id,
-                                                      v
-                                                    );
-                                                  else setPriceEditId(null);
-                                                }}
-                                              />
-                                            </div>
-                                          ) : (
-                                            <button
-                                              type="button"
-                                              className={cn(
-                                                "tabular-money inline-flex items-center gap-1 hover:underline",
-                                                row.overridePrice != null
-                                                  ? "text-amber-700"
-                                                  : ""
-                                              )}
-                                              onClick={() => {
-                                                setPriceEditId(row.id);
-                                                setPriceDraft(
-                                                  String(
-                                                    row.overridePrice ??
-                                                      row.basePrice
-                                                  )
-                                                );
-                                              }}
-                                            >
-                                              {formatIDR(
-                                                row.overridePrice ??
-                                                  row.basePrice
-                                              )}
-                                              <Pencil className="size-3 opacity-60" />
-                                            </button>
-                                          )}
-                                          {row.overridePrice != null ? (
-                                            <Button
-                                              type="button"
-                                              variant="ghost"
-                                              size="icon"
-                                              className="size-7 text-amber-700"
-                                              title="Kembalikan harga DB"
-                                              aria-label={`Kembalikan harga DB untuk ${row.name}`}
-                                              onClick={() =>
-                                                void applyPriceOverride(
-                                                  row.id,
-                                                  null
-                                                )
-                                              }
-                                            >
-                                              <RotateCcw className="size-3.5" />
-                                            </Button>
-                                          ) : null}
+                                          {renderPriceControl(row)}
                                         </TableCell>
                                         <TableCell className="tabular-money text-right text-sm font-medium">
                                           {formatIDR(row.subtotal)}
@@ -997,6 +972,40 @@ export function ManualWorkspace({
                                 ))}
                               </TableBody>
                             </Table>
+                            </div>
+                            <ul className="divide-border divide-y md:hidden">
+                              {g.items.map((row) => (
+                                <li key={row.id} className="space-y-2 px-3 py-3">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <p className="min-w-0 text-sm font-medium break-words">{row.name}</p>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-muted-foreground size-8 shrink-0"
+                                      aria-label={`Hapus baris ${row.name}`}
+                                      onClick={() => setDeleteItemId(row.id)}
+                                    >
+                                      <Trash2 className="size-4" />
+                                    </Button>
+                                  </div>
+                                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                                    <div>
+                                      <dt className="text-muted-foreground text-xs">{t("costing.manual.qty")} ({row.uom})</dt>
+                                      <dd>{renderQtyInput(row, "tabular-money h-9 w-full text-right")}</dd>
+                                    </div>
+                                    <div>
+                                      <dt className="text-muted-foreground text-xs">{t("costing.manual.colUnitPrice")}</dt>
+                                      <dd className="flex min-h-9 items-center">{renderPriceControl(row)}</dd>
+                                    </div>
+                                  </dl>
+                                  <p className="flex items-baseline justify-between text-sm">
+                                    <span className="text-muted-foreground text-xs">{t("costing.manual.colSubtotal")}</span>
+                                    <span className="tabular-money font-medium">{formatIDR(row.subtotal)}</span>
+                                  </p>
+                                </li>
+                              ))}
+                            </ul>
                           </SortableContext>
                         )}
                       </>
@@ -1030,11 +1039,23 @@ export function ManualWorkspace({
         </DndContext>
       )}
 
+      {!loading && !isManualEmpty ? (
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" onClick={() => void ensureDefaultAndOpenPicker()}>
+            <Plus data-icon="inline-start" aria-hidden />
+            {t("costing.manual.addRow")}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => void createKelompok()}>
+            {t("costing.manual.addGroup")}
+          </Button>
+        </div>
+      ) : null}
+
       {!embedded ? (
       <Card className="border-border ">
         <CardContent className="space-y-4 p-4">
           <h3 className="text-sm font-semibold text-foreground">
-            Cost summary
+            Ringkasan biaya
           </h3>
           <Table>
             <TableBody>
@@ -1219,7 +1240,7 @@ export function ManualWorkspace({
                 </TableCell>
               </TableRow>
               <TableRow className="bg-muted/50 border-t-2 text-base font-bold">
-                <TableCell>SELLING PRICE</TableCell>
+                <TableCell>Harga jual</TableCell>
                 <TableCell className="tabular-money text-right">
                   {formatIDR(totals.selling)}
                 </TableCell>
@@ -1239,7 +1260,7 @@ export function ManualWorkspace({
               variant="secondary"
               onClick={() =>
                 updateProject({ status: "draft" }).catch((e) =>
-                  showToast(String(e))
+                  showToast(costingErrorMessage(e))
                 )
               }
             >
@@ -1249,7 +1270,7 @@ export function ManualWorkspace({
               type="button"
               onClick={() =>
                 updateProject({ status: "finalized" }).catch((e) =>
-                  showToast(String(e))
+                  showToast(costingErrorMessage(e))
                 )
               }
             >

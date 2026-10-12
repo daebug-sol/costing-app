@@ -1,5 +1,6 @@
 "use client";
 
+import { costingErrorMessage } from "@/lib/costing-error-message";
 import { Loader2 } from "lucide-react";
 import { CostingLevelHeading } from "@/components/costing/costing-shell";
 import { useI18n } from "@/components/i18n-provider";
@@ -257,7 +258,7 @@ export function AhuModulesTab({ ed }: { ed: AhuEditor }) {
                 disabled={isCalculating || segmentActionsDisabled}
                 onClick={() =>
                   saveAhuParams(seg.id, ahu).catch((e) =>
-                    showToast(String(e))
+                    showToast(costingErrorMessage(e))
                   )
                 }
               >
@@ -270,7 +271,7 @@ export function AhuModulesTab({ ed }: { ed: AhuEditor }) {
                   disabled={isCalculating || segmentActionsDisabled}
                   onClick={() =>
                     saveAhuParamsAndRecalculate(seg.id, ahu).catch((e) =>
-                      showToast(String(e))
+                      showToast(costingErrorMessage(e))
                     )
                   }
                 >

@@ -2,7 +2,7 @@
 
 import { DndContext, DragOverlay, closestCenter, defaultDropAnimation } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/components/i18n-provider";
 import { AssemblyTypeBadge } from "@/components/costing/assembly-type-badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,17 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
   const save = useSaveState();
   const [openId, setOpenId] = useState<string | null>(null);
   // Keep the open item valid when items are added or removed.
+  // Open a newly added item so the user can start filling it in.
+  const knownIds = useRef<string[] | null>(null);
+  useEffect(() => {
+    const ids = segments.map((s) => s.id);
+    const prev = knownIds.current;
+    knownIds.current = ids;
+    if (prev && ids.length > prev.length) {
+      const added = ids.find((id) => !prev.includes(id));
+      if (added) setOpenId(added);
+    }
+  }, [segments]);
   const effectiveOpenId =
     openId && segments.some((s) => s.id === openId)
       ? openId
