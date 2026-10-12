@@ -1,6 +1,6 @@
 export const THEME_STORAGE_KEY = "costing-appearance";
 
-export type ThemePalette = "professional" | "warm";
+export type ThemePalette = "dotmatrix" | "professional" | "warm";
 export type ThemeAppearance = "light" | "dark" | "system";
 export type ResolvedAppearance = "light" | "dark";
 
@@ -10,12 +10,14 @@ export type ThemePreferences = {
 };
 
 export const DEFAULT_THEME_PREFERENCES: ThemePreferences = {
-  palette: "professional",
+  palette: "dotmatrix",
   appearance: "system",
 };
 
 export function isThemePalette(value: unknown): value is ThemePalette {
-  return value === "professional" || value === "warm";
+  return (
+    value === "dotmatrix" || value === "professional" || value === "warm"
+  );
 }
 
 export function isThemeAppearance(value: unknown): value is ThemeAppearance {
@@ -85,4 +87,4 @@ export function applyThemeToDocument(
 }
 
 /** Inline boot script — keep logic aligned with helpers above. */
-export const THEME_INIT_SCRIPT = `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var d=JSON.parse(localStorage.getItem(k)||"null");var p=d&&d.palette==="warm"?"warm":"professional";var a=d&&["light","dark","system"].indexOf(d.appearance)>=0?d.appearance:"system";var r=a==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):a;var el=document.documentElement;el.setAttribute("data-palette",p);if(r==="dark")el.classList.add("dark");else el.classList.remove("dark");}catch(e){document.documentElement.setAttribute("data-palette","professional");}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var d=JSON.parse(localStorage.getItem(k)||"null");var p=d&&["dotmatrix","professional","warm"].indexOf(d.palette)>=0?d.palette:"dotmatrix";var a=d&&["light","dark","system"].indexOf(d.appearance)>=0?d.appearance:"system";var r=a==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):a;var el=document.documentElement;el.setAttribute("data-palette",p);if(r==="dark")el.classList.add("dark");else el.classList.remove("dark");}catch(e){document.documentElement.setAttribute("data-palette","dotmatrix");}})();`;

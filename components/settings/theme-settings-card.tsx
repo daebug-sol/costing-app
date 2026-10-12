@@ -5,6 +5,7 @@ import { useTheme } from "@/components/theme-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { LOCALES, type Locale } from "@/lib/i18n/locale";
+import { isThemePalette } from "@/lib/theme-preferences";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export function ThemeSettingsCard() {
@@ -28,7 +29,7 @@ export function ThemeSettingsCard() {
             size="sm"
             value={palette}
             onValueChange={(value) => {
-              if (value === "professional" || value === "warm") {
+              if (isThemePalette(value)) {
                 setPalette(value);
               }
             }}
@@ -36,6 +37,9 @@ export function ThemeSettingsCard() {
             data-testid="theme-palette-toggle"
             className="flex-wrap"
           >
+            <ToggleGroupItem value="dotmatrix" aria-label={t("settings.appearance.paletteDotmatrix")}>
+              {t("settings.appearance.paletteDotmatrix")}
+            </ToggleGroupItem>
             <ToggleGroupItem value="professional" aria-label={t("settings.appearance.paletteProfessional")}>
               {t("settings.appearance.paletteProfessional")}
             </ToggleGroupItem>

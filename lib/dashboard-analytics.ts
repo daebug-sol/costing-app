@@ -61,6 +61,7 @@ type DashboardQuotationInput = {
   id: string;
   status: string;
   salesman: string | null;
+  noSurat?: string | null;
   tanggal: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -593,7 +594,7 @@ function costingDataFromData(input: DashboardAnalyticsInput): DashboardApiRespon
   };
 }
 
-function revenueTrendFromData(
+export function revenueTrendFromData(
   input: DashboardAnalyticsInput,
   now: Date,
   range: DashboardRange
@@ -1087,6 +1088,8 @@ export function buildDashboardAnalyticsPayload(
 
   return {
     range,
+    scope: EMPTY_DASHBOARD_RESPONSE.scope,
+    personal: EMPTY_DASHBOARD_RESPONSE.personal,
     projectScope: {
       selectedProjectId,
       options: scopeOptions,

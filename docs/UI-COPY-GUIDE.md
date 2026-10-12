@@ -37,7 +37,9 @@ put the Indonesian string first.
 
 - **Sentence case** everywhere — including buttons, dialog titles, table
   headers. Do not use Title Case Like This.
-- No all-caps for emphasis. Use weight (`font-medium`, `font-semibold`) or
+- Card titles (`CardTitle`) and table headers are rendered uppercase by the
+  components (Dot Matrix design); write the source text in sentence case.
+- No other all-caps for emphasis. Use weight (`font-medium`, `font-semibold`) or
   color tokens.
 - **No exclamation marks** in production copy. (Toasts included.)
 - Address the user with neutral imperative or impersonal phrasing

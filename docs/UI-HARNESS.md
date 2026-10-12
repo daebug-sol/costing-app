@@ -44,17 +44,27 @@ use (`emerald-*` for positive, `amber-*` for warning, `rose-*` / `red-*` for
 negative). New tones should be added to `app/globals.css` first.
 
 **Selectable themes:** palette and appearance are independent, device-local
-preferences (no DB/API). Users choose **Profesional** (green, default) or
+preferences (no DB/API). Users choose **Dot Matrix** (default), **Profesional** (green) or
 **Hangat** (legacy taupe) palette, and **Terang**, **Gelap**, or **Sistem**
 appearance in Pengaturan → Tampilan. Preferences persist in
 `localStorage` key `costing-appearance` as
-`{ palette: "professional"|"warm", appearance: "light"|"dark"|"system" }`.
+`{ palette: "dotmatrix"|"professional"|"warm", appearance: "light"|"dark"|"system" }`.
 The root `<html>` receives `data-palette` and the `.dark` class (when resolved
 appearance is dark). An inline boot script in `app/layout.tsx` applies saved
 preferences before first paint; `ThemeProvider` keeps React state, Clerk
 shadcn appearance, and system `prefers-color-scheme` in sync. Token sets live
-in `app/globals.css` under four combinations (Professional/Warm × light/dark).
-New users default to **Professional + System**.
+in `app/globals.css` under six combinations (Dot Matrix/Professional/Warm × light/dark).
+New users default to **Dot Matrix + System**.
+
+**Dot Matrix palette:** `signal` (red) marks alarms, pointers and negative
+numbers; `positive` (green) marks good news; use `text-signal` /
+`text-positive` (and `-muted` backgrounds) instead of ad hoc rose/emerald when
+writing new Dot Matrix UI. `Card` has three tones: `standard`, `quiet`
+(recessed) and `feature` (inverse hero card, at most one per page). Fonts: DM
+Sans for text, Doto (`font-dot`) for hero numbers, clock and the wordmark only.
+Radius scale follows `--radius` (1rem). No shadows, gradients or blur; the page
+canvas dot grid is the `bg-dot-grid` class. Contrast of the palette is checked
+by `node scripts/check-theme-contrast.mjs`.
 
 **Help module (`/help`):** in-app lessons live as a TypeScript catalog under
 `content/help/` (no MDX). Progress is device-local in `localStorage` key
