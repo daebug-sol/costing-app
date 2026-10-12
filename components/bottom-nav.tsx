@@ -32,6 +32,7 @@ export function BottomNav() {
   const isOperator = useCostingStore((s) => s.isOperator);
 
   const items = getMainNav(role, permissions, isOperator);
+  if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
 
   return (
     <nav
@@ -53,7 +54,7 @@ export function BottomNav() {
                 className={cn(
                   "flex h-14 flex-col items-center justify-center gap-0.5 px-1 text-xs font-medium transition-colors",
                   active
-                    ? "text-foreground"
+                    ? "text-foreground border-t-2 border-foreground font-semibold"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >

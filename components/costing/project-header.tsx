@@ -74,9 +74,9 @@ export function ProjectHeader({ ed }: { ed: CostingWorkspaceState }) {
             />
           ) : (
             <>
-              <h2 className="text-foreground min-w-0 truncate text-xl font-semibold">
+              <h1 className="text-foreground min-w-0 truncate text-xl font-semibold">
                 {currentProject.name}
-              </h2>
+              </h1>
               <Button
                 type="button"
                 variant="ghost"
