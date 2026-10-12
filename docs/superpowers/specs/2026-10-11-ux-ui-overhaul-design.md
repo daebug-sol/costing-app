@@ -1,6 +1,7 @@
 # UX/UI overhaul: header, content layout, costing flow (Dot Matrix)
 
 Status: draft for review, not implemented.
+Builds on draft PR #12 (head 46246ad): it already ships the Dot Matrix palette, DM Sans + Doto, dot primitives, restyled card/button/tabs/table and the personal dashboard. Sections 5 and 6 below are therefore covered by #12 and are kept only as the agreed intent.
 Supersedes (where they conflict): `2026-10-11-costing-workspace-revamp-design.md` sections 2 (side panel) and 4 (status stepper). PR 1 of that spec (project list + `?project=` routing) is already merged and stays.
 
 ## Intent (agreed with dae)
@@ -15,7 +16,7 @@ Supersedes (where they conflict): `2026-10-11-costing-workspace-revamp-design.md
 - Follow `docs/UI-HARNESS.md`: `components/ui/*`, semantic tokens only, lucide icons, `aria-label` on icon-only buttons, one `<h1>` per page, AlertDialog for destructive/confirm actions, full state matrix (idle/pending/success/error/empty/loading), Indonesian copy per `docs/UI-COPY-GUIDE.md`, strings through `lib/i18n` (ID source of truth, EN complete).
 
 ## 1. Global header and page frame
-- Single sticky top bar: logo (left); main menu **Dashboard, Database, Costing, Dokumentasi**; right cluster: Help (`?` icon button, `aria-label` + tooltip "Bantuan"), language switcher, account.
+- Single sticky top bar (palette, fonts and the wordmark come from #12; the active item keeps #12's pill style): logo (left); main menu **Dashboard, Database, Costing, Dokumentasi**; right cluster: Help (`?` icon button, `aria-label` + tooltip "Bantuan"), language switcher, account.
 - Help is **not** a main menu item. Contextual help links per page stay.
 - Phone/small tablet: bottom bar with the 4 main menu items (icon + label); Help and settings live in the account menu at the top right.
 - Remove the large "Workspace / Costing / description" band. Each page has one `<h1>` row (title left, primary action right) directly under the bar.
@@ -55,10 +56,10 @@ Personal per salesperson, no rankings or leaderboard. First card: greeting (sela
 Customers, Database, Documentation, Settings, Help get the new header/page frame and card style only; no flow changes in this overhaul unless they break the conventional-pattern rule (to be listed in the plan).
 
 ## 8. Delivery (UI-HARNESS section 8 cadence, one PR each)
-1. **Frame**: header, bottom bar, Help relocation, page-title row, card header style, i18n additions.
+1. **Frame**: 4-item menu, Help icon, bottom bar, page-title row, i18n additions (theme and card header style already in #12).
 2. **Costing project page**: price bar, items accordion, add-item, margins card, status/finalize dialogs.
 3. **Editors**: manual table + mobile cards, AHU tabs and stale banner, error messages with "Coba lagi".
-4. **Dashboard** personal view.
+4. ~~Dashboard personal view~~ shipped in #12.
 5. **Polish**: remaining pages' frame, a11y pass, Playwright baselines.
 
 ## 9. Testing
