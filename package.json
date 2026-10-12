@@ -24,7 +24,8 @@
     "extract-formulas:list": "node scripts/extract-formulas.mjs --list",
     "db:up": "docker compose up -d postgres",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:seed:demo": "ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} prisma/seed-demo.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.12",
