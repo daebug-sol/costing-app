@@ -2,6 +2,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/components/i18n-provider";
 import { MarginsCard } from "@/components/costing/margins-card";
 import { ProjectPriceBar } from "@/components/costing/project-price-bar";
+import { AddItemMenu } from "@/components/costing/add-item-menu";
+import { SegmentCard } from "@/components/costing/segment-card";
+import type { CostingWorkspaceState } from "@/components/costing/use-costing-workspace";
 import { formatIDR } from "@/lib/utils/format";
 
 const wrap = (node: React.ReactNode) =>
@@ -63,5 +66,47 @@ describe("MarginsCard", () => {
       expect(html).toContain(label);
     }
     expect((html.match(/<input/g) ?? []).length).toBeGreaterThanOrEqual(6);
+  });
+});
+
+const edStub = (over: Record<string, unknown> = {}) =>
+  ({
+    ahuModuleEnabled: false,
+    addManualItem: () => {},
+    addManualGroupItem: () => {},
+    addSegment: async () => {},
+    showToast: () => {},
+    confirm: async () => true,
+    deleteSegment: async () => {},
+    patchSegment: async () => {},
+    ...over,
+  }) as unknown as CostingWorkspaceState;
+
+describe("AddItemMenu", () => {
+  it("empty state offers Item manual and hides AHU when the module is off", () => {
+    const html = wrap(<AddItemMenu ed={edStub()} variant="empty" />);
+    expect(html).toContain("Item manual");
+    expect(html).not.toContain("AHU otomatis");
+  });
+
+  it("empty state shows AHU otomatis when the module is on", () => {
+    const html = wrap(<AddItemMenu ed={edStub({ ahuModuleEnabled: true })} variant="empty" />);
+    expect(html).toContain("AHU otomatis");
+  });
+
+  it("inline variant is a labeled Tambah item button", () => {
+    const html = wrap(<AddItemMenu ed={edStub()} variant="inline" />);
+    expect(html).toContain("Tambah item");
+  });
+});
+
+describe("SegmentCard", () => {
+  const seg = { id: "s1", title: "Foo", type: "manual", subtotal: 0 } as unknown as CostingWorkspaceState["segments"][number];
+
+  it("renders a labeled name input, an item menu and a collapsed toggle", () => {
+    const html = wrap(<SegmentCard ed={edStub()} seg={seg} index={0} open={false} onToggle={() => {}} />);
+    expect(html).toContain("Nama item Foo");
+    expect(html).toContain("Menu item Foo");
+    expect(html).toContain('aria-expanded="false"');
   });
 });
