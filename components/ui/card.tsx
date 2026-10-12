@@ -5,14 +5,20 @@ import { cn } from "@/lib/utils"
 function Card({
   className,
   size = "default",
+  tone = "standard",
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+}: React.ComponentProps<"div"> & {
+  size?: "default" | "sm"
+  /** standard = default card; quiet = recessed; feature = inverse hero card (one per page). */
+  tone?: "standard" | "quiet" | "feature"
+}) {
   return (
     <div
       data-slot="card"
       data-size={size}
+      data-tone={tone}
       className={cn(
-        "group/card flex flex-col gap-8 overflow-hidden bg-card py-8 text-sm text-card-foreground shadow-sm ring-1 ring-foreground/5 has-[>img:first-child]:pt-0 data-[size=sm]:gap-5 data-[size=sm]:py-5 *:[img:first-child]:rounded-none *:[img:last-child]:rounded-none",
+        "group/card flex flex-col gap-8 overflow-hidden rounded-xl bg-card py-8 text-sm text-card-foreground ring-1 ring-border data-[tone=feature]:bg-inverse data-[tone=feature]:text-inverse-foreground data-[tone=feature]:ring-0 data-[tone=quiet]:bg-surface-inset has-[>img:first-child]:pt-0 data-[size=sm]:gap-5 data-[size=sm]:py-5 *:[img:first-child]:rounded-none *:[img:last-child]:rounded-none",
         className
       )}
       {...props}
@@ -38,7 +44,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-title"
       className={cn(
-        "font-heading text-lg font-semibold tracking-wider uppercase",
+        "font-heading text-sm font-semibold tracking-widest uppercase before:mr-2 before:inline-block before:size-1.5 before:bg-current before:align-middle before:content-['']",
         className
       )}
       {...props}

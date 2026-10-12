@@ -45,9 +45,9 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         ? pathname === "/"
         : pathname === href || pathname.startsWith(`${href}/`);
     return cn(
-      "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+      "rounded-full px-4 py-2 text-sm font-medium transition-colors",
       active
-        ? "bg-primary text-primary-foreground shadow-sm"
+        ? "bg-primary text-primary-foreground"
         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
     );
   };
@@ -140,14 +140,14 @@ export function Navbar() {
   }, [loadOrgModules]);
 
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/80">
+    <header className="fixed top-0 z-50 w-full border-b border-border bg-card">
       <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
         <div className="flex min-w-0 flex-1 items-center md:min-w-[200px] md:flex-none">
           <Link
             href="/"
-            className="text-foreground min-w-0 truncate font-semibold tracking-tight"
+            className="text-foreground min-w-0 shrink-0 font-dot text-lg leading-none sm:text-2xl font-black tracking-wide uppercase"
           >
-            Costing App
+            Costing
           </Link>
         </div>
 

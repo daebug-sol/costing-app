@@ -54,9 +54,9 @@ export function CashflowTimelineChart({
 }) {
   const { t } = useI18n();
   const chartConfig = {
-    projectedIn: { label: t("dashboard.legend.cashIn"), color: "var(--chart-2)" },
-    projectedOut: { label: t("dashboard.legend.cashOut"), color: "var(--chart-1)" },
-    runningBalance: { label: t("dashboard.legend.runningBalance"), color: "var(--chart-4)" },
+    projectedIn: { label: t("dashboard.legend.cashIn"), color: "var(--positive)" },
+    projectedOut: { label: t("dashboard.legend.cashOut"), color: "var(--signal)" },
+    runningBalance: { label: t("dashboard.legend.runningBalance"), color: "var(--foreground)" },
   } satisfies ChartConfig;
   const { ref, tier } = useContainerWidth<HTMLDivElement>();
   const scale = buildCashflowTimelineScale(data.series);

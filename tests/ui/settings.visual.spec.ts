@@ -3,11 +3,12 @@ import {
   DEFAULT_THEME_PREFERENCES,
   THEME_STORAGE_KEY,
   serializeThemePreferences,
+  type ThemePreferences,
 } from "../../lib/theme-preferences";
 
 async function setThemePreferences(
   page: import("@playwright/test").Page,
-  preferences: { palette: "professional" | "warm"; appearance: "light" | "dark" | "system" }
+  preferences: ThemePreferences
 ) {
   await page.addInitScript(
     ({ key, value }) => {
@@ -78,6 +79,22 @@ test.describe("Settings ('/settings')", () => {
     ).toHaveAttribute("data-state", "on");
   });
 
+  test("matches dark dotmatrix visual baseline", async ({ page }) => {
+    await setThemePreferences(page, { palette: "dotmatrix", appearance: "dark" });
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { level: 1, name: "Pengaturan" })).toBeVisible();
+    await expect(page.getByTestId("theme-settings-card")).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("data-palette", "dotmatrix");
+    await expect(page.locator("html")).toHaveClass(/dark/);
+
+    await expect(page).toHaveScreenshot("settings-shell-dark-dotmatrix.png", {
+      fullPage: true,
+      mask: [page.locator(".tabular-money"), page.locator("[data-volatile]")],
+      animations: "disabled",
+      timeout: 15_000,
+    });
+  });
+
   test("matches dark professional visual baseline", async ({ page }) => {
     await setThemePreferences(page, { palette: "professional", appearance: "dark" });
     await page.goto("/settings");
@@ -113,7 +130,7 @@ test.describe("Settings ('/settings')", () => {
     await setThemePreferences(page, DEFAULT_THEME_PREFERENCES);
     await page.goto("/settings");
 
-    await expect(page.locator("html")).toHaveAttribute("data-palette", "professional");
+    await expect(page.locator("html")).toHaveAttribute("data-palette", "dotmatrix");
     await expect(page.locator("html")).toHaveClass(/dark/);
     await expect(
       page.getByTestId("theme-appearance-toggle").getByText("Sistem", { exact: true })
