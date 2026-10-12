@@ -3,6 +3,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark, shadcn } from "@clerk/ui/themes";
 import { I18nProvider } from "@/components/i18n-provider";
+import { BottomNav } from "@/components/bottom-nav";
 import { Navbar } from "@/components/Navbar";
 import { Toaster } from "@/components/Toast";
 import { ThemeProvider, useTheme } from "@/components/theme-provider";
@@ -14,7 +15,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const shell = (
     <TooltipProvider>
       <Navbar />
-      <main className="min-h-screen bg-background pt-14">{children}</main>
+      <main className="min-h-screen bg-background pt-14 pb-16 lg:pb-0">
+        {children}
+      </main>
+      <BottomNav />
       <Toaster />
     </TooltipProvider>
   );

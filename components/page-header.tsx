@@ -19,8 +19,8 @@ export type PageHeaderProps = {
   className?: string;
   innerClassName?: string;
   /**
-   * band — full-width strip with border & surface (default for PageShell).
-   * inline — typography block only, for embedded layouts (e.g. Costing).
+   * band — default for PageShell: slim title row with a little more top space.
+   * inline — tighter variant for embedded layouts (e.g. Costing).
    */
   variant?: "band" | "inline";
 };
@@ -39,7 +39,7 @@ export function PageHeader({
       className={cn(
         "mx-auto flex w-full flex-col gap-3 px-4 sm:px-6 lg:px-8",
         widthClass[width],
-        variant === "band" ? "py-5 sm:py-6" : "pt-4 pb-3",
+        variant === "band" ? "pt-6 pb-2" : "pt-4 pb-3",
         innerClassName
       )}
     >
@@ -67,11 +67,7 @@ export function PageHeader({
     return <header className={cn("w-full", className)}>{inner}</header>;
   }
 
-  return (
-    <header className={cn("border-border w-full border-b bg-card", className)}>
-      {inner}
-    </header>
-  );
+  return <header className={cn("w-full", className)}>{inner}</header>;
 }
 
 export { widthClass as pageHeaderWidthClass };

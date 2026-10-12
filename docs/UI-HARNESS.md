@@ -66,6 +66,8 @@ Radius scale follows `--radius` (1rem). No shadows, gradients or blur; the page
 canvas dot grid is the `bg-dot-grid` class. Contrast of the palette is checked
 by `node scripts/check-theme-contrast.mjs`.
 
+**Navigation:** the main menu is exactly Dashboard, Database, Costing, Dokumentasi (`lib/nav-items.ts`, filtered by permission, plus Operator for operators). Help is a `?` icon button in the top bar's right cluster (also in the account menu). Below `lg` the main menu is a bottom bar (`components/bottom-nav.tsx`) and there is no hamburger. Page titles use the slim `PageHeader` row, not a banded strip.
+
 **Help module (`/help`):** in-app lessons live as a TypeScript catalog under
 `content/help/` (no MDX). Progress is device-local in `localStorage` key
 `costing-help-progress` (`completedLessonKeys`, `lastOpenedKey`, `updatedAt`).
