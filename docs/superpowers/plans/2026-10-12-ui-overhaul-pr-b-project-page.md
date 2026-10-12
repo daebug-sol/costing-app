@@ -23,9 +23,9 @@
 ## Review Focus
 
 - A project with 0 items: price bar shows Rp 0 for all three numbers; empty state offers Item manual and (if module enabled) AHU otomatis; no `document.querySelector` click-through remains. (Task 3)
-- Opening an item closes the previously open one; deleting the open item leaves none open without errors. (Task 3 test)
+- Opening an item closes the previously open one; deleting the open item leaves none open without errors. (Task 1 test, Task 4)
 - A failed margin save shows "Gagal menyimpan" with a retry action and keeps the typed value. (Task 1 test + Task 2)
-- Finalize dialog names the project and says it can be reverted; a finalized project shows "Kembalikan ke draft" and no "Finalkan". (Task 3)
+- Finalize dialog names the project and says it can be reverted; a finalized project shows "Kembalikan ke draft" and no "Finalkan". (Task 4)
 - Price bar stays visible under the top bar while scrolling a long project and does not overlap the bottom bar on phones (390px). (Task 5 Playwright)
 - Long item names and large rupiah values do not overflow cards or the price bar at 390px. (Task 5 Playwright)
 
