@@ -7,37 +7,31 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
-import { Menu, Settings, X } from "lucide-react";
+import { CircleHelp, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useI18n } from "@/components/i18n-provider";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { MessageKey } from "@/lib/i18n/messages";
-import { canSeeNavHref } from "@/lib/permissions";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { getMainNav } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { useCostingStore } from "@/store/costingStore";
 
-const navItems = [
-  { href: "/", labelKey: "nav.dashboard" },
-  { href: "/database", labelKey: "nav.database" },
-  { href: "/costing", labelKey: "nav.costing" },
-  { href: "/documentation", labelKey: "nav.documentation" },
-  { href: "/help", labelKey: "nav.help" },
-] as const satisfies ReadonlyArray<{ href: string; labelKey: MessageKey }>;
-
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function NavLinks() {
   const { t } = useI18n();
   const pathname = usePathname();
   const role = useCostingStore((s) => s.role);
   const permissions = useCostingStore((s) => s.permissions);
   const isOperator = useCostingStore((s) => s.isOperator);
 
-  const visible = navItems.filter(({ href }) =>
-    canSeeNavHref(href, role, permissions)
-  );
+  const visible = getMainNav(role, permissions, isOperator);
 
   const linkClass = (href: string) => {
     const active =
@@ -54,29 +48,38 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <nav
-      className="flex flex-col gap-1 md:flex-row md:items-center md:gap-0.5"
+      className="flex items-center gap-0.5"
       aria-label={t("nav.mainLabel")}
     >
       {visible.map(({ href, labelKey }) => (
-        <Link
-          key={href}
-          href={href}
-          onClick={onNavigate}
-          className={linkClass(href)}
-        >
+        <Link key={href} href={href} className={linkClass(href)}>
           {t(labelKey)}
         </Link>
       ))}
-      {isOperator ? (
-        <Link
-          href="/operator"
-          onClick={onNavigate}
-          className={linkClass("/operator")}
-        >
-          {t("nav.operator")}
-        </Link>
-      ) : null}
     </nav>
+  );
+}
+
+const HAS_CLERK = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
+function HelpLink({ className }: { className?: string }) {
+  const { t } = useI18n();
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          asChild
+          className={className}
+        >
+          <Link href="/help" aria-label={t("nav.helpAria")}>
+            <CircleHelp aria-hidden />
+          </Link>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{t("nav.helpAria")}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -111,6 +114,11 @@ function AuthControls() {
               labelIcon={<Settings className="size-4" aria-hidden />}
               href="/settings"
             />
+            <UserButton.Link
+              label={t("nav.help")}
+              labelIcon={<CircleHelp className="size-4" aria-hidden />}
+              href="/help"
+            />
             <UserButton.Action label="manageAccount" />
             <UserButton.Action label="signOut" />
           </UserButton.MenuItems>
@@ -131,8 +139,6 @@ function AuthControls() {
 }
 
 export function Navbar() {
-  const { t } = useI18n();
-  const [open, setOpen] = useState(false);
   const loadOrgModules = useCostingStore((s) => s.loadOrgModules);
 
   useEffect(() => {
@@ -157,30 +163,8 @@ export function Navbar() {
 
         <div className="flex shrink-0 items-center justify-end gap-2 md:min-w-[200px]">
           <LanguageSwitcher />
+          <HelpLink className={HAS_CLERK ? "hidden sm:inline-flex" : undefined} />
           <AuthControls />
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            aria-expanded={open}
-            aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")}
-            onClick={() => setOpen((v) => !v)}
-          >
-            {open ? <X data-icon="inline-start" /> : <Menu data-icon="inline-start" />}
-          </Button>
-        </div>
-      </div>
-
-      <div
-        className={cn(
-          "border-b border-border bg-card md:hidden",
-          open ? "block" : "hidden"
-        )}
-      >
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-4 py-3 sm:px-6">
-          <NavLinks onNavigate={() => setOpen(false)} />
         </div>
       </div>
     </header>
