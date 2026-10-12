@@ -70,6 +70,8 @@ by `node scripts/check-theme-contrast.mjs`.
 
 **Costing project page:** one centered column (max 880px) that scrolls with the page on every device. Order: header (breadcrumb, name, status, Buat penawaran, ⋯), sticky price bar, item cards (one open at a time), "Tambah item", margins card, Finalkan. Save feedback comes from `lib/save-state.ts`; finalize/draft confirmations use `confirm` with `destructive: false` and only state what is true.
 
+**Costing editors:** manual items use Indonesian labels (Nama, Satuan, Harga satuan, Subtotal), "+ Tambah baris" (primary) and "+ Tambah grup" (secondary), and render rows as cards below `md`. AHU items use tabs "1 Unit / 2 Modul / 3 Ringkasan" and show a "Perlu hitung ulang" banner (`lib/ahu-dirty.ts`) while parameters differ from the saved ones. Failed actions toast via `costingErrorMessage`, never `String(e)`.
+
 **Help module (`/help`):** in-app lessons live as a TypeScript catalog under
 `content/help/` (no MDX). Progress is device-local in `localStorage` key
 `costing-help-progress` (`completedLessonKeys`, `lastOpenedKey`, `updatedAt`).

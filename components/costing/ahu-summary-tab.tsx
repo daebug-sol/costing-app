@@ -1,5 +1,6 @@
 "use client";
 
+import { costingErrorMessage } from "@/lib/costing-error-message";
 import { Loader2 } from "lucide-react";
 import { CostingLevelHeading } from "@/components/costing/costing-shell";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,7 @@ export function AhuSummaryTab({ ed }: { ed: AhuEditor }) {
                 onClick={() => {
                   setResettingMarkup(true);
                   resetSegmentMarkup(seg.id)
-                    .catch((e) => showToast(String(e)))
+                    .catch((e) => showToast(costingErrorMessage(e)))
                     .finally(() => setResettingMarkup(false));
                 }}
               >

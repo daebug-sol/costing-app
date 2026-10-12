@@ -1,6 +1,8 @@
 "use client";
 
+import { costingErrorMessage } from "@/lib/costing-error-message";
 import { useMemo, useRef, useState } from "react";
+import { isAhuParamsDirty } from "@/lib/ahu-dirty";
 import type { AhuRecalcParams } from "@/lib/ahu-recalc-params";
 import { normalizeSectionLayout } from "@/lib/ahu-recalc-params";
 import { DEFAULT_COSTING_SCOPE, normalizeCostingScope } from "@/lib/costing-scope";
@@ -48,7 +50,7 @@ export function useAhuSegmentEditor({
   const commitSectionPrice = (sec: CostingSectionWithLines, raw: string) => {
     const v = parseIDR(raw);
     if (v === null) {
-      setSectionOverride(sec.id, null).catch((e) => showToast(String(e)));
+      setSectionOverride(sec.id, null).catch((e) => showToast(costingErrorMessage(e)));
       setPriceEditId(null);
       return;
     }
@@ -56,12 +58,17 @@ export function useAhuSegmentEditor({
       showToast("Harga kategori harus berupa angka");
       return;
     }
-    setSectionOverride(sec.id, v).catch((e) => showToast(String(e)));
+    setSectionOverride(sec.id, v).catch((e) => showToast(costingErrorMessage(e)));
     setPriceEditId(null);
   };
 
   const [ahu, setAhu] = useState<AhuRecalcParams>(() =>
     initialAhuFromSegment(seg.ahuRecalcParams)
+  );
+
+  const ahuDirty = useMemo(
+    () => isAhuParamsDirty(initialAhuFromSegment(seg.ahuRecalcParams), ahu),
+    [seg.ahuRecalcParams, ahu]
   );
 
   const nSec =
@@ -200,6 +207,7 @@ export function useAhuSegmentEditor({
     hasAnyOverride,
     commitSectionPrice,
     ahu,
+    ahuDirty,
     setAhu,
     nSec,
     sectionLayout,
