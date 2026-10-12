@@ -65,7 +65,7 @@ describe("MarginsCard", () => {
     for (const label of ["Overhead", "Kontinjensi", "Eskalasi", "Asuransi", "Mobilisasi", "Margin"]) {
       expect(html).toContain(label);
     }
-    expect((html.match(/<input/g) ?? []).length).toBeGreaterThanOrEqual(6);
+    expect(html.split("<" + "input").length - 1).toBeGreaterThanOrEqual(6);
   });
 });
 
