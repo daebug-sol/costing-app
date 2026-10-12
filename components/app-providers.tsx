@@ -15,7 +15,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const shell = (
     <TooltipProvider>
       <Navbar />
-      <main className="min-h-screen bg-background pt-14 pb-16 md:pb-0">
+      <main className="min-h-screen bg-background pt-14 pb-16 lg:pb-0">
         {children}
       </main>
       <BottomNav />

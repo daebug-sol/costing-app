@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * App frame: 4-item main menu, Help as an icon, bottom bar below `md`.
+ * App frame: 4-item main menu, Help as an icon, bottom bar below `lg`.
  * Layout is chosen by the Playwright project (desktop 1440 / iPhone 13 390).
  */
 test.describe("app frame", () => {
@@ -28,6 +28,14 @@ test.describe("app frame", () => {
       await expect(bottom.getByRole("link", { name })).toBeVisible();
     }
     await expect(page.getByRole("button", { name: "Buka menu" })).toHaveCount(0);
+  });
+
+  test("tablet 768px: bottom bar, top menu hidden, no overlap in the top bar", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium-mobile");
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto("/");
+    await expect(page.getByRole("navigation", { name: "Navigasi bawah" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Navigasi utama" })).toBeHidden();
   });
 
   test("mobile: English labels at 360px do not overflow the page", async ({ page }, testInfo) => {

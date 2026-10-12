@@ -149,7 +149,7 @@ export function Navbar() {
   return (
     <header className="fixed top-0 z-50 w-full border-b border-border bg-card">
       <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
-        <div className="flex min-w-0 flex-1 items-center md:min-w-[200px] md:flex-none">
+        <div className="flex min-w-0 flex-1 items-center lg:min-w-[200px] lg:flex-none">
           <Link
             href="/"
             className="text-foreground min-w-0 shrink-0 font-dot text-lg leading-none sm:text-2xl font-black tracking-wide uppercase"
@@ -158,11 +158,11 @@ export function Navbar() {
           </Link>
         </div>
 
-        <div className="hidden min-w-0 flex-1 justify-center md:flex">
+        <div className="hidden min-w-0 flex-1 justify-center lg:flex">
           <NavLinks />
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-2 md:min-w-[200px]">
+        <div className="flex shrink-0 items-center justify-end gap-2 lg:min-w-[200px]">
           <LanguageSwitcher />
           <HelpLink className={HAS_CLERK ? "hidden sm:inline-flex" : undefined} />
           <AuthControls />

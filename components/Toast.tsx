@@ -24,7 +24,7 @@ export function Toaster() {
 
   return (
     <div
-      className="fixed right-4 bottom-20 z-[100] md:bottom-4 flex w-full max-w-sm flex-col gap-2"
+      className="fixed right-4 bottom-20 z-[100] lg:bottom-4 flex w-full max-w-sm flex-col gap-2"
       role="region"
       aria-label="Notifications"
     >
