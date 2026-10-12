@@ -66,8 +66,7 @@ test.describe("Stateful editors", () => {
     const { id } = (await (await created).json()) as { id: string };
 
     try {
-      await page.getByRole("button", { name: "Tambah metode costing" }).click();
-      await page.getByRole("menuitem", { name: "AHU otomatis" }).click();
+      await page.getByRole("button", { name: "AHU otomatis" }).click();
 
       await expect(page.getByRole("tab", { name: "Unit & hitung" })).toBeVisible({ timeout: 30_000 });
       await page.getByRole("tab", { name: "Parameter modul" }).click();

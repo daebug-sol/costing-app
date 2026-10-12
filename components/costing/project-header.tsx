@@ -36,6 +36,8 @@ export function ProjectHeader({ ed }: { ed: CostingWorkspaceState }) {
         name: currentProject.name,
       }),
       description: t(finalized ? "costing.page.draftDescription" : "costing.page.finalizeDescription"),
+      confirmLabel: t(finalized ? "costing.page.backToDraft" : "costing.page.finalize"),
+      destructive: false,
     }).then((ok) => {
       if (ok) updateProject({ status: finalized ? "draft" : "finalized" }).catch(fail);
     });
@@ -57,7 +59,7 @@ export function ProjectHeader({ ed }: { ed: CostingWorkspaceState }) {
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto sm:flex-1">
           {editingName ? (
             <Input
               autoFocus
@@ -90,7 +92,7 @@ export function ProjectHeader({ ed }: { ed: CostingWorkspaceState }) {
           {statusBadge(currentProject.status)}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:ml-auto">
           <Button asChild>
             <Link href={`/documentation?fromProject=${encodeURIComponent(currentProject.id)}`}>
               {t("costing.page.createQuotation")}

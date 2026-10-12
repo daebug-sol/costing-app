@@ -68,6 +68,8 @@ by `node scripts/check-theme-contrast.mjs`.
 
 **Navigation:** the main menu is exactly Dashboard, Database, Costing, Dokumentasi (`lib/nav-items.ts`, filtered by permission, plus Operator for operators). Help is a `?` icon button in the top bar's right cluster (also in the account menu). Below `lg` the main menu is a bottom bar (`components/bottom-nav.tsx`) and there is no hamburger. Page titles use the slim `PageHeader` row, not a banded strip.
 
+**Costing project page:** one centered column (max 880px) that scrolls with the page on every device. Order: header (breadcrumb, name, status, Buat penawaran, ⋯), sticky price bar, item cards (one open at a time), "Tambah item", margins card, Finalkan. Save feedback comes from `lib/save-state.ts`; finalize/draft confirmations use `confirm` with `destructive: false` and only state what is true.
+
 **Help module (`/help`):** in-app lessons live as a TypeScript catalog under
 `content/help/` (no MDX). Progress is device-local in `localStorage` key
 `costing-help-progress` (`completedLessonKeys`, `lastOpenedKey`, `updatedAt`).

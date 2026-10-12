@@ -33,4 +33,51 @@ test.describe("Costing project navigation", () => {
       await request.delete(`/api/projects/${id}`);
     }
   });
+
+  test("project page: empty state, add item, price bar and finalize dialog", async ({ page, request }) => {
+    const name = `E2E page ${Date.now()}`;
+    const res = await request.post("/api/projects", { data: { name } });
+    const { id } = (await res.json()) as { id: string };
+    try {
+      await page.goto(`/costing?project=${encodeURIComponent(id)}`);
+      await expect(page.getByRole("heading", { name })).toBeVisible();
+      await expect(page.getByText("Belum ada item")).toBeVisible();
+
+      const bar = page.getByText("Harga jual").first();
+      await expect(bar).toBeVisible();
+      await expect(page.getByText("Total biaya").first()).toBeVisible();
+      await expect(page.getByText("Per unit").first()).toBeVisible();
+
+      await page.getByRole("button", { name: "Item manual" }).click();
+      await expect(page.getByRole("button", { name: "Tambah item" })).toBeVisible();
+      await expect(page.getByText("Belum ada item")).toHaveCount(0);
+
+      await page.getByRole("button", { name: "Finalkan" }).first().click();
+      const dialog = page.getByRole("alertdialog");
+      await expect(dialog).toContainText("Anda tetap bisa mengembalikannya ke draft");
+      await dialog.getByRole("button", { name: "Finalkan", exact: true }).click();
+      await expect(page.getByRole("button", { name: "Kembalikan ke draft" })).toBeVisible();
+    } finally {
+      await request.delete(`/api/projects/${id}`);
+    }
+  });
+
+  test("project page: price bar stays visible and nothing overflows at 390px", async ({ page, request }) => {
+    const name = `E2E mobile ${Date.now()}`;
+    const res = await request.post("/api/projects", { data: { name } });
+    const { id } = (await res.json()) as { id: string };
+    try {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`/costing?project=${encodeURIComponent(id)}`);
+      await expect(page.getByRole("heading", { name })).toBeVisible();
+      await page.mouse.wheel(0, 600);
+      await expect(page.getByText("Harga jual").first()).toBeInViewport();
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth
+      );
+      expect(overflow).toBe(true);
+    } finally {
+      await request.delete(`/api/projects/${id}`);
+    }
+  });
 });

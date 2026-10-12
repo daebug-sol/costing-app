@@ -67,6 +67,8 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
         name: currentProject.name,
       }),
       description: t(finalized ? "costing.page.draftDescription" : "costing.page.finalizeDescription"),
+      confirmLabel: t(finalized ? "costing.page.backToDraft" : "costing.page.finalize"),
+      destructive: false,
     }).then((ok) => {
       if (ok)
         updateProject({ status: finalized ? "draft" : "finalized" }).catch((e) =>
