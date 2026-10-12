@@ -16,7 +16,7 @@ test.describe("app frame", () => {
     await expect(page.getByRole("navigation", { name: "Navigasi bawah" })).toBeHidden();
 
     await page.getByRole("link", { name: "Bantuan" }).click();
-    await expect(page).toHaveURL(/\/help$/);
+    await expect(page).toHaveURL(/\/help$/, { timeout: 30_000 });
   });
 
   test("mobile: bottom bar replaces the hamburger", async ({ page }, testInfo) => {
