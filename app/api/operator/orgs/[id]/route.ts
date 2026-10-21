@@ -13,6 +13,7 @@ const orgSelect = {
   slug: true,
   plan: true,
   ahuModuleEnabled: true,
+  trialEndsAt: true,
   createdAt: true,
 } as const;
 
@@ -64,9 +65,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   const hasPlan = Object.prototype.hasOwnProperty.call(raw, "plan");
   const hasAhu = Object.prototype.hasOwnProperty.call(raw, "ahuModuleEnabled");
 
-  if (!hasPlan && !hasAhu) {
+  const hasTrial = Object.prototype.hasOwnProperty.call(raw, "trialEndsAt");
+
+  if (!hasPlan && !hasAhu && !hasTrial) {
     return NextResponse.json(
-      { error: "Provide plan and/or ahuModuleEnabled" },
+      { error: "Provide plan, ahuModuleEnabled and/or trialEndsAt" },
       { status: 400 }
     );
   }
@@ -83,6 +86,24 @@ export async function PATCH(request: Request, context: RouteContext) {
       { error: "ahuModuleEnabled must be a boolean" },
       { status: 400 }
     );
+  }
+
+  // null ends the demo (paid/legacy org); an ISO date sets or extends it.
+  let trialEndsAt: Date | null | undefined;
+  if (hasTrial) {
+    if (raw.trialEndsAt === null) {
+      trialEndsAt = null;
+    } else if (
+      typeof raw.trialEndsAt === "string" &&
+      !Number.isNaN(Date.parse(raw.trialEndsAt))
+    ) {
+      trialEndsAt = new Date(raw.trialEndsAt);
+    } else {
+      return NextResponse.json(
+        { error: "trialEndsAt must be an ISO date or null" },
+        { status: 400 }
+      );
+    }
   }
 
   try {
@@ -111,7 +132,10 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const updated = await prisma.organization.update({
       where: { id },
-      data: resolved.data,
+      data: {
+        ...resolved.data,
+        ...(trialEndsAt !== undefined ? { trialEndsAt } : {}),
+      },
       select: orgSelect,
     });
 

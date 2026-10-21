@@ -8,6 +8,7 @@ const orgSelect = {
   slug: true,
   plan: true,
   ahuModuleEnabled: true,
+  trialEndsAt: true,
   createdAt: true,
 } as const;
 

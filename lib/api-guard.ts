@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { isAuthBypassed, requireAuth } from "@/lib/auth";
 import type { OrgRole } from "@/lib/org-roles";
+import { prisma } from "@/lib/prisma";
+import { isTrialExpired, trialExpiredResponse } from "@/lib/trial";
 import {
   bypassOrgRole,
   ensureOrganizationMember,
@@ -10,7 +12,14 @@ import {
 type GuardSuccess = { userId: string; orgId: string; role: OrgRole };
 type GuardFailure = { response: NextResponse };
 
-export async function guardApiRoute(): Promise<GuardSuccess | GuardFailure> {
+export type GuardOptions = {
+  /** Let an expired demo org through (data export and the trial-status check only). */
+  allowExpired?: boolean;
+};
+
+export async function guardApiRoute(
+  options: GuardOptions = {}
+): Promise<GuardSuccess | GuardFailure> {
   const authResult = await requireAuth();
   if ("response" in authResult) return authResult;
 
@@ -24,6 +33,16 @@ export async function guardApiRoute(): Promise<GuardSuccess | GuardFailure> {
 
   if (isAuthBypassed()) {
     return { userId, orgId, role: bypassOrgRole() };
+  }
+
+  if (!options.allowExpired) {
+    const org = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { trialEndsAt: true },
+    });
+    if (isTrialExpired(org?.trialEndsAt)) {
+      return { response: trialExpiredResponse() };
+    }
   }
 
   const role = await ensureOrganizationMember(orgId, userId);

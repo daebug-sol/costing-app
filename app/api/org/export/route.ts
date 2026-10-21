@@ -4,7 +4,7 @@ import { enforceRateLimit } from "@/lib/rate-limit";
 import { exportOrgData } from "@/lib/tenant-queries";
 
 export async function GET() {
-  const guard = await guardApiRoute();
+  const guard = await guardApiRoute({ allowExpired: true });
   if ("response" in guard) return guard.response;
   const { orgId } = guard;
 

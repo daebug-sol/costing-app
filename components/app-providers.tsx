@@ -6,6 +6,7 @@ import { I18nProvider } from "@/components/i18n-provider";
 import { BottomNav } from "@/components/bottom-nav";
 import { Navbar } from "@/components/Navbar";
 import { Toaster } from "@/components/Toast";
+import { TrialBanner } from "@/components/trial-banner";
 import { ThemeProvider, useTheme } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -16,6 +17,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
     <TooltipProvider>
       <Navbar />
       <main className="min-h-screen bg-background pt-14 pb-16 lg:pb-0">
+        <TrialBanner />
         {children}
       </main>
       <BottomNav />
