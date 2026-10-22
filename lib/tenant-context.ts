@@ -18,6 +18,10 @@ export async function resolveOrganizationId(
       clerkOrgId,
       name: "Organization",
       slug,
+      // Created lazily by a Clerk org nobody activated (user-created, or
+      // invited): locked until the operator approves it. Activation and the
+      // seeds create their own rows and never reach this path.
+      trialEndsAt: new Date(),
       members: {
         create: { userId, role: "owner" },
       },

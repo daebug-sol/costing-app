@@ -36,18 +36,24 @@ export function TrialBanner() {
       >
         <div className="max-w-md rounded-lg border border-border bg-card p-6 text-center">
           <h2 id="trial-expired-title" className="text-lg font-semibold">
-            Masa demo berakhir
+            Akses organisasi dibatasi
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Data Anda masih tersimpan. Hubungi kami untuk melanjutkan ke akun
-            berbayar, atau unduh salinan datanya.
+            Masa demo berakhir atau organisasi ini belum diaktifkan. Data tetap
+            tersimpan. Hubungi kami untuk melanjutkan, masukkan kode
+            aktivasi, atau unduh salinan datanya.
           </p>
-          <Button asChild className="mt-4 gap-2" variant="outline">
-            <a href="/api/org/export" download>
-              <Download className="size-4" />
-              Unduh data
-            </a>
-          </Button>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Button asChild variant="outline" className="gap-2">
+              <a href="/api/org/export" download>
+                <Download className="size-4" />
+                Unduh data
+              </a>
+            </Button>
+            <Button asChild>
+              <a href="/activate">Masukkan kode</a>
+            </Button>
+          </div>
         </div>
       </div>
     );

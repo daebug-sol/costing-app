@@ -41,7 +41,7 @@ export function addDays(from: Date, days: number): Date {
 export function trialExpiredResponse(): NextResponse {
   return NextResponse.json(
     {
-      error: "Masa demo berakhir. Hubungi kami untuk melanjutkan.",
+      error: "Akses organisasi dibatasi: demo berakhir atau belum diaktifkan. Hubungi kami untuk melanjutkan.",
       code: "TRIAL_EXPIRED",
     },
     { status: 403 }
