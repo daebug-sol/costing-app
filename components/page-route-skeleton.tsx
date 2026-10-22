@@ -23,7 +23,7 @@ function PageHeaderSkeleton({
       ? "max-w-[720px]"
       : width === "doc"
         ? "max-w-3xl"
-        : "max-w-[1400px]";
+        : "max-w-none";
 
   return (
     <header className="w-full border-b border-border bg-card">
@@ -59,7 +59,7 @@ function ContentShell({
       ? "max-w-[720px]"
       : width === "doc"
         ? "max-w-3xl"
-        : "max-w-[1400px]";
+        : "max-w-none";
 
   return (
     <div

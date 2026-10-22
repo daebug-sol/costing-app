@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export type PageHeaderWidth = "wide" | "narrow" | "doc";
 
 const widthClass: Record<PageHeaderWidth, string> = {
-  wide: "max-w-[1400px]",
+  wide: "max-w-none",
   narrow: "max-w-[720px]",
   doc: "max-w-3xl",
 };

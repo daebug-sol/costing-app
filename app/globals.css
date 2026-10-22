@@ -484,12 +484,12 @@ html.dark[data-palette="dotmatrix"] {
 
   /** Horizontal page margins — matches docs/UI-HARNESS.md shell */
   .app-page-gutter {
-    @apply mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8;
+    @apply w-full px-4 sm:px-6 lg:px-8;
   }
 
-  /** Costing workspace uses a slightly wider canvas */
+  /** Full-width canvas (same as above; kept for the costing list) */
   .app-page-gutter-wide {
-    @apply mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8;
+    @apply w-full px-4 sm:px-6 lg:px-8;
   }
 
   /** Consistent inset inside bordered panels */

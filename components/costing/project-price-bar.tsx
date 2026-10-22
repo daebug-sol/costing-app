@@ -29,7 +29,7 @@ export function ProjectPriceBar({ totals, saveState, onRetry }: Props) {
   return (
     <section
       aria-label={t("costing.page.sellingPrice")}
-      className="bg-card sticky top-14 z-30 flex flex-wrap items-end gap-x-8 gap-y-2 rounded-xl px-4 py-3 ring-1 ring-border sm:px-5"
+      className="bg-card flex flex-wrap items-end gap-x-8 gap-y-2 rounded-xl px-4 py-3 ring-1 ring-border sm:px-5"
     >
       <div className="min-w-0">
         <div className="text-muted-foreground text-xs">{t("costing.page.sellingPrice")}</div>

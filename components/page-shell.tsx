@@ -9,7 +9,7 @@ type PageShellProps = {
   children: ReactNode;
   /** Optional toolbar beside the title (filters, primary actions). */
   actions?: ReactNode;
-  /** wide = 1400px (dashboard, database, costing header); narrow = 720px (settings) */
+  /** wide = full width (dashboard, database, costing header); narrow = 720px (settings) */
   width?: PageHeaderWidth;
   className?: string;
   headerClassName?: string;
@@ -17,7 +17,7 @@ type PageShellProps = {
 };
 
 const widthClass = {
-  wide: "max-w-[1400px]",
+  wide: "max-w-none",
   narrow: "max-w-[720px]",
   doc: "max-w-3xl",
 } as const;

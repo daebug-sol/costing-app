@@ -27,7 +27,7 @@ For each screen the PR changes, confirm:
 ### Screen: <name / route>
 
 #### Layout & density
-- [ ] Page shell matches neighboring screens (`mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8`, `space-y-6`)
+- [ ] Page shell matches neighboring screens (`w-full px-4 py-6 sm:px-6 lg:px-8`, full width, `space-y-6`)
 - [ ] Card padding (`p-3`–`p-4`) and heading scale unchanged unless intentional
 - [ ] Tokens only — `bg-card`, `text-muted-foreground`, `border-border`, etc. No raw hex unless added to `app/globals.css`
 
