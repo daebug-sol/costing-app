@@ -79,19 +79,22 @@ const edStub = (over: Record<string, unknown> = {}) =>
     confirm: async () => true,
     deleteSegment: async () => {},
     patchSegment: async () => {},
+    moveSegment: () => {},
+    segments: [],
     ...over,
   }) as unknown as CostingWorkspaceState;
 
 describe("AddItemMenu", () => {
-  it("empty state offers Item manual and hides AHU when the module is off", () => {
+  it("empty state offers Single Item and Group Item and hides Auto-AHU when the module is off", () => {
     const html = wrap(<AddItemMenu ed={edStub()} variant="empty" />);
-    expect(html).toContain("Item manual");
-    expect(html).not.toContain("AHU otomatis");
+    expect(html).toContain("Single Item");
+    expect(html).toContain("Group Item");
+    expect(html).not.toContain("Auto-AHU");
   });
 
-  it("empty state shows AHU otomatis when the module is on", () => {
+  it("empty state shows Auto-AHU when the module is on", () => {
     const html = wrap(<AddItemMenu ed={edStub({ ahuModuleEnabled: true })} variant="empty" />);
-    expect(html).toContain("AHU otomatis");
+    expect(html).toContain("Auto-AHU");
   });
 
   it("inline variant is a labeled Tambah item button", () => {
@@ -103,10 +106,13 @@ describe("AddItemMenu", () => {
 describe("SegmentCard", () => {
   const seg = { id: "s1", title: "Foo", type: "manual", subtotal: 0 } as unknown as CostingWorkspaceState["segments"][number];
 
-  it("renders a labeled name input, an item menu and a collapsed toggle", () => {
+  it("renders the name, an item menu and a collapsed toggle without grip or chevron", () => {
     const html = wrap(<SegmentCard ed={edStub()} seg={seg} index={0} open={false} onToggle={() => {}} />);
-    expect(html).toContain("Nama item Foo");
+    expect(html).toContain("Foo");
     expect(html).toContain("Menu item Foo");
+    expect(html).toContain("Buka atau tutup Foo");
     expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain("lucide-grip-vertical");
+    expect(html).not.toContain("lucide-chevron");
   });
 });

@@ -66,7 +66,7 @@ test.describe("Stateful editors", () => {
     const { id } = (await (await created).json()) as { id: string };
 
     try {
-      await page.getByRole("button", { name: "AHU otomatis" }).click();
+      await page.getByRole("button", { name: "Auto-AHU" }).click();
 
       await expect(page.getByRole("tab", { name: "1 Unit" })).toBeVisible({ timeout: 30_000 });
       await page.getByRole("tab", { name: "2 Modul" }).click();
@@ -83,12 +83,12 @@ test.describe("Stateful editors", () => {
     const { id } = (await res.json()) as { id: string };
     try {
       await page.goto(`/costing?project=${encodeURIComponent(id)}`);
-      await page.getByRole("button", { name: "Item manual" }).click();
+      await page.getByRole("button", { name: "Single Item" }).click();
       await expect(page.getByRole("button", { name: "Tambah baris" })).toBeVisible({ timeout: 30_000 });
       await expect(page.getByRole("button", { name: "Tambah grup" })).toBeVisible();
 
       await page.getByRole("button", { name: "Tambah item" }).click();
-      await page.getByRole("menuitem", { name: "AHU otomatis" }).click();
+      await page.getByRole("menuitem", { name: "Auto-AHU" }).click();
       await expect(page.getByRole("tab", { name: "1 Unit" })).toBeVisible({ timeout: 30_000 });
       await expect(page.getByText("Perlu hitung ulang")).toHaveCount(0);
       const sections = page.getByLabel("Jumlah section");
