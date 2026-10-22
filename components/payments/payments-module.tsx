@@ -205,7 +205,6 @@ export function PaymentsModule() {
       width="wide"
       eyebrow="Order-to-Cash"
       title="Pembayaran"
-      description="Penerimaan kas dan alokasi ke invoice terbuka"
       contentClassName="space-y-6"
     >
       {confirmDialog}

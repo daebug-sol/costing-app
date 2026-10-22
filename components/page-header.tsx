@@ -11,6 +11,7 @@ const widthClass: Record<PageHeaderWidth, string> = {
 
 export type PageHeaderProps = {
   title: string;
+  /** Record facts only (e.g. "Customer · Status" on a detail page). Never a sentence explaining the page. */
   description?: string;
   /** Kept for call-site compatibility; not rendered. */
   eyebrow?: string;
@@ -39,13 +40,13 @@ export function PageHeader({
       className={cn(
         "mx-auto flex w-full flex-col gap-3 px-4 sm:px-6 lg:px-8",
         widthClass[width],
-        variant === "band" ? "pt-6 pb-2" : "pt-4 pb-3",
+        variant === "band" ? "pt-5 pb-1" : "pt-4 pb-2",
         innerClassName
       )}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1 space-y-1">
-          <h1 className="text-foreground text-2xl font-semibold tracking-tight text-balance">
+          <h1 className="text-foreground text-xl font-semibold tracking-tight text-balance">
             {title}
           </h1>
           {description ? (

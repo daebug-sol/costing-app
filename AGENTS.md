@@ -15,3 +15,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 When a task touches costing math, use the **costing-formula-change** skill. When deploying or hardening for production, read **PRODUCTION-HARNESS.md** and the **production-release** skill. When a task touches UI/UX (any change under `app/**/*.tsx` or `components/**/*.tsx`), read **UI-HARNESS.md**, use the **shadcn** skill (`.cursor/skills/shadcn/`) for components/add/search/styling, and walk **UI-PR-CHECKLIST.md** before merge.
 
 **ui-ux-pro-max** (`.cursor/skills/ui-ux-pro-max/`) — design intelligence (palettes, landing patterns, UX checklist). Use for **new marketing/landing** or explicit “redesign exploration”; for existing costing/database/dashboard screens, **UI-HARNESS wins** (do not replace tokens or restyle unrelated modules). Requires **Python 3** for `scripts/search.py` (`winget install Python.Python.3.12`).
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

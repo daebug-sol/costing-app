@@ -16,7 +16,6 @@ import type { CostingWorkspaceState } from "./use-costing-workspace";
 export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
   const { t } = useI18n();
   const {
-    router,
     projects,
     isLoading,
     search,
@@ -165,10 +164,6 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
             actionLabel={t("costing.list.newProject")}
             onAction={() => setNewOpen(true)}
             className="py-8"
-            secondaryActionLabel={t("costing.list.help")}
-            onSecondaryAction={() =>
-              router.push("/help/costing/proyek-dan-segment")
-            }
           />
         ) : filteredProjects.length === 0 ? (
           <p className="p-4 text-center text-xs text-muted-foreground">

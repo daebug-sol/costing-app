@@ -256,7 +256,6 @@ export function DashboardPage() {
     <PageShell
       eyebrow={t("dashboard.eyebrow")}
       title={t("dashboard.title")}
-      description={t("dashboard.description")}
       contentClassName="gap-6 pt-8 pb-6 sm:pt-10 sm:pb-8"
       actions={<DashboardToolbar {...toolbarProps} align="center" surface="panel" />}
     >

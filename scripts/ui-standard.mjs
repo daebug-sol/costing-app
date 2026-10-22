@@ -93,6 +93,20 @@ for (const f of nonUi) {
 }
 rule("no raw <textarea>/<input> outside ui/ (file/hidden inputs allowed)", rawFields);
 
+// Page titles carry no explanatory subtitle: a literal or translated description is page fluff.
+// Detail pages may pass record facts as an expression (e.g. `${customer} · ${status}`).
+const pageSubtitles = [];
+for (const f of nonUi) {
+  for (const tag of ["PageShell", "PageHeader"]) {
+    for (const t of openingTags(f.text, tag)) {
+      if (/\bdescription=(["']|\{\s*t\()/.test(t.src)) {
+        pageSubtitles.push(`${f.path}:${f.text.slice(0, t.index).split("\n").length}`);
+      }
+    }
+  }
+}
+rule("no explanatory subtitle on PageShell/PageHeader", pageSubtitles);
+
 rule(
   "no hardcoded English table headers/labels",
   scanLines(nonUi, /<(TableHead|Label|th)\b[^>]*>\s*(Description|Name|Code|Category|Actions|Quantity|Price|Loading\.*|Saving\.*)\s*</)

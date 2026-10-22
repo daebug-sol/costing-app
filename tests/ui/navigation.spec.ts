@@ -16,7 +16,7 @@ test.describe("app frame", () => {
     await expect(page.getByRole("navigation", { name: "Navigasi bawah" })).toBeHidden();
 
     await page.getByRole("link", { name: "Bantuan" }).click();
-    await expect(page).toHaveURL(/\/help$/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/\/help\/mulai-cepat\//, { timeout: 30_000 });
   });
 
   test("mobile: bottom bar replaces the hamburger", async ({ page }, testInfo) => {
@@ -41,8 +41,9 @@ test.describe("app frame", () => {
   test("mobile: English labels at 360px do not overflow the page", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium-mobile");
     await page.setViewportSize({ width: 360, height: 740 });
+    await page.goto("/settings");
+    await page.getByTestId("locale-toggle").getByRole("radio", { name: "English" }).click();
     await page.goto("/");
-    await page.getByTestId("language-switcher").getByRole("button", { name: "EN" }).click();
     await expect(page.getByRole("navigation", { name: "Bottom navigation" })).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth

@@ -31,7 +31,6 @@ const id = {
   "costing.list.filter.monthAll": "Semua bulan",
   "costing.list.filter.date": "Tanggal (update)",
   "costing.list.itemCount": "{count} item",
-  "costing.list.help": "Bantuan",
   "costing.addRow.description": "Tambahkan baris manual pada section yang dipilih.",
   "costing.list.empty.title": "Belum ada proyek",
   "costing.list.empty.description": "Buat proyek costing pertama Anda untuk mulai menghitung biaya.",
@@ -177,8 +176,6 @@ const id = {
   // --- dashboard: page
   "dashboard.eyebrow": "Ringkasan",
   "dashboard.title": "Dashboard",
-  "dashboard.description":
-    "Ringkasan finansial proyek dan quotation untuk estimasi, sales, dan manajemen.",
   "dashboard.error.notFound": "Proyek tidak ditemukan",
   "dashboard.error.load": "Gagal memuat dashboard",
   "dashboard.error.staleData": "{error}. Menampilkan data terakhir yang tersedia.",
@@ -360,7 +357,6 @@ const id = {
   "settings.appearance.system": "Sistem",
   "settings.eyebrow": "Konfigurasi",
   "settings.title": "Pengaturan",
-  "settings.description": "Profil perusahaan, default costing, forex, dan syarat penawaran",
   "settings.noPermission": "Anda tidak punya izin mengubah pengaturan",
   "settings.saved": "Pengaturan disimpan",
   "settings.saveFailed": "Gagal menyimpan",
@@ -400,7 +396,6 @@ const en: Record<MessageKey, string> = {
   "costing.list.filter.monthAll": "All months",
   "costing.list.filter.date": "Date (updated)",
   "costing.list.itemCount": "{count} items",
-  "costing.list.help": "Help",
   "costing.addRow.description": "Add a manual row to the selected section.",
   "costing.list.empty.title": "No projects yet",
   "costing.list.empty.description": "Create your first costing project to start calculating costs.",
@@ -547,8 +542,6 @@ const en: Record<MessageKey, string> = {
   // --- dashboard: page
   "dashboard.eyebrow": "Overview",
   "dashboard.title": "Dashboard",
-  "dashboard.description":
-    "Financial overview of projects and quotations for estimating, sales, and management.",
   "dashboard.error.notFound": "Project not found",
   "dashboard.error.load": "Failed to load the dashboard",
   "dashboard.error.staleData": "{error}. Showing the last available data.",
@@ -729,7 +722,6 @@ const en: Record<MessageKey, string> = {
   "settings.appearance.system": "System",
   "settings.eyebrow": "Configuration",
   "settings.title": "Settings",
-  "settings.description": "Company profile, costing defaults, forex, and quotation terms",
   "settings.noPermission": "You do not have permission to change settings",
   "settings.saved": "Settings saved",
   "settings.saveFailed": "Failed to save",

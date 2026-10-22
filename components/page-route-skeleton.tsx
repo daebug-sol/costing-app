@@ -35,8 +35,7 @@ function PageHeaderSkeleton({
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 flex-1 space-y-2">
-            <Skeleton className="h-8 w-48 max-w-full rounded-md" />
-            <Skeleton className="h-4 w-full max-w-md rounded-md" />
+            <Skeleton className="h-7 w-48 max-w-full rounded-md" />
           </div>
           {hasToolbar ? (
             <Skeleton className="h-9 w-40 shrink-0 rounded-md sm:w-48" />

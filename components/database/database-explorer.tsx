@@ -9,7 +9,6 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -82,7 +81,6 @@ export function DatabaseExplorer({
   onCreateFile,
   createFileLabel = "Buat file",
 }: DatabaseExplorerProps) {
-  const router = useRouter();
   const [folders, setFolders] = useState<FolderSummary[]>([]);
   const [files, setFiles] = useState<FileRow[]>([]);
   const [loadingFolders, setLoadingFolders] = useState(true);
@@ -443,10 +441,6 @@ export function DatabaseExplorer({
               icon={Folder}
               title="Pilih folder"
               description="Pilih folder di panel kiri untuk melihat file di dalamnya."
-              secondaryActionLabel="Bantuan"
-              onSecondaryAction={() =>
-                router.push("/help/database/folder-dan-file")
-              }
             />
           ) : filteredFiles.length === 0 ? (
             <EmptyState
@@ -455,10 +449,6 @@ export function DatabaseExplorer({
               description={emptyFileDescription}
               actionLabel={createFileLabel}
               onAction={() => setNewFileOpen(true)}
-              secondaryActionLabel="Bantuan"
-              onSecondaryAction={() =>
-                router.push("/help/database/folder-dan-file")
-              }
             />
           ) : (
             <table className="min-w-full text-sm">
