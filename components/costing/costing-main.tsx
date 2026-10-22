@@ -51,7 +51,8 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
   } = ed;
 
   const save = useSaveState();
-  const [openId, setOpenId] = useState<string | null>(null);
+  // undefined = untouched (first item open); null = every item collapsed.
+  const [openId, setOpenId] = useState<string | null | undefined>(undefined);
   // Keep the open item valid when items are added or removed.
   // Open a newly added item so the user can start filling it in.
   const knownIds = useRef<string[] | null>(null);
@@ -65,9 +66,11 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
     }
   }, [segments]);
   const effectiveOpenId =
-    openId && segments.some((s) => s.id === openId)
-      ? openId
-      : (segments[0]?.id ?? null);
+    openId === null
+      ? null
+      : openId && segments.some((s) => s.id === openId)
+        ? openId
+        : (segments[0]?.id ?? null);
 
   if (!currentProject) return null;
   const finalized = isFinalizedStatus(currentProject.status);
@@ -167,7 +170,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
                       index={i}
                       open={seg.id === effectiveOpenId}
                       onToggle={() =>
-                        setOpenId(seg.id === effectiveOpenId ? "" : seg.id)
+                        setOpenId(seg.id === effectiveOpenId ? null : seg.id)
                       }
                     />
                   ))}

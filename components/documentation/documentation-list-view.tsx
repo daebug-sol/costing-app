@@ -36,7 +36,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ContextualHelpLink } from "@/components/help/contextual-help-link";
 import { PageShell } from "@/components/page-shell";
 import {
   computeProjectProgress,
@@ -135,11 +134,9 @@ export function DocumentationListView({
       width="doc"
       eyebrow="Dokumentasi"
       title="Penawaran"
-      description="Folder per pelanggan — perluas proyek untuk melihat progres O2C."
       contentClassName="py-8"
       actions={
         <div className="flex flex-wrap items-center gap-3">
-          <ContextualHelpLink pathname="/documentation" />
           <Button
             type="button"
             className="shrink-0 gap-2"

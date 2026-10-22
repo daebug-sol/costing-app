@@ -171,7 +171,6 @@ export function OperatorConsole() {
         width="wide"
         eyebrow="Platform"
         title="Operator"
-        description="Kelola plan dan modul AHU per organisasi"
         contentClassName="flex flex-col gap-6 lg:py-8"
       >
         <Card>
@@ -192,7 +191,6 @@ export function OperatorConsole() {
         width="wide"
         eyebrow="Platform"
         title="Operator"
-        description="Kelola plan dan modul AHU per organisasi"
         contentClassName="flex flex-col gap-6 lg:py-8"
       >
         <div className="rounded-lg border border-border bg-card p-6 text-center">
@@ -211,7 +209,6 @@ export function OperatorConsole() {
       width="wide"
       eyebrow="Platform"
       title="Operator"
-      description="Kelola plan dan modul AHU per organisasi"
       actions={
         <Button
           type="button"

@@ -317,7 +317,6 @@ export function InvoicesModule() {
       width="wide"
       eyebrow="Order-to-Cash"
       title="Invoice"
-      description="Tagihan pelanggan — status, jatuh tempo, dan PDF"
       contentClassName="space-y-4"
     >
       <div className="space-y-1.5">

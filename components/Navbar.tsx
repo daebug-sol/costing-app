@@ -12,14 +12,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { useI18n } from "@/components/i18n-provider";
-import { LanguageSwitcher } from "@/components/language-switcher";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { lessonsForRoute } from "@/lib/help/catalog";
 import { getMainNav } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { useCostingStore } from "@/store/costingStore";
@@ -62,8 +61,16 @@ function NavLinks() {
 
 const HAS_CLERK = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
+/** Help lesson for the current route, or the Help hub when none matches. */
+function useHelpHref() {
+  const pathname = usePathname() ?? "/";
+  const lesson = lessonsForRoute(pathname)[0];
+  return lesson ? `/help/${lesson.track}/${lesson.slug}` : "/help";
+}
+
 function HelpLink({ className }: { className?: string }) {
   const { t } = useI18n();
+  const href = useHelpHref();
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -74,7 +81,7 @@ function HelpLink({ className }: { className?: string }) {
           className={className}
           aria-label={t("nav.helpAria")}
         >
-          <Link href="/help">
+          <Link href={href} data-testid="header-help-link">
             <CircleHelp aria-hidden />
           </Link>
         </Button>
@@ -88,14 +95,9 @@ function AuthControls() {
   const { t } = useI18n();
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     return (
-      <>
-        <Badge variant="secondary" className="hidden font-normal sm:inline-flex">
-          Dev mode
-        </Badge>
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/settings">{t("nav.settings")}</Link>
-        </Button>
-      </>
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/settings">{t("nav.settings")}</Link>
+      </Button>
     );
   }
 
@@ -163,7 +165,6 @@ export function Navbar() {
         </div>
 
         <div className="flex shrink-0 items-center justify-end gap-2 lg:min-w-[200px]">
-          <LanguageSwitcher />
           <HelpLink className={HAS_CLERK ? "hidden sm:inline-flex" : undefined} />
           <AuthControls />
         </div>

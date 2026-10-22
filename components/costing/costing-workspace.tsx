@@ -1,7 +1,6 @@
 "use client";
 
 import { FolderKanban } from "lucide-react";
-import { ContextualHelpLink } from "@/components/help/contextual-help-link";
 import { EmptyState } from "@/components/empty-state";
 import { useI18n } from "@/components/i18n-provider";
 import { PageHeader } from "@/components/page-header";
@@ -34,9 +33,7 @@ export function CostingWorkspace() {
           width="wide"
           eyebrow="Workspace"
           title="Costing"
-          description="Kelola proyek, item, dan rincian biaya tanpa mengubah logika perhitungan."
           className="shrink-0"
-          actions={<ContextualHelpLink pathname="/costing" />}
         />
       ) : null}
 

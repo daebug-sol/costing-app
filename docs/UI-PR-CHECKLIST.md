@@ -29,6 +29,8 @@ For each screen the PR changes, confirm:
 #### Layout & density
 - [ ] Page shell matches neighboring screens (`w-full px-4 py-6 sm:px-6 lg:px-8`, full width, `space-y-6`)
 - [ ] Card padding (`p-3`–`p-4`) and heading scale unchanged unless intentional
+- [ ] No explanatory subtitle under the page title; no page-level "Bantuan" link (the header `?` is the only Help entry)
+- [ ] No element that repeats what the title, nav, or another control already says
 - [ ] Tokens only — `bg-card`, `text-muted-foreground`, `border-border`, etc. No raw hex unless added to `app/globals.css`
 
 #### Interaction & feedback

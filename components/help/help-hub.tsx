@@ -41,7 +41,6 @@ export function HelpHub() {
       width="wide"
       eyebrow="Panduan"
       title="Help"
-      description="Pelajaran singkat untuk Database, Costing, quotation, Dashboard, dan Pengaturan."
     >
       <div className="flex flex-col gap-6" data-testid="help-hub">
         <HelpSearch />

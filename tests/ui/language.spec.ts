@@ -5,22 +5,16 @@ import { expect, test } from "@playwright/test";
  * chrome that renders even when the backend is unavailable.
  */
 test.describe("language switcher", () => {
-  test("defaults to Indonesian, switches to English, and persists", async ({ page }) => {
-    await page.goto("/");
-    const switcher = page.getByTestId("language-switcher");
-    await expect(switcher).toBeVisible();
+  test("defaults to Indonesian, switches to English in Settings, and persists", async ({ page }) => {
+    await page.goto("/settings");
     await expect(page.locator("html")).toHaveAttribute("lang", "id");
-    await expect(switcher).toHaveAttribute("aria-label", "Ganti bahasa");
-
-    await switcher.getByRole("button", { name: "EN" }).click();
+    const toggle = page.getByTestId("locale-toggle");
+    await toggle.getByRole("radio", { name: "English" }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    await expect(switcher).toHaveAttribute("aria-label", "Change language");
 
-    await page.reload();
+    await page.goto("/");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    await expect(
-      page.getByTestId("language-switcher").getByRole("button", { name: "EN" })
-    ).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("language-switcher")).toHaveCount(0);
   });
 
   test("settings page exposes the same language choice", async ({ page }) => {

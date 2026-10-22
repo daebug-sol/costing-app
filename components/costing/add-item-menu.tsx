@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Plus, Sparkles } from "lucide-react";
+import { FileText, Layers, Plus, Sparkles } from "lucide-react";
 import { useI18n } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +38,10 @@ export function AddItemMenu({ ed, variant }: Props) {
             <FileText aria-hidden />
             {t("costing.page.itemManual")}
           </Button>
+          <Button type="button" size="lg" variant="outline" onClick={addGroup}>
+            <Layers aria-hidden />
+            {t("costing.page.itemGroup")}
+          </Button>
           {ahuModuleEnabled ? (
             <Button type="button" size="lg" variant="outline" onClick={() => void addAhu()}>
               <Sparkles aria-hidden />
@@ -62,10 +66,19 @@ export function AddItemMenu({ ed, variant }: Props) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
-        <DropdownMenuItem onClick={addManual}>{t("costing.page.itemManual")}</DropdownMenuItem>
-        <DropdownMenuItem onClick={addGroup}>{t("costing.page.itemGroup")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={addManual}>
+          <FileText aria-hidden />
+          {t("costing.page.itemManual")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={addGroup}>
+          <Layers aria-hidden />
+          {t("costing.page.itemGroup")}
+        </DropdownMenuItem>
         {ahuModuleEnabled ? (
-          <DropdownMenuItem onClick={() => void addAhu()}>{t("costing.page.itemAhu")}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => void addAhu()}>
+            <Sparkles aria-hidden />
+            {t("costing.page.itemAhu")}
+          </DropdownMenuItem>
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>

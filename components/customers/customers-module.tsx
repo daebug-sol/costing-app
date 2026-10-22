@@ -156,7 +156,6 @@ export function CustomersModule() {
       width="wide"
       eyebrow="Master data"
       title="Pelanggan"
-      description="Data master pelanggan untuk penawaran, sales order, invoice, dan pembayaran"
       contentClassName="space-y-6"
     >
       {confirmDialog}

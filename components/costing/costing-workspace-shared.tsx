@@ -102,7 +102,6 @@ export function SortableCostingSegment({
   }) => React.ReactNode;
 }) {
   const {
-    attributes,
     listeners,
     setNodeRef,
     transform,
@@ -114,12 +113,11 @@ export function SortableCostingSegment({
     transition: isDragging ? transition : undefined,
     opacity: isDragging ? 0.3 : 1,
   };
+  // Pointer listeners only: the header holding them also has buttons, so it must not become role="button".
   const dragProps: React.HTMLAttributes<HTMLDivElement> = {
-    ...attributes,
     ...listeners,
-    className:
-      "cursor-grab touch-none select-none active:cursor-grabbing rounded-md px-1 py-0.5 -mx-1 -my-0.5",
-    title: "Tahan lalu seret untuk mengurutkan item",
+    className: "cursor-pointer select-none touch-manipulation",
+    title: "Klik untuk buka/tutup; tahan lalu seret untuk mengurutkan",
   };
   return <>{children({ setNodeRef, style, dragProps })}</>;
 }
