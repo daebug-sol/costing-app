@@ -431,7 +431,6 @@ export function SalesOrdersModule() {
       width="wide"
       eyebrow="Order-to-Cash"
       title="Sales Order"
-      description="Pesanan dari quotation yang menang — pengiriman dan invoice"
       contentClassName="space-y-4"
     >
       <div className="flex flex-wrap items-end gap-3">

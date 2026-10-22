@@ -48,7 +48,7 @@ test.describe("Costing project navigation", () => {
       await expect(page.getByText("Total biaya").first()).toBeVisible();
       await expect(page.getByText("Per unit").first()).toBeVisible();
 
-      await page.getByRole("button", { name: "Item manual" }).click();
+      await page.getByRole("button", { name: "Single Item" }).click();
       await expect(page.getByRole("button", { name: "Tambah item" })).toBeVisible();
       await expect(page.getByText("Belum ada item")).toHaveCount(0);
 

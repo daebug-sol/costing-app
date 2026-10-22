@@ -144,7 +144,6 @@ export function SettingsPage() {
         width="narrow"
         eyebrow={t("settings.eyebrow")}
         title={t("settings.title")}
-        description={t("settings.description")}
         contentClassName="flex flex-col gap-6 lg:py-8"
       >
         <ThemeSettingsCard />
@@ -167,7 +166,6 @@ export function SettingsPage() {
         width="narrow"
         eyebrow={t("settings.eyebrow")}
         title={t("settings.title")}
-        description={t("settings.description")}
         contentClassName="flex flex-col gap-6 lg:py-8"
       >
         <ThemeSettingsCard />
@@ -192,7 +190,6 @@ export function SettingsPage() {
       width="narrow"
       eyebrow={t("settings.eyebrow")}
       title={t("settings.title")}
-      description={t("settings.description")}
       contentClassName="flex flex-col gap-6 lg:py-8"
     >
       {!row.onboardingComplete ? (

@@ -1,6 +1,5 @@
 "use client";
 
-import { CostingShell } from "@/components/costing/costing-shell";
 import { useI18n } from "@/components/i18n-provider";
 import { costingErrorMessage } from "@/lib/costing-error-message";
 import { AhuStaleBanner } from "./ahu-stale-banner";
@@ -19,7 +18,7 @@ export function AhuSegmentEditor(props: AhuEditorProps) {
 
   return (
     <>
-      <CostingShell level="segment" className="space-y-4">
+      <div className="space-y-4">
         <AhuStaleBanner
           show={ahuDirty}
           busy={isCalculating}
@@ -41,7 +40,7 @@ export function AhuSegmentEditor(props: AhuEditorProps) {
 
           <AhuSummaryTab ed={ed} />
         </Tabs>
-      </CostingShell>
+      </div>
 
       <AhuSheet ed={ed} />
     </>

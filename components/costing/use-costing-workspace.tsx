@@ -1,8 +1,8 @@
 "use client";
 
 import { toastError } from "@/store/toastStore";
-import { type DragEndEvent, type DragStartEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { type DragEndEvent, type DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -543,11 +543,17 @@ export function useCostingWorkspace() {
     setExpandManualTick((t) => t + 1);
   }, [segments, currentProject?.id, setCostingOpenCats, setCostingOpenSegments]);
 
+  // Items are dragged by pressing and holding the card header (no grip handle);
+  // a short click on the header toggles the item instead. Keyboard users reorder
+  // with "Pindah ke atas/bawah" in the item menu, so no KeyboardSensor (it would
+  // swallow Space/Enter typed into the rename field).
   const segmentSensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { delay: 220, tolerance: 8 },
+    useSensor(MouseSensor, {
+      activationConstraint: { delay: 250, tolerance: 6 },
     }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 300, tolerance: 8 },
+    })
   );
 
   const onSegmentDragStart = (event: DragStartEvent) => {
@@ -564,6 +570,14 @@ export function useCostingWorkspace() {
     if (oldIndex < 0 || newIndex < 0) return;
     const next = arrayMove(ids, oldIndex, newIndex);
     reorderSegments(next).catch((e) => showToast(costingErrorMessage(e)));
+  };
+
+  const moveSegment = (id: string, delta: -1 | 1) => {
+    const ids = segments.map((s) => s.id);
+    const from = ids.indexOf(id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= ids.length) return;
+    reorderSegments(arrayMove(ids, from, to)).catch((e) => showToast(costingErrorMessage(e)));
   };
 
   const onSegmentDragCancel = () => {
@@ -687,6 +701,7 @@ export function useCostingWorkspace() {
     onSegmentDragStart,
     onSegmentDragEnd,
     onSegmentDragCancel,
+    moveSegment,
     statusBadge,
   };
 }
