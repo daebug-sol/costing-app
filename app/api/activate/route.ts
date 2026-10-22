@@ -6,7 +6,8 @@ import {
   isWellFormedActivationCode,
   normalizeActivationCode,
 } from "@/lib/activation-code";
-import { getUserEmail, isAuthBypassed, requireAuth } from "@/lib/auth";
+import { getDisplayName, getUserEmail, isAuthBypassed, requireAuth } from "@/lib/auth";
+import { seedDemoData } from "@/lib/demo-seed";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { enforceRateLimit } from "@/lib/rate-limit";
@@ -24,6 +25,9 @@ async function createClerkOrg(name: string, userId: string): Promise<string> {
   });
   return org.id;
 }
+
+// Writing a year of sample data takes a few seconds.
+export const maxDuration = 60;
 
 /** Redeem an activation code: creates the caller's demo organization. */
 export async function POST(request: Request) {
@@ -103,7 +107,20 @@ export async function POST(request: Request) {
       where: { userId, status: "pending" },
       data: { status: "approved" },
     });
-    return NextResponse.json({ ok: true, clerkOrgId, withDemoData: row.withDemoData });
+    let seeded = false;
+    if (row.withDemoData) {
+      try {
+        await seedDemoData(org.id, {
+          ownerUserId: userId,
+          ownerName: (await getDisplayName()) ?? undefined,
+        });
+        seeded = true;
+      } catch (e) {
+        // The org exists and the code is spent; the client can fill sample data from Settings.
+        logger.error("demo data seed failed", { userId, orgId: org.id, error: String(e) });
+      }
+    }
+    return NextResponse.json({ ok: true, clerkOrgId, withDemoData: row.withDemoData, seeded });
   } catch (e) {
     logger.error("activation failed", { userId, error: String(e) });
     // Release the code so the client can retry.

@@ -2,6 +2,7 @@ import { POST } from "@/app/api/activate/route";
 import { hashActivationCode } from "@/lib/activation-code";
 import { prisma } from "@/lib/prisma";
 import { resetRateLimitMemory } from "@/lib/rate-limit";
+import { seedDemoData } from "@/lib/demo-seed";
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
@@ -14,6 +15,7 @@ jest.mock("@/lib/prisma", () => ({
     demoRequest: { findFirst: jest.fn(), updateMany: jest.fn() },
   },
 }));
+jest.mock("@/lib/demo-seed", () => ({ seedDemoData: jest.fn() }));
 jest.mock("@/lib/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
@@ -95,6 +97,27 @@ describe("POST /api/activate", () => {
     expect(data.plan).toBe("standard");
     expect(data.trialEndsAt).toBeInstanceOf(Date);
     expect(data.members.create.role).toBe("owner");
+  });
+
+  it("seeds sample data only when the code asks for it", async () => {
+    db.activationCode.findUnique.mockResolvedValue(row());
+    await POST(req(CODE));
+    expect(seedDemoData).not.toHaveBeenCalled();
+
+    resetRateLimitMemory();
+    db.activationCode.findUnique.mockResolvedValue(row({ withDemoData: true }));
+    const res = await POST(req(CODE));
+    expect(seedDemoData).toHaveBeenCalledWith("org1", expect.objectContaining({ ownerUserId: expect.any(String) }));
+    expect((await res.json()).seeded).toBe(true);
+  });
+
+  it("still activates when the sample seed fails", async () => {
+    db.activationCode.findUnique.mockResolvedValue(row({ withDemoData: true }));
+    (seedDemoData as jest.Mock).mockRejectedValueOnce(new Error("slow db"));
+    const res = await POST(req(CODE));
+    expect(res.status).toBe(200);
+    expect((await res.json()).seeded).toBe(false);
+    expect(db.activationCode.update).toHaveBeenCalledTimes(1); // redeemedOrgId only, not released
   });
 
   it("releases the code when org creation fails", async () => {
