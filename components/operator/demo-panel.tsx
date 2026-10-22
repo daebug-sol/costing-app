@@ -51,6 +51,7 @@ export function DemoPanel() {
   const [codes, setCodes] = useState<CodeRow[]>([]);
   const [email, setEmail] = useState("");
   const [sendEmail, setSendEmail] = useState(true);
+  const [withDemoData, setWithDemoData] = useState(true);
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<Created | null>(null);
   const [copied, setCopied] = useState(false);
@@ -80,7 +81,7 @@ export function DemoPanel() {
       const res = await fetch("/api/operator/activation-codes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: target, sendEmail }),
+        body: JSON.stringify({ email: target, sendEmail, withDemoData }),
       });
       const j = (await res.json()) as { code?: string; emailed?: boolean; error?: string };
       if (!res.ok || !j.code) throw new Error(j.error ?? "Gagal membuat kode");
@@ -138,6 +139,14 @@ export function DemoPanel() {
               onCheckedChange={(v) => setSendEmail(v === true)}
             />
             <Label htmlFor="demo-send-email">Kirim lewat email</Label>
+          </div>
+          <div className="flex items-center gap-2 pb-2">
+            <Checkbox
+              id="demo-with-data"
+              checked={withDemoData}
+              onCheckedChange={(v) => setWithDemoData(v === true)}
+            />
+            <Label htmlFor="demo-with-data">Dengan data contoh</Label>
           </div>
           <Button type="submit" disabled={busy || !email.trim()}>
             {busy ? <Loader2 className="size-4 animate-spin" data-icon="inline-start" /> : null}

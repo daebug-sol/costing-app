@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { formatPhoneDash } from "@/lib/phone-format";
 import { formatNumber } from "@/lib/utils/format";
 import { PageShell } from "@/components/page-shell";
+import { DemoDataCard } from "@/components/settings/demo-data-card";
 import { OrgMembersCard } from "@/components/settings/org-members-card";
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card";
 import type { OrgRole } from "@/lib/org-roles";
@@ -232,6 +233,7 @@ export function SettingsPage() {
         </p>
       ) : null}
 
+      {canManageMembers ? <DemoDataCard /> : null}
       {canManageMembers ? <OrgMembersCard actorRole={actorRole} /> : null}
 
       <Card size="sm" className="shadow-sm">
