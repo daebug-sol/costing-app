@@ -13,6 +13,6 @@ Full standard: `docs/UI-HARNESS.md`; gate: `docs/UI-PR-CHECKLIST.md`; copy: `doc
 - Icons: lucide-react in app code (Phosphor only inside `components/ui/*`, per the shadcn preset). Icon-only buttons need `aria-label` naming the target.
 - Strings: new UI strings go through `lib/i18n/` (`t()`); legacy Indonesian literals are tolerated until a file is migrated.
 - Destructive actions: `AlertDialog` naming the object. Never `window.confirm`/`prompt`.
-- One `<h1>` per page (`PageHeader`/`PageShell`); shell max-width 1400px.
+- One `<h1>` per page (`PageHeader`/`PageShell`); shell is full width on desktop (no max-width; 32px gutters).
 - Every async view has loading (skeleton), empty (`EmptyState`) and error states; toasts via the global `toastStore`.
 - No gradients/blur/glow decoration. UI tasks never touch calculation code.

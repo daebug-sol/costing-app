@@ -68,7 +68,7 @@ by `node scripts/check-theme-contrast.mjs`.
 
 **Navigation:** the main menu is exactly Dashboard, Database, Costing, Dokumentasi (`lib/nav-items.ts`, filtered by permission, plus Operator for operators). Help is a `?` icon button in the top bar's right cluster (also in the account menu). Below `lg` the main menu is a bottom bar (`components/bottom-nav.tsx`) and there is no hamburger. Page titles use the slim `PageHeader` row, not a banded strip.
 
-**Costing project page:** one centered column (max 880px) that scrolls with the page on every device. Order: header (breadcrumb, name, status, Buat penawaran, ⋯), sticky price bar, item cards (one open at a time), "Tambah item", margins card, Finalkan. Save feedback comes from `lib/save-state.ts`; finalize/draft confirmations use `confirm` with `destructive: false` and only state what is true.
+**Costing project page:** full-width page that scrolls with the page on every device. Below `xl` it is one column; from `xl` (1280px) it is two columns: item cards on the left, a sticky 24rem sidebar (price bar, margins card, Finalkan) on the right. Mobile order: header (breadcrumb, name, status, Buat penawaran, ⋯), sticky price bar, item cards (one open at a time), "Tambah item", margins card, Finalkan. Save feedback comes from `lib/save-state.ts`; finalize/draft confirmations use `confirm` with `destructive: false` and only state what is true.
 
 **Costing editors:** manual items use Indonesian labels (Nama, Satuan, Harga satuan, Subtotal), "+ Tambah baris" (primary) and "+ Tambah grup" (secondary), and render rows as cards below `md`. AHU items use tabs "1 Unit / 2 Modul / 3 Ringkasan" and show a "Perlu hitung ulang" banner (`lib/ahu-dirty.ts`) while parameters differ from the saved ones. Failed actions toast via `costingErrorMessage`, never `String(e)`.
 
@@ -82,7 +82,7 @@ sentence case. Entry points: Navbar, Settings onboarding CTA, `ContextualHelpLin
 and optional `EmptyState` secondary action.
 
 **Density:** match neighboring screens. The dashboard, costing workspace, and
-database module all use the `mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8`
+database module all use the `w-full px-4 py-6 sm:px-6 lg:px-8` (full width, no max-width)
 shell with `space-y-6`. Card padding is `p-3`–`p-4` and headings are
 `text-2xl font-semibold tracking-tight` (page) / `text-base` (card). Do not
 introduce a new scale.

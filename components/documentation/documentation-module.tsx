@@ -133,7 +133,7 @@ export function DocumentationModule() {
       <DocumentationHeader ed={ctx} />
 
 
-      <div className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-1 gap-4 overflow-hidden px-4 py-4 sm:gap-5 sm:px-6 sm:py-5 lg:grid-cols-[minmax(0,34%)_minmax(0,66%)] lg:px-8 lg:py-6">
+      <div className="grid min-h-0 w-full flex-1 grid-cols-1 gap-4 overflow-hidden px-4 py-4 sm:gap-5 sm:px-6 sm:py-5 lg:grid-cols-[minmax(0,34%)_minmax(0,66%)] lg:px-8 lg:py-6">
         <DocumentationForm ed={ctx} />
 
         <DocumentationPreview ed={ctx} />

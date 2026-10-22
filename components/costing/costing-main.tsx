@@ -1,7 +1,15 @@
 "use client";
 
-import { DndContext, DragOverlay, closestCenter, defaultDropAnimation } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  defaultDropAnimation,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/components/i18n-provider";
 import { AssemblyTypeBadge } from "@/components/costing/assembly-type-badge";
@@ -74,83 +82,116 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
 
   const toggleStatus = () =>
     void confirm({
-      title: t(finalized ? "costing.page.draftTitle" : "costing.page.finalizeTitle", {
-        name: currentProject.name,
-      }),
-      description: t(finalized ? "costing.page.draftDescription" : "costing.page.finalizeDescription"),
-      confirmLabel: t(finalized ? "costing.page.backToDraft" : "costing.page.finalize"),
+      title: t(
+        finalized ? "costing.page.draftTitle" : "costing.page.finalizeTitle",
+        {
+          name: currentProject.name,
+        },
+      ),
+      description: t(
+        finalized
+          ? "costing.page.draftDescription"
+          : "costing.page.finalizeDescription",
+      ),
+      confirmLabel: t(
+        finalized ? "costing.page.backToDraft" : "costing.page.finalize",
+      ),
       destructive: false,
     }).then((ok) => {
       if (ok)
-        updateProject({ status: finalized ? "draft" : "finalized" }).catch((e) =>
-          showToast(costingErrorMessage(e))
+        updateProject({ status: finalized ? "draft" : "finalized" }).catch(
+          (e) => showToast(costingErrorMessage(e)),
         );
     });
 
   const dragged = segments.find((s) => s.id === activeSegmentDragId);
 
   return (
-    <div className="space-y-4">
-      <ProjectHeader ed={ed} />
-      <ProjectPriceBar totals={totals} saveState={save.state} onRetry={() => void saveMargins()} />
+    <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start xl:gap-6">
+      <div className="order-1 xl:col-span-2">
+        <ProjectHeader ed={ed} />
+      </div>
+      {/* Below xl the aside dissolves (contents) and children keep their own order. */}
+      <aside className="contents xl:sticky xl:top-[4.5rem] xl:col-start-2 xl:row-start-2 xl:flex xl:flex-col xl:gap-4">
+        <div className="order-2 sticky top-14 z-30 xl:static">
+          <ProjectPriceBar
+            totals={totals}
+            saveState={save.state}
+            onRetry={() => void saveMargins()}
+          />
+        </div>
+        <div className="order-4">
+          <MarginsCard
+            marginPct={marginPct}
+            setMarginPct={setMarginPct}
+            useEsk={useEsk}
+            useAsu={useAsu}
+            useMob={useMob}
+            totals={totals}
+            onSaveMargins={() => void saveMargins()}
+            onToggles={(next) => void saveToggles(next)}
+            saveState={save.state}
+          />
+        </div>
+        <div className="order-5 flex flex-wrap justify-end gap-2 pb-4">
+          <Button type="button" variant="outline" onClick={toggleStatus}>
+            {finalized
+              ? t("costing.page.backToDraft")
+              : t("costing.page.finalize")}
+          </Button>
+        </div>
+      </aside>
 
-      {segments.length === 0 ? (
-        <AddItemMenu ed={ed} variant="empty" />
-      ) : (
-        <>
-          <DndContext
-            sensors={segmentSensors}
-            collisionDetection={closestCenter}
-            onDragStart={onSegmentDragStart}
-            onDragEnd={onSegmentDragEnd}
-            onDragCancel={onSegmentDragCancel}
-          >
-            <SortableContext items={segments.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-3">
-                {segments.map((seg, i) => (
-                  <SegmentCard
-                    key={seg.id}
-                    ed={ed}
-                    seg={seg}
-                    index={i}
-                    open={seg.id === effectiveOpenId}
-                    onToggle={() => setOpenId(seg.id === effectiveOpenId ? "" : seg.id)}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-            <DragOverlay dropAnimation={defaultDropAnimation}>
-              {dragged ? (
-                <div className="bg-card flex max-w-md items-center gap-2 rounded-xl border border-primary/35 px-4 py-3 shadow-lg">
-                  <AssemblyTypeBadge variant={dragged.type === "manual" ? "manual" : "ahu"} />
-                  <span className="min-w-0 flex-1 truncate font-medium">{dragged.title}</span>
-                  <span className="text-muted-foreground tabular-money text-xs">
-                    {formatIDR(dragged.subtotal)}
-                  </span>
+      <div className="order-3 flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-2">
+        {segments.length === 0 ? (
+          <AddItemMenu ed={ed} variant="empty" />
+        ) : (
+          <>
+            <DndContext
+              sensors={segmentSensors}
+              collisionDetection={closestCenter}
+              onDragStart={onSegmentDragStart}
+              onDragEnd={onSegmentDragEnd}
+              onDragCancel={onSegmentDragCancel}
+            >
+              <SortableContext
+                items={segments.map((s) => s.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-3">
+                  {segments.map((seg, i) => (
+                    <SegmentCard
+                      key={seg.id}
+                      ed={ed}
+                      seg={seg}
+                      index={i}
+                      open={seg.id === effectiveOpenId}
+                      onToggle={() =>
+                        setOpenId(seg.id === effectiveOpenId ? "" : seg.id)
+                      }
+                    />
+                  ))}
                 </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-          <AddItemMenu ed={ed} variant="inline" />
-        </>
-      )}
-
-      <MarginsCard
-        marginPct={marginPct}
-        setMarginPct={setMarginPct}
-        useEsk={useEsk}
-        useAsu={useAsu}
-        useMob={useMob}
-        totals={totals}
-        onSaveMargins={() => void saveMargins()}
-        onToggles={(next) => void saveToggles(next)}
-        saveState={save.state}
-      />
-
-      <div className="flex flex-wrap justify-end gap-2 pb-4">
-        <Button type="button" variant="outline" onClick={toggleStatus}>
-          {finalized ? t("costing.page.backToDraft") : t("costing.page.finalize")}
-        </Button>
+              </SortableContext>
+              <DragOverlay dropAnimation={defaultDropAnimation}>
+                {dragged ? (
+                  <div className="bg-card flex max-w-md items-center gap-2 rounded-xl border border-primary/35 px-4 py-3 shadow-lg">
+                    <AssemblyTypeBadge
+                      variant={dragged.type === "manual" ? "manual" : "ahu"}
+                    />
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {dragged.title}
+                    </span>
+                    <span className="text-muted-foreground tabular-money text-xs">
+                      {formatIDR(dragged.subtotal)}
+                    </span>
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+            <AddItemMenu ed={ed} variant="inline" />
+          </>
+        )}
       </div>
     </div>
   );

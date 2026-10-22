@@ -22,7 +22,7 @@ export function DashboardStickyToolbar({ children, visible, className }: Dashboa
       data-testid="dashboard-sticky-toolbar"
       className={cn("fixed inset-x-0 top-14 z-40", dashboardStickyToolbarShellClass, className)}
     >
-      <div className="mx-auto flex max-w-[1400px] justify-start px-4 py-3.5 sm:px-6 sm:py-4 lg:px-8">
+      <div className="flex w-full justify-start px-4 py-3.5 sm:px-6 sm:py-4 lg:px-8">
         <div className="min-w-0">{children}</div>
       </div>
     </div>

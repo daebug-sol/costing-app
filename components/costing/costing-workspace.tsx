@@ -45,7 +45,7 @@ export function CostingWorkspace() {
           <CostingProjectList ed={ed} />
         </div>
       ) : (
-        <div className="mx-auto w-full max-w-[880px] px-4 py-4 sm:px-6 sm:py-5 lg:py-6">
+        <div className="w-full px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6">
           {projectView === "ready" ? (
             <CostingMain ed={ed} />
           ) : projectView === "error" ? (
