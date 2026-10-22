@@ -11,11 +11,9 @@ import { DashboardStickyToolbar } from "@/components/dashboard/dashboard-sticky-
 import { DashboardToolbar } from "@/components/dashboard/dashboard-toolbar";
 import { dashboardSegmentClass } from "@/components/dashboard/dashboard-surface-styles";
 import { useDashboardToolbarStuck } from "@/hooks/use-dashboard-toolbar-stuck";
-import { FollowUpList } from "@/components/dashboard/personal/follow-up-list";
-import { GreetingCard } from "@/components/dashboard/personal/greeting-card";
-import { PersonalKpis, type PersonalKpi } from "@/components/dashboard/personal/personal-kpis";
+import { HomeOverview } from "@/components/dashboard/personal/home-overview";
+import { type PersonalKpi } from "@/components/dashboard/personal/personal-kpis";
 import { ScopeSwitcher } from "@/components/dashboard/personal/scope-switcher";
-import { TargetCard } from "@/components/dashboard/personal/target-card";
 import { QuotationAgingTable } from "@/components/dashboard/quotation-aging-table";
 import { QuotationFunnel } from "@/components/dashboard/quotation-funnel";
 import { StatusDistribution } from "@/components/dashboard/status-distribution";
@@ -194,23 +192,28 @@ export function DashboardPage() {
         key: "sales",
         title: t("dashboard.personal.kpi.sales"),
         value: formatRpShort(kpis.bookedRevenueMtd),
-        note: t("dashboard.personal.kpi.salesNote", { delta: `${mtdBookedDelta >= 0 ? "+" : ""}${formatPercent(mtdBookedDelta)}` }),
+        note:
+          mtdBookedDelta !== 0
+            ? t("dashboard.personal.kpi.salesNote", { delta: `${mtdBookedDelta > 0 ? "+" : ""}${formatPercent(mtdBookedDelta)}` })
+            : "",
         trend: { data: booked, direction: direction(mtdBookedDelta) },
       },
       {
         key: "winRate",
         title: t("dashboard.personal.kpi.winRate"),
         value: formatPercent(kpis.winRatePct),
-        note: t("dashboard.personal.kpi.winRateNote", {
-          approved: data?.quotationFunnel.approvedCount ?? 0,
-          total: data?.quotationFunnel.totalCount ?? 0,
-        }),
+        note: data?.quotationFunnel.totalCount
+          ? t("dashboard.personal.kpi.winRateNote", {
+              approved: data.quotationFunnel.approvedCount,
+              total: data.quotationFunnel.totalCount,
+            })
+          : "",
       },
       {
         key: "margin",
         title: t("dashboard.personal.kpi.margin"),
         value: formatPercent(kpis.weightedGrossMarginPct),
-        note: t("dashboard.personal.kpi.marginNote"),
+        note: "",
         trend: {
           data: trendSeries.map((p) => p.weightedMarginPct),
           direction: direction(marginDelta),
@@ -220,7 +223,9 @@ export function DashboardPage() {
         key: "pipeline",
         title: t("dashboard.personal.kpi.pipeline"),
         value: formatRpShort(kpis.pipelineValue),
-        note: t("dashboard.personal.kpi.pipelineNote", { count: kpis.pendingQuotation }),
+        note: kpis.pendingQuotation
+          ? t("dashboard.personal.kpi.pipelineNote", { count: kpis.pendingQuotation })
+          : "",
       },
     ];
   }, [kpis, trendSeries, mtdBookedDelta, marginDelta, data, t]);
@@ -256,10 +261,18 @@ export function DashboardPage() {
     <PageShell
       eyebrow={t("dashboard.eyebrow")}
       title={t("dashboard.title")}
-      contentClassName="gap-6 pt-8 pb-6 sm:pt-10 sm:pb-8"
-      actions={<DashboardToolbar {...toolbarProps} align="center" surface="panel" />}
+      contentClassName="gap-6"
+      actions={
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          {data?.scope.options.length ? (
+            <ScopeSwitcher options={data.scope.options} value={salesman} onChange={setSalesman} />
+          ) : null}
+          <DashboardToolbar {...toolbarProps} align="center" surface="panel" />
+        </div>
+      }
     >
-      <div ref={sentinelRef} className="pointer-events-none h-px w-full" aria-hidden />
+      {/* -mb-6 cancels the flex gap so the sentinel adds no space above the overview. */}
+      <div ref={sentinelRef} className="pointer-events-none -mb-6 h-px w-full" aria-hidden />
 
       <DashboardStickyToolbar visible={isStuck}>
         <DashboardToolbar {...toolbarProps} align="start" surface="panel" />
@@ -271,32 +284,19 @@ export function DashboardPage() {
         </div>
       ) : null}
 
-      {data?.scope.options.length ? (
-        <div className="flex justify-end">
-          <ScopeSwitcher options={data.scope.options} value={salesman} onChange={setSalesman} />
-        </div>
-      ) : null}
-
       {loading && !data ? (
         <TableLoadingSkeleton columns={4} rows={2} />
       ) : data ? (
         <>
-          <section
-            className={cn("grid min-w-0 gap-4", isSelfView && "lg:grid-cols-2")}
-            data-testid="dashboard-personal-home"
-          >
-            <GreetingCard name={data.scope.viewerName} personal={data.personal} now={now} />
-            {isSelfView ? (
-              <TargetCard
-                personal={data.personal}
-                canEditTarget
-                onSaved={() => setReloadKey((k) => k + 1)}
-                now={now}
-              />
-            ) : null}
-          </section>
-          <PersonalKpis items={personalKpis} />
-          <FollowUpList items={data.personal.followUps} total={data.personal.followUpTotal} />
+          <HomeOverview
+            name={data.scope.viewerName}
+            personal={data.personal}
+            now={now}
+            kpis={personalKpis}
+            trend={<RevenueTrendChart data={data.revenueTrend} compact />}
+            showTarget={isSelfView}
+            onTargetSaved={() => setReloadKey((k) => k + 1)}
+          />
         </>
       ) : null}
 
@@ -313,7 +313,7 @@ export function DashboardPage() {
         </h2>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <PillTabsList>
+          <PillTabsList className="grid-cols-2 self-start sm:w-auto">
             <PillTabsTrigger
               value="finansial"
               layoutId="dashboard-insight-pill"
@@ -355,14 +355,6 @@ export function DashboardPage() {
               )}
             </ChartInsightBlock>
 
-            <ChartInsightBlock
-              title={t("dashboard.revenueTrend.title")}
-              loading={chartLoading}
-              detailDescription={t("dashboard.revenueTrend.detail")}
-              detailContent={data ? <RevenueTrendChart data={data.revenueTrend} /> : null}
-            >
-              {data ? <RevenueTrendChart data={data.revenueTrend} compact /> : null}
-            </ChartInsightBlock>
           </TabsContent>
           ) : null}
 

@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { FollowUpList } from "@/components/dashboard/personal/follow-up-list";
 import { greetingForHour } from "@/components/dashboard/personal/greeting-card";
+import { HomeOverview } from "@/components/dashboard/personal/home-overview";
 import { RichLine } from "@/components/dashboard/personal/rich-line";
 import { TargetCard } from "@/components/dashboard/personal/target-card";
 import { I18nProvider } from "@/components/i18n-provider";
@@ -69,5 +70,41 @@ describe("TargetCard", () => {
     expect(html).toContain("Sisa Rp 180 jt");
     expect(html).toContain("<circle");
     expect(html).toContain("Rp 420 jt");
+  });
+});
+
+describe("HomeOverview", () => {
+  const kpis = [
+    { key: "sales", title: "Penjualan", value: "Rp 1 jt", note: "" },
+    { key: "margin", title: "Margin", value: "20%", note: "" },
+  ];
+  const items = Array.from({ length: 6 }, (_, i) => ({
+    id: `i${i}`,
+    kind: "invoice-overdue" as const,
+    ref: `INV-${i}`,
+    party: "PT Arga",
+    dueLabel: "overdue" as const,
+    overdueDays: 1,
+  }));
+
+  it("puts greeting, KPIs, trend and the first follow-ups in one card", () => {
+    const html = wrap(
+      <HomeOverview
+        name="Rina"
+        personal={{ ...personal, followUps: items, followUpTotal: 6 }}
+        now={new Date("2026-10-22T08:00:00")}
+        kpis={kpis}
+        trend={<div>trend-chart</div>}
+        showTarget={false}
+        onTargetSaved={() => {}}
+      />
+    );
+    expect(html).toContain("Selamat pagi, Rina");
+    expect(html).toContain("Penjualan");
+    expect(html).toContain("trend-chart");
+    expect(html).toContain("INV-3");
+    expect(html).not.toContain("INV-4");
+    expect(html).toContain("+2 lainnya");
+    expect(html).not.toContain("Atur target");
   });
 });

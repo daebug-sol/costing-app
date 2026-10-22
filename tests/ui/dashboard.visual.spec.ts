@@ -24,9 +24,8 @@ test.describe("Dashboard ('/')", () => {
   });
 
   test("renders heading, tabs, and primary regions", async ({ page }) => {
-    await expect(
-      page.getByText(/Ringkasan finansial proyek dan quotation/)
-    ).toBeVisible();
+    // Page titles carry no explanatory subtitle (docs/UI-HARNESS.md).
+    await expect(page.getByText(/Ringkasan finansial proyek dan quotation/)).toHaveCount(0);
 
     await expect(page.getByRole("button", { name: "Muat ulang" })).toBeVisible();
 

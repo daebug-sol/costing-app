@@ -206,9 +206,13 @@ export function ActivationPage() {
     <PageShell
       width="narrow"
       title="Aktivasi demo"
-      description="Akun Anda belum terhubung ke organisasi. Masukkan kode aktivasi atau minta demo. Sudah punya organisasi? Pilih lewat pemilih organisasi di bilah atas."
       contentClassName="flex flex-col gap-6 lg:py-8"
     >
+      {/* Onboarding instructions, so they live in the body rather than as a page subtitle. */}
+      <p className="text-sm text-muted-foreground">
+        Akun Anda belum terhubung ke organisasi. Masukkan kode aktivasi atau minta demo. Sudah punya
+        organisasi? Pilih lewat pemilih organisasi di bilah atas.
+      </p>
       {HAS_CLERK ? <ClerkActivation /> : <CodeCard />}
       <RequestCard />
     </PageShell>
