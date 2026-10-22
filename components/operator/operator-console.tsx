@@ -2,6 +2,7 @@
 
 import { Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { DemoPanel } from "@/components/operator/demo-panel";
 import { PageShell } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +37,7 @@ type OperatorOrg = {
   slug: string;
   plan: OrgPlan;
   ahuModuleEnabled: boolean;
+  trialEndsAt: string | null;
   createdAt: string;
 };
 
@@ -135,6 +137,34 @@ export function OperatorConsole() {
     }
   };
 
+  const patchTrial = async (org: OperatorOrg, action: "extend" | "end") => {
+    setSavingId(org.id);
+    try {
+      const base = Math.max(
+        Date.now(),
+        org.trialEndsAt ? Date.parse(org.trialEndsAt) : 0
+      );
+      const r = await fetch(`/api/operator/orgs/${org.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          trialEndsAt:
+            action === "end"
+              ? null
+              : new Date(base + 30 * 86_400_000).toISOString(),
+        }),
+      });
+      if (!r.ok) throw new Error(await readErr(r));
+      const updated = (await r.json()) as OperatorOrg;
+      setOrgs((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      toastSuccess(action === "end" ? "Organisasi dijadikan berbayar" : "Demo diperpanjang");
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : "Gagal menyimpan");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   if (denied) {
     return (
       <PageShell
@@ -201,6 +231,7 @@ export function OperatorConsole() {
       }
       contentClassName="flex flex-col gap-6 lg:py-8"
     >
+      <DemoPanel />
       <Card>
         <CardHeader>
           <CardTitle>Organisasi</CardTitle>
@@ -226,6 +257,7 @@ export function OperatorConsole() {
                   <TableHead>Slug</TableHead>
                   <TableHead>Plan</TableHead>
                   <TableHead>AHU</TableHead>
+                  <TableHead>Demo</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
@@ -274,6 +306,37 @@ export function OperatorConsole() {
                           }
                           aria-label={`AHU ${org.name}`}
                         />
+                      </TableCell>
+                      <TableCell className="whitespace-normal">
+                        {org.trialEndsAt ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs text-muted-foreground">
+                              s/d {new Date(org.trialEndsAt).toLocaleDateString("id-ID")}
+                            </span>
+                            <div className="flex gap-1">
+                              <Button
+                                type="button"
+                                size="xs"
+                                variant="outline"
+                                disabled={saving}
+                                onClick={() => void patchTrial(org, "extend")}
+                              >
+                                +30 hari
+                              </Button>
+                              <Button
+                                type="button"
+                                size="xs"
+                                variant="outline"
+                                disabled={saving}
+                                onClick={() => void patchTrial(org, "end")}
+                              >
+                                Jadikan berbayar
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button

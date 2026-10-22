@@ -21,6 +21,8 @@ model Organization {
   plan              OrgPlan  @default(free)
   /** Operator-managed: special clients keep AHU; new orgs default off. */
   ahuModuleEnabled  Boolean  @default(false)
+  /** Demo trial end; null = not a trial (paid or legacy). Past this date the org is locked. Operator-managed. */
+  trialEndsAt       DateTime?
   createdAt         DateTime @default(now())
 
   members           OrganizationMember[]
@@ -698,4 +700,37 @@ model QuotationItem {
 
   @@index([quotationId])
   @@index([projectId])
+}
+
+/** Demo access request submitted by a signed-in user without an organization. */
+model DemoRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  email     String
+  name      String
+  company   String
+  phone     String   @default("")
+  /** pending | approved | dismissed */
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+/** One-time activation code that creates a demo organization. Only the SHA-256 hash is stored. */
+model ActivationCode {
+  id               String    @id @default(cuid())
+  codeHash         String    @unique
+  /** Code is bound to this (lowercased) account email. */
+  email            String
+  trialDays        Int       @default(30)
+  withDemoData     Boolean   @default(false)
+  expiresAt        DateTime
+  redeemedAt       DateTime?
+  redeemedByUserId String?
+  redeemedOrgId    String?
+  createdAt        DateTime  @default(now())
+
+  @@index([email])
 }

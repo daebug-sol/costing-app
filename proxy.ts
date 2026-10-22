@@ -9,6 +9,13 @@ const isPublicRoute = createRouteMatcher([
   "/legal(.*)",
 ]);
 
+/** Reachable by a signed-in user who has no organization yet. */
+const isActivationRoute = createRouteMatcher([
+  "/activate(.*)",
+  "/api/activate",
+  "/api/demo/request",
+]);
+
 function bypassMiddleware() {
   return NextResponse.next();
 }
@@ -16,8 +23,17 @@ function bypassMiddleware() {
 export default isAuthBypassed()
   ? bypassMiddleware
   : clerkMiddleware(async (auth, request) => {
-      if (!isPublicRoute(request)) {
-        await auth.protect();
+      if (isPublicRoute(request)) return;
+      await auth.protect();
+      // Signed in but no active organization: send pages to the activation gate
+      // (API routes keep answering 403 "No active organization").
+      const { orgId } = await auth();
+      if (
+        !orgId &&
+        !isActivationRoute(request) &&
+        !request.nextUrl.pathname.startsWith("/api/")
+      ) {
+        return NextResponse.redirect(new URL("/activate", request.url));
       }
     });
 

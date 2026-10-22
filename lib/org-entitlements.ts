@@ -2,6 +2,7 @@ import type { OrgPlan } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { OrgModules } from "@/lib/org-modules";
+import { TRIAL_LIMITS } from "@/lib/trial";
 
 export type { OrgPlan };
 
@@ -41,15 +42,15 @@ export async function assertWithinPlanLimits(
 ): Promise<AssertWithinPlanLimitsResult> {
   const org = await prisma.organization.findUnique({
     where: { id: orgId },
-    select: { plan: true },
+    select: { plan: true, trialEndsAt: true },
   });
   const plan = org?.plan ?? "free";
-  if (plan !== "free") return { ok: true };
+  const onTrial = org?.trialEndsAt != null;
+  if (plan !== "free" && !onTrial) return { ok: true };
 
+  const caps = onTrial ? TRIAL_LIMITS : FREE_LIMITS;
   const limit =
-    resource === "projects"
-      ? FREE_LIMITS.maxProjects
-      : FREE_LIMITS.maxQuotations;
+    resource === "projects" ? caps.maxProjects : caps.maxQuotations;
 
   const count =
     resource === "projects"
@@ -66,7 +67,9 @@ export async function assertWithinPlanLimits(
       ok: false,
       response: NextResponse.json(
         {
-          error: `Free plan limit reached (${limit} ${label}). Upgrade to Standard to create more.`,
+          error: onTrial
+          ? `Demo limit reached (${limit} ${label}). Contact us to continue.`
+          : `Free plan limit reached (${limit} ${label}). Upgrade to Standard to create more.`,
           code: "PLAN_LIMIT_REACHED",
           resource,
           limit,

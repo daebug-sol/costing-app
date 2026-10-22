@@ -58,3 +58,14 @@ export async function getDisplayName(): Promise<string | null> {
   const full = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
   return full || user.username || null;
 }
+
+/** Signed-in user's primary email (lowercased); null when unknown. */
+export async function getUserEmail(): Promise<string | null> {
+  if (isAuthBypassed()) {
+    return process.env.TEST_USER_EMAIL?.trim().toLowerCase() || null;
+  }
+  const { currentUser } = await import("@clerk/nextjs/server");
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  return email ? email.trim().toLowerCase() : null;
+}
