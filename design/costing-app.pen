@@ -33615,6 +33615,3299 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "xjj04",
+      "x": 0,
+      "y": 12000,
+      "name": "Explorer – Komponen",
+      "theme": {
+        "mode": "light"
+      },
+      "width": 1520,
+      "fill": "$app-bg",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": 40,
+      "children": [
+        {
+          "type": "text",
+          "id": "Z37Dd",
+          "name": "Note",
+          "fill": "$app-fg",
+          "content": "Pola explorer tunggal: dipakai sama persis di Costing, Database, dan Dokumentasi",
+          "fontFamily": "$font-sans",
+          "fontSize": 16,
+          "fontWeight": "600"
+        },
+        {
+          "type": "frame",
+          "id": "e3YqkZ",
+          "name": "Explorer Row",
+          "reusable": true,
+          "width": 720,
+          "fill": "$app-card",
+          "stroke": "$app-border",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "gap": 14,
+          "padding": [
+            12,
+            16
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "HXzLo",
+              "name": "Icon Tile",
+              "width": 40,
+              "height": 40,
+              "fill": "$app-secondary",
+              "cornerRadius": 10,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "P3N5Kl",
+                  "name": "Icon",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "file-text",
+                  "library": "lucide",
+                  "fill": "$app-fg"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rpyqE",
+              "name": "Text",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "hwOLg",
+                  "name": "Title",
+                  "fill": "$app-fg",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Judul item",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "qKsxe",
+                  "name": "Meta",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "mceTd",
+                      "name": "Meta Text",
+                      "fill": "$app-muted-fg",
+                      "content": "ID · tanggal",
+                      "fontFamily": "$font-sans",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "OhXU9",
+                      "name": "Badge",
+                      "fill": "$app-secondary",
+                      "cornerRadius": 10,
+                      "stroke": "$app-border",
+                      "strokeWidth": 1,
+                      "padding": [
+                        2,
+                        8
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "y2YQxm",
+                          "name": "Badge Text",
+                          "fill": "$app-fg",
+                          "content": "DRAFT",
+                          "fontFamily": "$font-sans",
+                          "fontSize": 10,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.8
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "airHj",
+              "name": "Value",
+              "fill": "$app-fg",
+              "content": "Rp 0",
+              "fontFamily": "$font-mono",
+              "fontSize": 13,
+              "fontWeight": "500"
+            },
+            {
+              "type": "icon",
+              "id": "Ffo4f",
+              "name": "Chevron",
+              "width": 16,
+              "height": 16,
+              "icon": "chevron-right",
+              "library": "lucide",
+              "fill": "$app-muted-fg"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "W6tM0P",
+          "name": "Folder Item",
+          "reusable": true,
+          "width": 240,
+          "cornerRadius": 10,
+          "gap": 10,
+          "padding": [
+            9,
+            10
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "QQ81T",
+              "name": "Icon",
+              "width": 16,
+              "height": 16,
+              "icon": "folder",
+              "library": "lucide",
+              "fill": "$app-fg"
+            },
+            {
+              "type": "text",
+              "id": "I3Vb9t",
+              "name": "Name",
+              "fill": "$app-fg",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Folder",
+              "fontFamily": "$font-sans",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "EAuJM",
+              "name": "Count",
+              "fill": "$app-muted-fg",
+              "content": "0",
+              "fontFamily": "$font-sans",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "PLxro",
+          "name": "Explorer Toolbar",
+          "reusable": true,
+          "width": 900,
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "z0t2F",
+              "type": "ref",
+              "ref": "Clngp",
+              "name": "Search",
+              "width": "fill_container",
+              "descendants": {
+                "N1J0K": {
+                  "content": "Cari…"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "jNtd1",
+              "name": "Filter Button",
+              "height": 40,
+              "fill": "$app-card",
+              "cornerRadius": 12,
+              "stroke": "$app-input",
+              "strokeWidth": 1,
+              "gap": 8,
+              "padding": [
+                0,
+                14
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "SsgS6",
+                  "name": "Icon",
+                  "width": 15,
+                  "height": 15,
+                  "icon": "sliders-horizontal",
+                  "library": "lucide",
+                  "fill": "$app-fg"
+                },
+                {
+                  "type": "text",
+                  "id": "dJwlJ",
+                  "name": "Label",
+                  "fill": "$app-fg",
+                  "content": "Filter",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "RSdvu",
+          "name": "Bottom Bar",
+          "reusable": true,
+          "width": 390,
+          "height": 64,
+          "fill": "$app-card",
+          "stroke": "$app-border",
+          "strokeWidth": {
+            "top": 1
+          },
+          "padding": [
+            8,
+            0
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "h3q6J",
+              "name": "Tab Dashboard",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "ErX7W",
+                  "name": "Icon",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "layout-dashboard",
+                  "library": "lucide",
+                  "fill": "$app-muted-fg"
+                },
+                {
+                  "type": "text",
+                  "id": "GOB37",
+                  "name": "Label",
+                  "fill": "$app-muted-fg",
+                  "content": "Dashboard",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "gM9hZ",
+              "name": "Tab Database",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "CQXGw",
+                  "name": "Icon",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "database",
+                  "library": "lucide",
+                  "fill": "$app-muted-fg"
+                },
+                {
+                  "type": "text",
+                  "id": "METlD",
+                  "name": "Label",
+                  "fill": "$app-muted-fg",
+                  "content": "Database",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "p4z4v",
+              "name": "Tab Costing",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "RSb8b",
+                  "name": "Icon",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "calculator",
+                  "library": "lucide",
+                  "fill": "$app-muted-fg"
+                },
+                {
+                  "type": "text",
+                  "id": "WT6Pw",
+                  "name": "Label",
+                  "fill": "$app-muted-fg",
+                  "content": "Costing",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "qIrKN",
+              "name": "Tab Dokumentasi",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "GmxfJ",
+                  "name": "Icon",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "book-open",
+                  "library": "lucide",
+                  "fill": "$app-muted-fg"
+                },
+                {
+                  "type": "text",
+                  "id": "xlUec",
+                  "name": "Label",
+                  "fill": "$app-muted-fg",
+                  "content": "Dokumentasi",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "T8al8",
+          "name": "Mobile Header",
+          "reusable": true,
+          "width": 390,
+          "height": 56,
+          "fill": "$app-card",
+          "stroke": "$app-border",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "padding": [
+            0,
+            16
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "S0DspB",
+              "name": "Logo",
+              "fill": "$app-fg",
+              "content": "COSTING",
+              "fontFamily": "$font-dot",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "mZumG",
+              "name": "Right",
+              "gap": 14,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "ljfpf",
+                  "name": "Help",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "circle-question-mark",
+                  "library": "lucide",
+                  "fill": "$app-fg"
+                },
+                {
+                  "type": "frame",
+                  "id": "P1UYb6",
+                  "name": "Avatar",
+                  "width": 30,
+                  "height": 30,
+                  "fill": "$app-primary",
+                  "cornerRadius": 15,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "wEyPN",
+                      "name": "Initials",
+                      "fill": "$app-on-primary",
+                      "content": "RK",
+                      "fontFamily": "$font-sans",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "F2MZp",
+      "x": 0,
+      "y": 12600,
+      "name": "Explorer · Costing",
+      "theme": {
+        "mode": "light"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$app-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "ke33r",
+          "type": "ref",
+          "ref": "f7qwz",
+          "name": "Header",
+          "width": "fill_container",
+          "descendants": {
+            "IkSuu": {
+              "fill": "$app-primary"
+            },
+            "i5UK21": {
+              "fill": "$app-on-primary",
+              "fontWeight": "500"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "sVVIq",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            24,
+            32,
+            32,
+            32
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "KpWAi",
+              "name": "Title Row",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "x1JNI",
+                  "name": "Page Title",
+                  "fill": "$app-fg",
+                  "content": "Costing",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 20,
+                  "fontWeight": "600"
+                },
+                {
+                  "id": "H7uwCM",
+                  "type": "ref",
+                  "ref": "NuYMR",
+                  "name": "Primary Action",
+                  "descendants": {
+                    "u5gzQh": {
+                      "content": "+ Proyek baru"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "eDX7d",
+              "type": "ref",
+              "ref": "PLxro",
+              "name": "Toolbar",
+              "width": "fill_container",
+              "descendants": {
+                "z0t2F/N1J0K": {
+                  "content": "Cari proyek, model, atau ID…"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "g1di2F",
+              "name": "Explorer",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "YH3wj",
+                  "name": "Folder Panel",
+                  "width": 260,
+                  "height": "fill_container",
+                  "fill": "$app-card",
+                  "cornerRadius": 16,
+                  "stroke": "$app-border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "padding": 8,
+                  "children": [
+                    {
+                      "id": "Gh0fQ",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder Semua proyek",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "layers"
+                        },
+                        "I3Vb9t": {
+                          "content": "Semua proyek",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "144"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Ad25R",
+                      "name": "Section PELANGGAN",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        10,
+                        6,
+                        10
+                      ],
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "vsfor",
+                          "name": "PELANGGAN",
+                          "fill": "$app-muted-fg",
+                          "content": "PELANGGAN",
+                          "fontFamily": "$font-sans",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.8
+                        }
+                      ]
+                    },
+                    {
+                      "id": "k0Ssc",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder RS Harapan Bunda",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "RS Harapan Bunda",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "8"
+                        }
+                      }
+                    },
+                    {
+                      "id": "XjV1e",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder Hotel Kencana Surabaya",
+                      "width": "fill_container",
+                      "fill": "$app-muted",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "Hotel Kencana Surabaya",
+                          "fontWeight": "600"
+                        },
+                        "EAuJM": {
+                          "content": "8"
+                        }
+                      }
+                    },
+                    {
+                      "id": "LHYQ5",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder Hotel Samudra Bali Resort",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "Hotel Samudra Bali Resort",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "4"
+                        }
+                      }
+                    },
+                    {
+                      "id": "vKXYy",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder PT Tekstil Karya Mulya",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "PT Tekstil Karya Mulya",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "8"
+                        }
+                      }
+                    },
+                    {
+                      "id": "rGL9v",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder PT Boga Nusantara Sejahtera",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "PT Boga Nusantara Sejahtera",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "6"
+                        }
+                      }
+                    },
+                    {
+                      "id": "GIiqN",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder PT Pusat Data Garuda",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "PT Pusat Data Garuda",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "6"
+                        }
+                      }
+                    },
+                    {
+                      "id": "fWoUJ",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder RS Ibu dan Anak Kasih Ibu",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "RS Ibu dan Anak Kasih Ibu",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "7"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "QkK5Q",
+                  "name": "List Panel",
+                  "clip": true,
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$app-card",
+                  "cornerRadius": 16,
+                  "stroke": "$app-border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "KGOEo",
+                      "name": "Location Bar",
+                      "width": "fill_container",
+                      "fill": "$app-secondary",
+                      "stroke": "$app-border",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "d97reN",
+                          "name": "Breadcrumb",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "F3zst",
+                              "name": "Semua folder",
+                              "fill": "$app-muted-fg",
+                              "content": "Semua folder",
+                              "fontFamily": "$font-sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "PxXiI",
+                              "name": "Sep",
+                              "width": 12,
+                              "height": 12,
+                              "icon": "chevron-right",
+                              "library": "lucide",
+                              "fill": "$app-muted-fg"
+                            },
+                            {
+                              "type": "text",
+                              "id": "r8p5MB",
+                              "name": "Hotel Kencana Surabaya",
+                              "fill": "$app-fg",
+                              "content": "Hotel Kencana Surabaya",
+                              "fontFamily": "$font-sans",
+                              "fontSize": 13,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Mrud7",
+                          "name": "Right",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "FLWg0",
+                              "name": "4 item · Terbaru",
+                              "fill": "$app-muted-fg",
+                              "content": "4 item · Terbaru",
+                              "fontFamily": "$font-sans",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "nw7BG",
+                              "name": "Sort",
+                              "width": 13,
+                              "height": 13,
+                              "icon": "arrow-down-up",
+                              "library": "lucide",
+                              "fill": "$app-muted-fg"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "QznAc",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row AHU Area Fasilitas Kolam",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "calculator"
+                        },
+                        "hwOLg": {
+                          "content": "AHU Area Fasilitas Kolam"
+                        },
+                        "mceTd": {
+                          "content": "AHU-X3-075-H3-H · 10.900 CMH · 21 Okt 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "DRAFT"
+                        },
+                        "airHj": {
+                          "content": "Rp 363.363.933",
+                          "enabled": true
+                        }
+                      }
+                    },
+                    {
+                      "id": "K4uS0",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row AHU Ruang Ballroom Lt. 2",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "calculator"
+                        },
+                        "hwOLg": {
+                          "content": "AHU Ruang Ballroom Lt. 2"
+                        },
+                        "mceTd": {
+                          "content": "AHU-X4-100-H3-V · 13.300 CMH · 2 Okt 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "FINAL"
+                        },
+                        "airHj": {
+                          "content": "Rp 512.880.400",
+                          "enabled": true
+                        }
+                      }
+                    },
+                    {
+                      "id": "mLLmx",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row Panel Kontrol Lobby",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "calculator"
+                        },
+                        "hwOLg": {
+                          "content": "Panel Kontrol Lobby"
+                        },
+                        "mceTd": {
+                          "content": "Panel · 18 Sep 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "FINAL"
+                        },
+                        "airHj": {
+                          "content": "Rp 96.450.000",
+                          "enabled": true
+                        }
+                      }
+                    },
+                    {
+                      "id": "zTqf5",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row AHU Dapur Utama",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "calculator"
+                        },
+                        "hwOLg": {
+                          "content": "AHU Dapur Utama"
+                        },
+                        "mceTd": {
+                          "content": "AHU-X3-075-H3-H · 9.800 CMH · 30 Agu 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "DRAFT"
+                        },
+                        "airHj": {
+                          "content": "Rp 288.104.120",
+                          "enabled": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "qRWAX",
+      "x": 1520,
+      "y": 12600,
+      "name": "Explorer · Database",
+      "theme": {
+        "mode": "light"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$app-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "ef0hs",
+          "type": "ref",
+          "ref": "f7qwz",
+          "name": "Header",
+          "width": "fill_container",
+          "descendants": {
+            "TomTU": {
+              "fill": "$app-primary"
+            },
+            "S02ev": {
+              "fill": "$app-on-primary",
+              "fontWeight": "500"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "Tcfl3",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            24,
+            32,
+            32,
+            32
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "p0spG",
+              "name": "Title Row",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ogfFi",
+                  "name": "Page Title",
+                  "fill": "$app-fg",
+                  "content": "Database",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 20,
+                  "fontWeight": "600"
+                },
+                {
+                  "id": "E04B5",
+                  "type": "ref",
+                  "ref": "NuYMR",
+                  "name": "Primary Action",
+                  "descendants": {
+                    "u5gzQh": {
+                      "content": "+ File baru"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "m5jD9M",
+              "type": "ref",
+              "ref": "PLxro",
+              "name": "Toolbar",
+              "width": "fill_container",
+              "descendants": {
+                "z0t2F/N1J0K": {
+                  "content": "Cari nama file…"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "hGXVD",
+              "name": "Explorer",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "pG5tL",
+                  "name": "Folder Panel",
+                  "width": 260,
+                  "height": "fill_container",
+                  "fill": "$app-card",
+                  "cornerRadius": 16,
+                  "stroke": "$app-border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "padding": 8,
+                  "children": [
+                    {
+                      "id": "JW7Ul",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder Semua file",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "layers"
+                        },
+                        "I3Vb9t": {
+                          "content": "Semua file",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "7"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Q1v3CA",
+                      "name": "Section SISTEM",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        10,
+                        6,
+                        10
+                      ],
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "KU9ch",
+                          "name": "SISTEM",
+                          "fill": "$app-muted-fg",
+                          "content": "SISTEM",
+                          "fontFamily": "$font-sans",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.8
+                        }
+                      ]
+                    },
+                    {
+                      "id": "XxnK5",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder AHU Database",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "database"
+                        },
+                        "I3Vb9t": {
+                          "content": "AHU Database",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "3"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "f1Q2Nh",
+                      "name": "Section FOLDER SAYA",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        10,
+                        6,
+                        10
+                      ],
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "RFHoF",
+                          "name": "FOLDER SAYA",
+                          "fill": "$app-muted-fg",
+                          "content": "FOLDER SAYA",
+                          "fontFamily": "$font-sans",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.8
+                        },
+                        {
+                          "type": "text",
+                          "id": "R6CmkY",
+                          "name": "+ Baru",
+                          "fill": "$app-fg",
+                          "content": "+ Baru",
+                          "fontFamily": "$font-sans",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "R5r854",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder Umum",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "Umum",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "0"
+                        }
+                      }
+                    },
+                    {
+                      "id": "RCmWO",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder Harga Supplier",
+                      "width": "fill_container",
+                      "fill": "$app-muted",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "Harga Supplier",
+                          "fontWeight": "600"
+                        },
+                        "EAuJM": {
+                          "content": "4"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bRxSA",
+                  "name": "List Panel",
+                  "clip": true,
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$app-card",
+                  "cornerRadius": 16,
+                  "stroke": "$app-border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "o7Olm8",
+                      "name": "Location Bar",
+                      "width": "fill_container",
+                      "fill": "$app-secondary",
+                      "stroke": "$app-border",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "CRRE7",
+                          "name": "Breadcrumb",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "sIxAy",
+                              "name": "Semua folder",
+                              "fill": "$app-muted-fg",
+                              "content": "Semua folder",
+                              "fontFamily": "$font-sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "i6qaxZ",
+                              "name": "Sep",
+                              "width": 12,
+                              "height": 12,
+                              "icon": "chevron-right",
+                              "library": "lucide",
+                              "fill": "$app-muted-fg"
+                            },
+                            {
+                              "type": "text",
+                              "id": "tsUvw",
+                              "name": "Harga Supplier",
+                              "fill": "$app-fg",
+                              "content": "Harga Supplier",
+                              "fontFamily": "$font-sans",
+                              "fontSize": 13,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ZunSc",
+                          "name": "Right",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "nB00y",
+                              "name": "4 item · Terbaru",
+                              "fill": "$app-muted-fg",
+                              "content": "4 item · Terbaru",
+                              "fontFamily": "$font-sans",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "E5kBt",
+                              "name": "Sort",
+                              "width": 13,
+                              "height": 13,
+                              "icon": "arrow-down-up",
+                              "library": "lucide",
+                              "fill": "$app-muted-fg"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "fuGyL",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row Harga Coil 2026",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "sheet"
+                        },
+                        "hwOLg": {
+                          "content": "Harga Coil 2026"
+                        },
+                        "mceTd": {
+                          "content": "Excel · 248 baris · diperbarui 12 Okt 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "AKTIF"
+                        },
+                        "airHj": {
+                          "content": "",
+                          "enabled": false
+                        }
+                      }
+                    },
+                    {
+                      "id": "FWczO",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row Harga Motor & Fan",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "sheet"
+                        },
+                        "hwOLg": {
+                          "content": "Harga Motor & Fan"
+                        },
+                        "mceTd": {
+                          "content": "Excel · 96 baris · diperbarui 3 Okt 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "AKTIF"
+                        },
+                        "airHj": {
+                          "content": "",
+                          "enabled": false
+                        }
+                      }
+                    },
+                    {
+                      "id": "EkXqW",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row Harga Damper",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "sheet"
+                        },
+                        "hwOLg": {
+                          "content": "Harga Damper"
+                        },
+                        "mceTd": {
+                          "content": "Excel · 54 baris · diperbarui 20 Sep 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "AKTIF"
+                        },
+                        "airHj": {
+                          "content": "",
+                          "enabled": false
+                        }
+                      }
+                    },
+                    {
+                      "id": "VFm0c",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row Harga Panel Sandwich (lama)",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "sheet"
+                        },
+                        "hwOLg": {
+                          "content": "Harga Panel Sandwich (lama)"
+                        },
+                        "mceTd": {
+                          "content": "Excel · 61 baris · diperbarui 2 Jan 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "ARSIP"
+                        },
+                        "airHj": {
+                          "content": "",
+                          "enabled": false
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "HCgbO",
+      "x": 3040,
+      "y": 12600,
+      "name": "Explorer · Dokumentasi",
+      "theme": {
+        "mode": "light"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$app-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "O9cxsg",
+          "type": "ref",
+          "ref": "f7qwz",
+          "name": "Header",
+          "width": "fill_container",
+          "descendants": {
+            "F6bfr": {
+              "fill": "$app-primary"
+            },
+            "ZcB5Q": {
+              "fill": "$app-on-primary",
+              "fontWeight": "500"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "AkZRr",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            24,
+            32,
+            32,
+            32
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "TN4gq",
+              "name": "Title Row",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "M3jZef",
+                  "name": "Page Title",
+                  "fill": "$app-fg",
+                  "content": "Penawaran",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 20,
+                  "fontWeight": "600"
+                },
+                {
+                  "id": "D9em55",
+                  "type": "ref",
+                  "ref": "NuYMR",
+                  "name": "Primary Action",
+                  "descendants": {
+                    "u5gzQh": {
+                      "content": "+ Buat penawaran"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "i4UPUm",
+              "type": "ref",
+              "ref": "PLxro",
+              "name": "Toolbar",
+              "width": "fill_container",
+              "descendants": {
+                "z0t2F/N1J0K": {
+                  "content": "Cari nama, nomor surat, atau perihal…"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "n8E00",
+              "name": "Explorer",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "jCHlI",
+                  "name": "Folder Panel",
+                  "width": 260,
+                  "height": "fill_container",
+                  "fill": "$app-card",
+                  "cornerRadius": 16,
+                  "stroke": "$app-border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "padding": 8,
+                  "children": [
+                    {
+                      "id": "hOPTW",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder Semua penawaran",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "layers"
+                        },
+                        "I3Vb9t": {
+                          "content": "Semua penawaran",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "144"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "iNaYN",
+                      "name": "Section PELANGGAN",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        10,
+                        6,
+                        10
+                      ],
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ksxpM",
+                          "name": "PELANGGAN",
+                          "fill": "$app-muted-fg",
+                          "content": "PELANGGAN",
+                          "fontFamily": "$font-sans",
+                          "fontSize": 11,
+                          "fontWeight": "600",
+                          "letterSpacing": 0.8
+                        }
+                      ]
+                    },
+                    {
+                      "id": "pp18V",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder RS Harapan Bunda",
+                      "width": "fill_container",
+                      "fill": "$app-muted",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "RS Harapan Bunda",
+                          "fontWeight": "600"
+                        },
+                        "EAuJM": {
+                          "content": "8"
+                        }
+                      }
+                    },
+                    {
+                      "id": "XkOH3",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder Hotel Kencana Surabaya",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "Hotel Kencana Surabaya",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "8"
+                        }
+                      }
+                    },
+                    {
+                      "id": "H9Ibw",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder Hotel Samudra Bali Resort",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "Hotel Samudra Bali Resort",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "4"
+                        }
+                      }
+                    },
+                    {
+                      "id": "ddGF1",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder PT Tekstil Karya Mulya",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "PT Tekstil Karya Mulya",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "8"
+                        }
+                      }
+                    },
+                    {
+                      "id": "NiMzI",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder PT Boga Nusantara Sejahtera",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "PT Boga Nusantara Sejahtera",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "6"
+                        }
+                      }
+                    },
+                    {
+                      "id": "J58PB",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder PT Pusat Data Garuda",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "PT Pusat Data Garuda",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "6"
+                        }
+                      }
+                    },
+                    {
+                      "id": "vEHbz",
+                      "type": "ref",
+                      "ref": "W6tM0P",
+                      "name": "Folder RS Ibu dan Anak Kasih Ibu",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "descendants": {
+                        "QQ81T": {
+                          "icon": "folder"
+                        },
+                        "I3Vb9t": {
+                          "content": "RS Ibu dan Anak Kasih Ibu",
+                          "fontWeight": "400"
+                        },
+                        "EAuJM": {
+                          "content": "7"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tSGv9",
+                  "name": "List Panel",
+                  "clip": true,
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$app-card",
+                  "cornerRadius": 16,
+                  "stroke": "$app-border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "VRqCG",
+                      "name": "Location Bar",
+                      "width": "fill_container",
+                      "fill": "$app-secondary",
+                      "stroke": "$app-border",
+                      "strokeWidth": {
+                        "bottom": 1
+                      },
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "F75f3",
+                          "name": "Breadcrumb",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "v7MJO",
+                              "name": "Semua folder",
+                              "fill": "$app-muted-fg",
+                              "content": "Semua folder",
+                              "fontFamily": "$font-sans",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "D948V",
+                              "name": "Sep",
+                              "width": 12,
+                              "height": 12,
+                              "icon": "chevron-right",
+                              "library": "lucide",
+                              "fill": "$app-muted-fg"
+                            },
+                            {
+                              "type": "text",
+                              "id": "lEGOn",
+                              "name": "RS Harapan Bunda",
+                              "fill": "$app-fg",
+                              "content": "RS Harapan Bunda",
+                              "fontFamily": "$font-sans",
+                              "fontSize": 13,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "W6dC7",
+                          "name": "Right",
+                          "gap": 6,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "X6ccju",
+                              "name": "4 item · Terbaru",
+                              "fill": "$app-muted-fg",
+                              "content": "4 item · Terbaru",
+                              "fontFamily": "$font-sans",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "SMDdv",
+                              "name": "Sort",
+                              "width": 13,
+                              "height": 13,
+                              "icon": "arrow-down-up",
+                              "library": "lucide",
+                              "fill": "$app-muted-fg"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "jevGT",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row QT-202610-0008 · AHU Ruang Operasi",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "file-text"
+                        },
+                        "hwOLg": {
+                          "content": "QT-202610-0008 · AHU Ruang Operasi"
+                        },
+                        "mceTd": {
+                          "content": "14 Okt 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "TERKIRIM"
+                        },
+                        "airHj": {
+                          "content": "Rp 1.037.363.204",
+                          "enabled": true
+                        }
+                      }
+                    },
+                    {
+                      "id": "PXibh",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row QT-202610-0001 · AHU ICU Lt. 3",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "file-text"
+                        },
+                        "hwOLg": {
+                          "content": "QT-202610-0001 · AHU ICU Lt. 3"
+                        },
+                        "mceTd": {
+                          "content": "10 Okt 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "TERKIRIM"
+                        },
+                        "airHj": {
+                          "content": "Rp 784.168.164",
+                          "enabled": true
+                        }
+                      }
+                    },
+                    {
+                      "id": "lIuhv",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row QT-202610-0003 · Panel Kontrol Utama",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "file-text"
+                        },
+                        "hwOLg": {
+                          "content": "QT-202610-0003 · Panel Kontrol Utama"
+                        },
+                        "mceTd": {
+                          "content": "3 Okt 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "MENANG"
+                        },
+                        "airHj": {
+                          "content": "Rp 778.205.089",
+                          "enabled": true
+                        }
+                      }
+                    },
+                    {
+                      "id": "mDWBg",
+                      "type": "ref",
+                      "ref": "e3YqkZ",
+                      "name": "Row QT-202607-0001 · AHU Farmasi",
+                      "width": "fill_container",
+                      "descendants": {
+                        "P3N5Kl": {
+                          "icon": "file-text"
+                        },
+                        "hwOLg": {
+                          "content": "QT-202607-0001 · AHU Farmasi"
+                        },
+                        "mceTd": {
+                          "content": "26 Jul 2026"
+                        },
+                        "OhXU9": {
+                          "enabled": true
+                        },
+                        "y2YQxm": {
+                          "content": "KALAH"
+                        },
+                        "airHj": {
+                          "content": "Rp 111.595.000",
+                          "enabled": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "SK9lA",
+      "x": 4560,
+      "y": 13650,
+      "name": "Explorer Mobile · Costing (folder)",
+      "theme": {
+        "mode": "light"
+      },
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$app-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "DSTr5",
+          "type": "ref",
+          "ref": "T8al8",
+          "name": "Mobile Header",
+          "width": "fill_container"
+        },
+        {
+          "type": "frame",
+          "id": "RxygO",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "AGTsp",
+              "name": "Title Row",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "qvToM",
+                  "name": "Page Title",
+                  "fill": "$app-fg",
+                  "content": "Costing",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 20,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "nazH9",
+                  "name": "Primary Action",
+                  "width": 40,
+                  "height": 40,
+                  "fill": "$app-primary",
+                  "cornerRadius": 20,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "Vi0RX",
+                      "name": "Plus",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "plus",
+                      "library": "lucide",
+                      "fill": "$app-on-primary"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "FS7V6",
+              "type": "ref",
+              "ref": "PLxro",
+              "name": "Toolbar",
+              "width": "fill_container",
+              "descendants": {
+                "z0t2F/N1J0K": {
+                  "content": "Cari proyek…"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "UZh1r",
+              "name": "Location Bar",
+              "width": "fill_container",
+              "gap": 6,
+              "padding": [
+                4,
+                2
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "u4WxE",
+                  "name": "Semua folder",
+                  "fill": "$app-fg",
+                  "content": "Semua folder",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "K8VY2",
+              "name": "List Panel",
+              "clip": true,
+              "width": "fill_container",
+              "fill": "$app-card",
+              "cornerRadius": 16,
+              "stroke": "$app-border",
+              "strokeWidth": 1,
+              "layout": "vertical",
+              "children": [
+                {
+                  "id": "OLezu",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row Semua proyek",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "layers"
+                    },
+                    "hwOLg": {
+                      "content": "Semua proyek"
+                    },
+                    "mceTd": {
+                      "content": "144 proyek"
+                    },
+                    "OhXU9": {
+                      "enabled": false
+                    },
+                    "y2YQxm": {
+                      "content": ""
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "DokVm",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row RS Harapan Bunda",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "folder"
+                    },
+                    "hwOLg": {
+                      "content": "RS Harapan Bunda"
+                    },
+                    "mceTd": {
+                      "content": "8 proyek"
+                    },
+                    "OhXU9": {
+                      "enabled": false
+                    },
+                    "y2YQxm": {
+                      "content": ""
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "H5RGiq",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row Hotel Kencana Surabaya",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "folder"
+                    },
+                    "hwOLg": {
+                      "content": "Hotel Kencana Surabaya"
+                    },
+                    "mceTd": {
+                      "content": "8 proyek"
+                    },
+                    "OhXU9": {
+                      "enabled": false
+                    },
+                    "y2YQxm": {
+                      "content": ""
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "ghwx5",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row Hotel Samudra Bali Resort",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "folder"
+                    },
+                    "hwOLg": {
+                      "content": "Hotel Samudra Bali Resort"
+                    },
+                    "mceTd": {
+                      "content": "4 proyek"
+                    },
+                    "OhXU9": {
+                      "enabled": false
+                    },
+                    "y2YQxm": {
+                      "content": ""
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "glChq",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row PT Tekstil Karya Mulya",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "folder"
+                    },
+                    "hwOLg": {
+                      "content": "PT Tekstil Karya Mulya"
+                    },
+                    "mceTd": {
+                      "content": "8 proyek"
+                    },
+                    "OhXU9": {
+                      "enabled": false
+                    },
+                    "y2YQxm": {
+                      "content": ""
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "LyWcl",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row PT Boga Nusantara Sejahtera",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "folder"
+                    },
+                    "hwOLg": {
+                      "content": "PT Boga Nusantara Sejahtera"
+                    },
+                    "mceTd": {
+                      "content": "6 proyek"
+                    },
+                    "OhXU9": {
+                      "enabled": false
+                    },
+                    "y2YQxm": {
+                      "content": ""
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "zC8vv",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row PT Pusat Data Garuda",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "folder"
+                    },
+                    "hwOLg": {
+                      "content": "PT Pusat Data Garuda"
+                    },
+                    "mceTd": {
+                      "content": "6 proyek"
+                    },
+                    "OhXU9": {
+                      "enabled": false
+                    },
+                    "y2YQxm": {
+                      "content": ""
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "G5rEH",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row RS Ibu dan Anak Kasih Ibu",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "folder"
+                    },
+                    "hwOLg": {
+                      "content": "RS Ibu dan Anak Kasih Ibu"
+                    },
+                    "mceTd": {
+                      "content": "7 proyek"
+                    },
+                    "OhXU9": {
+                      "enabled": false
+                    },
+                    "y2YQxm": {
+                      "content": ""
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "tCWPp",
+          "type": "ref",
+          "ref": "RSdvu",
+          "name": "Bottom Bar",
+          "width": "fill_container",
+          "descendants": {
+            "RSb8b": {
+              "fill": "$app-fg"
+            },
+            "WT6Pw": {
+              "fill": "$app-fg",
+              "fontWeight": "600"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "fDrnM",
+      "x": 4990,
+      "y": 13650,
+      "name": "Explorer Mobile · Costing",
+      "theme": {
+        "mode": "light"
+      },
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$app-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "J7pqb",
+          "type": "ref",
+          "ref": "T8al8",
+          "name": "Mobile Header",
+          "width": "fill_container"
+        },
+        {
+          "type": "frame",
+          "id": "uzwTC",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "p5Wfw",
+              "name": "Title Row",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ZdPsJ",
+                  "name": "Page Title",
+                  "fill": "$app-fg",
+                  "content": "Costing",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 20,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "BfcWi",
+                  "name": "Primary Action",
+                  "width": 40,
+                  "height": 40,
+                  "fill": "$app-primary",
+                  "cornerRadius": 20,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "b3ARmh",
+                      "name": "Plus",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "plus",
+                      "library": "lucide",
+                      "fill": "$app-on-primary"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "HPZTf",
+              "type": "ref",
+              "ref": "PLxro",
+              "name": "Toolbar",
+              "width": "fill_container",
+              "descendants": {
+                "z0t2F/N1J0K": {
+                  "content": "Cari proyek…"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "l3Pgs3",
+              "name": "Location Bar",
+              "width": "fill_container",
+              "gap": 6,
+              "padding": [
+                4,
+                2
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "xRPAk",
+                  "name": "Back",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$app-fg"
+                },
+                {
+                  "type": "text",
+                  "id": "pjhs5",
+                  "name": "Semua folder",
+                  "fill": "$app-muted-fg",
+                  "content": "Semua folder",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "icon",
+                  "id": "xg9Pq",
+                  "name": "Sep",
+                  "width": 12,
+                  "height": 12,
+                  "icon": "chevron-right",
+                  "library": "lucide",
+                  "fill": "$app-muted-fg"
+                },
+                {
+                  "type": "text",
+                  "id": "I82az",
+                  "name": "Hotel Kencana Surabaya",
+                  "fill": "$app-fg",
+                  "content": "Hotel Kencana Surabaya",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "gSFxL",
+              "name": "List Panel",
+              "clip": true,
+              "width": "fill_container",
+              "fill": "$app-card",
+              "cornerRadius": 16,
+              "stroke": "$app-border",
+              "strokeWidth": 1,
+              "layout": "vertical",
+              "children": [
+                {
+                  "id": "mlChy",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row AHU Area Fasilitas Kolam",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "calculator"
+                    },
+                    "hwOLg": {
+                      "content": "AHU Area Fasilitas Kolam"
+                    },
+                    "mceTd": {
+                      "content": "Rp 363,4 jt · 21 Okt"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "DRAFT"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "UK10B",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row AHU Ruang Ballroom Lt. 2",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "calculator"
+                    },
+                    "hwOLg": {
+                      "content": "AHU Ruang Ballroom Lt. 2"
+                    },
+                    "mceTd": {
+                      "content": "Rp 512,9 jt · 2 Okt"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "FINAL"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "gz83r",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row Panel Kontrol Lobby",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "calculator"
+                    },
+                    "hwOLg": {
+                      "content": "Panel Kontrol Lobby"
+                    },
+                    "mceTd": {
+                      "content": "Rp 96,5 jt · 18 Sep"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "FINAL"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "WZkko",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row AHU Dapur Utama",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "calculator"
+                    },
+                    "hwOLg": {
+                      "content": "AHU Dapur Utama"
+                    },
+                    "mceTd": {
+                      "content": "Rp 288,1 jt · 30 Agu"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "DRAFT"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "avhwt",
+          "type": "ref",
+          "ref": "RSdvu",
+          "name": "Bottom Bar",
+          "width": "fill_container",
+          "descendants": {
+            "RSb8b": {
+              "fill": "$app-fg"
+            },
+            "WT6Pw": {
+              "fill": "$app-fg",
+              "fontWeight": "600"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "mtmx8",
+      "x": 5420,
+      "y": 13650,
+      "name": "Explorer Mobile · Database",
+      "theme": {
+        "mode": "light"
+      },
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$app-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "m6kTvi",
+          "type": "ref",
+          "ref": "T8al8",
+          "name": "Mobile Header",
+          "width": "fill_container"
+        },
+        {
+          "type": "frame",
+          "id": "UmzGS",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "aPBMy",
+              "name": "Title Row",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "knnWn",
+                  "name": "Page Title",
+                  "fill": "$app-fg",
+                  "content": "Database",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 20,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "c2QkMw",
+                  "name": "Primary Action",
+                  "width": 40,
+                  "height": 40,
+                  "fill": "$app-primary",
+                  "cornerRadius": 20,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "QQ6fg",
+                      "name": "Plus",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "plus",
+                      "library": "lucide",
+                      "fill": "$app-on-primary"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "ErFQs",
+              "type": "ref",
+              "ref": "PLxro",
+              "name": "Toolbar",
+              "width": "fill_container",
+              "descendants": {
+                "z0t2F/N1J0K": {
+                  "content": "Cari nama file…"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "bP7OD",
+              "name": "Location Bar",
+              "width": "fill_container",
+              "gap": 6,
+              "padding": [
+                4,
+                2
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "zAGwS",
+                  "name": "Back",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$app-fg"
+                },
+                {
+                  "type": "text",
+                  "id": "FkfEk",
+                  "name": "Semua folder",
+                  "fill": "$app-muted-fg",
+                  "content": "Semua folder",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "icon",
+                  "id": "MD425",
+                  "name": "Sep",
+                  "width": 12,
+                  "height": 12,
+                  "icon": "chevron-right",
+                  "library": "lucide",
+                  "fill": "$app-muted-fg"
+                },
+                {
+                  "type": "text",
+                  "id": "WixBE",
+                  "name": "Harga Supplier",
+                  "fill": "$app-fg",
+                  "content": "Harga Supplier",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Y89ow",
+              "name": "List Panel",
+              "clip": true,
+              "width": "fill_container",
+              "fill": "$app-card",
+              "cornerRadius": 16,
+              "stroke": "$app-border",
+              "strokeWidth": 1,
+              "layout": "vertical",
+              "children": [
+                {
+                  "id": "sTZ8G",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row Harga Coil 2026",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "sheet"
+                    },
+                    "hwOLg": {
+                      "content": "Harga Coil 2026"
+                    },
+                    "mceTd": {
+                      "content": "248 baris · 12 Okt"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "AKTIF"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "LShPO",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row Harga Motor & Fan",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "sheet"
+                    },
+                    "hwOLg": {
+                      "content": "Harga Motor & Fan"
+                    },
+                    "mceTd": {
+                      "content": "96 baris · 3 Okt"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "AKTIF"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "QJVK5",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row Harga Damper",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "sheet"
+                    },
+                    "hwOLg": {
+                      "content": "Harga Damper"
+                    },
+                    "mceTd": {
+                      "content": "54 baris · 20 Sep"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "AKTIF"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "S5viwo",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row Harga Panel Sandwich (lama)",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "sheet"
+                    },
+                    "hwOLg": {
+                      "content": "Harga Panel Sandwich (lama)"
+                    },
+                    "mceTd": {
+                      "content": "61 baris · 2 Jan"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "ARSIP"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "FmBwY",
+          "type": "ref",
+          "ref": "RSdvu",
+          "name": "Bottom Bar",
+          "width": "fill_container",
+          "descendants": {
+            "CQXGw": {
+              "fill": "$app-fg"
+            },
+            "METlD": {
+              "fill": "$app-fg",
+              "fontWeight": "600"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ioKti",
+      "x": 5850,
+      "y": 13650,
+      "name": "Explorer Mobile · Dokumentasi",
+      "theme": {
+        "mode": "light"
+      },
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$app-bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "wUewp",
+          "type": "ref",
+          "ref": "T8al8",
+          "name": "Mobile Header",
+          "width": "fill_container"
+        },
+        {
+          "type": "frame",
+          "id": "UyFux",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "IvM9L",
+              "name": "Title Row",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "jlWuj",
+                  "name": "Page Title",
+                  "fill": "$app-fg",
+                  "content": "Penawaran",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 20,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "vW6Q0",
+                  "name": "Primary Action",
+                  "width": 40,
+                  "height": 40,
+                  "fill": "$app-primary",
+                  "cornerRadius": 20,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "YBX1e",
+                      "name": "Plus",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "plus",
+                      "library": "lucide",
+                      "fill": "$app-on-primary"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "e92qf",
+              "type": "ref",
+              "ref": "PLxro",
+              "name": "Toolbar",
+              "width": "fill_container",
+              "descendants": {
+                "z0t2F/N1J0K": {
+                  "content": "Cari nomor atau perihal…"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "nja3t",
+              "name": "Location Bar",
+              "width": "fill_container",
+              "gap": 6,
+              "padding": [
+                4,
+                2
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "g0AxpW",
+                  "name": "Back",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$app-fg"
+                },
+                {
+                  "type": "text",
+                  "id": "b2BDDX",
+                  "name": "Semua folder",
+                  "fill": "$app-muted-fg",
+                  "content": "Semua folder",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "icon",
+                  "id": "qnILQ",
+                  "name": "Sep",
+                  "width": 12,
+                  "height": 12,
+                  "icon": "chevron-right",
+                  "library": "lucide",
+                  "fill": "$app-muted-fg"
+                },
+                {
+                  "type": "text",
+                  "id": "W1FQA",
+                  "name": "RS Harapan Bunda",
+                  "fill": "$app-fg",
+                  "content": "RS Harapan Bunda",
+                  "fontFamily": "$font-sans",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PKxzT",
+              "name": "List Panel",
+              "clip": true,
+              "width": "fill_container",
+              "fill": "$app-card",
+              "cornerRadius": 16,
+              "stroke": "$app-border",
+              "strokeWidth": 1,
+              "layout": "vertical",
+              "children": [
+                {
+                  "id": "t9CuMh",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row QT-202610-0008 · AHU Ruang Operasi",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "file-text"
+                    },
+                    "hwOLg": {
+                      "content": "QT-202610-0008 · AHU Ruang Operasi"
+                    },
+                    "mceTd": {
+                      "content": "Rp 1,04 M · 14 Okt"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "TERKIRIM"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "xPI6Z",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row QT-202610-0001 · AHU ICU Lt. 3",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "file-text"
+                    },
+                    "hwOLg": {
+                      "content": "QT-202610-0001 · AHU ICU Lt. 3"
+                    },
+                    "mceTd": {
+                      "content": "Rp 784,2 jt · 10 Okt"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "TERKIRIM"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "stS3a",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row QT-202610-0003 · Panel Kontrol Utama",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "file-text"
+                    },
+                    "hwOLg": {
+                      "content": "QT-202610-0003 · Panel Kontrol Utama"
+                    },
+                    "mceTd": {
+                      "content": "Rp 778,2 jt · 3 Okt"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "MENANG"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "vq8X2",
+                  "type": "ref",
+                  "ref": "e3YqkZ",
+                  "name": "Row QT-202607-0001 · AHU Farmasi",
+                  "width": "fill_container",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "descendants": {
+                    "P3N5Kl": {
+                      "icon": "file-text"
+                    },
+                    "hwOLg": {
+                      "content": "QT-202607-0001 · AHU Farmasi"
+                    },
+                    "mceTd": {
+                      "content": "Rp 111,6 jt · 26 Jul"
+                    },
+                    "OhXU9": {
+                      "enabled": true
+                    },
+                    "y2YQxm": {
+                      "content": "KALAH"
+                    },
+                    "airHj": {
+                      "enabled": false
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "IZhE6",
+          "type": "ref",
+          "ref": "RSdvu",
+          "name": "Bottom Bar",
+          "width": "fill_container",
+          "descendants": {
+            "GmxfJ": {
+              "fill": "$app-fg"
+            },
+            "xlUec": {
+              "fill": "$app-fg",
+              "fontWeight": "600"
+            }
+          }
+        }
+      ]
     }
   ],
   "themes": {
