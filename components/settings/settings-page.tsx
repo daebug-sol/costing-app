@@ -10,7 +10,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatPhoneDash } from "@/lib/phone-format";
-import { formatNumber } from "@/lib/utils/format";
 import { PageShell } from "@/components/page-shell";
 import { DemoDataCard } from "@/components/settings/demo-data-card";
 import { OrgMembersCard } from "@/components/settings/org-members-card";
@@ -334,9 +333,9 @@ export function SettingsPage() {
 
       <Card size="sm" className="border-border ">
         <CardHeader>
-          <CardTitle className="text-lg">Penanggung jawab &amp; TTD preset</CardTitle>
+          <CardTitle className="text-lg">Penanggung jawab &amp; tanda tangan</CardTitle>
           <p className="text-xs font-normal text-muted-foreground">
-            Nama dan TTD default untuk dokumen penawaran (Documentation).
+            Dipakai di dokumen penawaran.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -374,7 +373,7 @@ export function SettingsPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label>TTD preset — Dibuat</Label>
+              <Label>Tanda tangan — Dibuat</Label>
               <Input
                 type="file"
                 accept="image/*"
@@ -395,7 +394,7 @@ export function SettingsPage() {
               )}
             </div>
             <div className="space-y-1.5">
-              <Label>TTD preset — Diperiksa</Label>
+              <Label>Tanda tangan — Diperiksa</Label>
               <Input
                 type="file"
                 accept="image/*"
@@ -416,7 +415,7 @@ export function SettingsPage() {
               )}
             </div>
             <div className="space-y-1.5">
-              <Label>TTD preset — Disetujui</Label>
+              <Label>Tanda tangan — Disetujui</Label>
               <Input
                 type="file"
                 accept="image/*"
@@ -533,8 +532,7 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-lg">Faktor waste costing AHU</CardTitle>
           <p className="text-xs font-normal text-muted-foreground">
-            Pengali waste (1,00–2,00). Hanya berlaku untuk costing baru;
-            costing yang sudah dihitung tidak berubah.
+            Rentang 1,00–2,00. Hanya berlaku untuk costing baru.
           </p>
         </CardHeader>
         <CardContent>
@@ -604,7 +602,7 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-lg">Kurs forex</CardTitle>
           <p className="text-xs font-normal text-muted-foreground">
-            Last updated:{" "}
+            Diperbarui{" "}
             {new Date(row.updatedAt).toLocaleString("id-ID", {
               dateStyle: "medium",
               timeStyle: "short",
@@ -612,12 +610,6 @@ export function SettingsPage() {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Kurs referensi (IDR per unit valas): USD{" "}
-            {formatNumber(row.forexUSD, 0)} · EUR {formatNumber(row.forexEUR, 0)}{" "}
-            · RM {formatNumber(row.forexRM, 0)} · SGD{" "}
-            {formatNumber(row.forexSGD, 0)}
-          </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {(
               [
@@ -674,7 +666,7 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-lg">Prefix penomoran dokumen</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Format nomor: PREFIX-YYYYMM-0001 (contoh QT-202608-0001)
+            Contoh: QT-202608-0001
           </p>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">

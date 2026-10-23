@@ -73,8 +73,7 @@ export function DemoDataCard() {
       <CardHeader>
         <CardTitle>Data demo</CardTitle>
         <CardDescription>
-          Pilih mulai dengan data contoh untuk melihat aplikasi terisi, atau kosongkan untuk
-          mencoba dari awal sampai dokumen jadi.
+          Isi dengan data contoh, atau kosongkan untuk mulai dari awal.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">

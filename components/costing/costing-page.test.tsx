@@ -28,7 +28,7 @@ const zeroTotals = {
 
 describe("ProjectPriceBar", () => {
   it("shows the three prices, zero for an empty project", () => {
-    const html = wrap(<ProjectPriceBar totals={zeroTotals} saveState="idle" onRetry={() => {}} />);
+    const html = wrap(<ProjectPriceBar totals={zeroTotals} saveState="idle" onRetry={() => {}} qty={1} onQtyCommit={() => {}} />);
     expect(html).toContain("Total biaya");
     expect(html).toContain("Harga jual");
     expect(html).toContain("Per unit");
@@ -36,12 +36,12 @@ describe("ProjectPriceBar", () => {
   });
 
   it("shows Tersimpan after a save", () => {
-    const html = wrap(<ProjectPriceBar totals={zeroTotals} saveState="saved" onRetry={() => {}} />);
+    const html = wrap(<ProjectPriceBar totals={zeroTotals} saveState="saved" onRetry={() => {}} qty={1} onQtyCommit={() => {}} />);
     expect(html).toContain("Tersimpan");
   });
 
   it("offers Coba lagi when saving failed", () => {
-    const html = wrap(<ProjectPriceBar totals={zeroTotals} saveState="error" onRetry={() => {}} />);
+    const html = wrap(<ProjectPriceBar totals={zeroTotals} saveState="error" onRetry={() => {}} qty={1} onQtyCommit={() => {}} />);
     expect(html).toContain("Gagal menyimpan");
     expect(html).toContain("Coba lagi");
   });

@@ -121,6 +121,12 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
             totals={totals}
             saveState={save.state}
             onRetry={() => void saveMargins()}
+            qty={currentProject.qty}
+            onQtyCommit={(qty) =>
+              updateProject({ qty }).catch((e) =>
+                showToast(costingErrorMessage(e)),
+              )
+            }
           />
         </div>
         <div className="order-4">

@@ -75,9 +75,12 @@ export function MarginsCard({
         </span>
       </CardHeader>
       <CardContent>
-        <ul className="divide-border divide-y">
+        <ul className="divide-border grid grid-cols-[2.25rem_minmax(0,1fr)_auto_auto] gap-x-1.5 divide-y sm:gap-x-2">
           {rows.map(({ key, label, amount, toggle }) => (
-            <li key={key} className="flex flex-wrap items-center gap-3 py-2.5">
+            <li
+              key={key}
+              className="col-span-4 grid grid-cols-subgrid items-center py-2.5"
+            >
               {toggle ? (
                 <Switch
                   id={`sw-${key}`}
@@ -85,14 +88,16 @@ export function MarginsCard({
                   checked={toggles[toggle]}
                   onCheckedChange={(v) => onToggles({ ...toggles, [toggle]: v })}
                 />
-              ) : null}
-              <Label htmlFor={`pct-${key}`} className="min-w-24 flex-1 normal-case">
+              ) : (
+                <span aria-hidden />
+              )}
+              <Label htmlFor={`pct-${key}`} className="min-w-0 truncate text-sm font-normal tracking-normal normal-case">
                 {label}
               </Label>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <Input
                   id={`pct-${key}`}
-                  className="h-8 w-20 text-right"
+                  className="h-8 w-14 px-1.5 text-right sm:w-16 sm:px-2"
                   type="number"
                   inputMode="decimal"
                   value={marginPct[key]}
@@ -104,7 +109,7 @@ export function MarginsCard({
                 />
                 <span className="text-muted-foreground text-xs">%</span>
               </div>
-              <span className="tabular-money w-32 text-right text-sm">{formatIDR(amount)}</span>
+              <span className="tabular-money pl-1 text-right text-sm whitespace-nowrap">{formatIDR(amount)}</span>
             </li>
           ))}
         </ul>
