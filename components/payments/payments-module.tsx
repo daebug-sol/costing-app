@@ -247,7 +247,7 @@ export function PaymentsModule() {
     >
       {confirmDialog}
       <ExplorerMobileList
-        placeholder="Cari nomor atau pelanggan…"
+        placeholder={t("explorer.numberOrCustomer")}
         search={search}
         onSearchChange={setSearch}
         filterActive={statusFilter !== "all"}
@@ -266,11 +266,11 @@ export function PaymentsModule() {
             </Select>
           </div>
         }
-        countLabel={`${shown.length} pembayaran`}
+        countLabel={t("explorer.payment.count", { count: shown.length })}
         empty={
           shown.length === 0 ? (
             <p className="text-muted-foreground px-4 py-10 text-center text-sm">
-              Belum ada pembayaran
+              {t("explorer.payment.empty")}
             </p>
           ) : undefined
         }

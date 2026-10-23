@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import {
   ArrowLeft,
   ClipboardList,
@@ -91,6 +92,7 @@ async function readErr(res: Response) {
 }
 
 export function SalesOrdersModule() {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const idParam = searchParams.get("id");
@@ -482,7 +484,7 @@ export function SalesOrdersModule() {
       </div>
 
       <ExplorerMobileList
-        placeholder="Cari nomor atau pelanggan…"
+        placeholder={t("explorer.numberOrCustomer")}
         search={search}
         onSearchChange={setSearch}
         filterActive={statusFilter !== "all"}
@@ -506,11 +508,11 @@ export function SalesOrdersModule() {
             </Select>
           </div>
         }
-        countLabel={`${shown.length} sales order`}
+        countLabel={t("explorer.so.count", { count: shown.length })}
         empty={
           shown.length === 0 ? (
             <p className="text-muted-foreground px-4 py-10 text-center text-sm">
-              Belum ada sales order
+              {t("explorer.so.empty")}
             </p>
           ) : undefined
         }

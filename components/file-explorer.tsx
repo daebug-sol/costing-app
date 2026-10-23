@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import { useI18n } from "@/components/i18n-provider";
 import {
   ChevronLeft,
   ChevronRight,
@@ -143,6 +144,7 @@ export function ExplorerToolbar({
   filterContent?: ReactNode;
   filterActive?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-2">
       <div className="relative min-w-0 flex-1">
@@ -165,10 +167,10 @@ export function ExplorerToolbar({
               type="button"
               variant="outline"
               className="h-10 shrink-0 gap-2"
-              aria-label="Filter"
+              aria-label={t("explorer.filter")}
             >
               <SlidersHorizontal className="size-4" />
-              Filter
+              {t("explorer.filter")}
               {filterActive ? (
                 <span
                   className="bg-primary size-1.5 rounded-full"
@@ -327,6 +329,7 @@ export function Explorer({
   panelBody,
   children,
 }: ExplorerProps) {
+  const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const selected = folders.find((f) => f.key === selectedKey) ?? null;
   const showItemsMobile = mobileOpen || search.trim() !== "";
@@ -416,7 +419,7 @@ export function Explorer({
         {!showItemsMobile ? (
           <div className="lg:hidden">
             <p className="text-foreground mb-3 text-sm font-medium">
-              Semua folder
+              {t("explorer.allFolders")}
             </p>
             <div className="bg-card border-border overflow-hidden rounded-xl border">
               <ul>
@@ -450,7 +453,7 @@ export function Explorer({
         >
           <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-sm">
             <nav
-              aria-label="Lokasi"
+              aria-label={t("explorer.location")}
               className="flex min-w-0 items-center gap-1.5"
             >
               <ChevronLeft className="size-4 shrink-0 lg:hidden" aria-hidden />
@@ -459,7 +462,7 @@ export function Explorer({
                 onClick={toRoot}
                 className="hover:text-foreground shrink-0"
               >
-                Semua folder
+                {t("explorer.allFolders")}
               </button>
               <ChevronRight className="size-4 shrink-0" aria-hidden />
               <span className="text-foreground truncate font-medium">

@@ -201,18 +201,18 @@ export function CustomersModule() {
     >
       {confirmDialog}
       <ExplorerMobileList
-        placeholder="Cari nama / perusahaan…"
+        placeholder={t("explorer.customer.search")}
         search={q}
         onSearchChange={setQ}
-        countLabel={`${shown.length} pelanggan`}
+        countLabel={t("explorer.customer.count", { count: shown.length })}
         empty={
           loading ? (
             <p className="text-muted-foreground px-4 py-10 text-center text-sm">
-              Memuat…
+              {t("explorer.loading")}
             </p>
           ) : shown.length === 0 ? (
             <p className="text-muted-foreground px-4 py-10 text-center text-sm">
-              Belum ada pelanggan
+              {t("explorer.customer.empty")}
             </p>
           ) : undefined
         }
