@@ -1,20 +1,31 @@
 "use client";
 
 import { FolderKanban, Plus, Search } from "lucide-react";
-import Link from "next/link";
+import {
+  ExplorerItem,
+  ExplorerItems,
+  ExplorerViewControls,
+  useExplorerView,
+} from "@/components/file-explorer";
 import { EmptyState } from "@/components/empty-state";
 import { useI18n } from "@/components/i18n-provider";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatNumber } from "@/lib/utils/format";
 import type { CostingWorkspaceState } from "./use-costing-workspace";
 
 export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
   const { t } = useI18n();
+  const [view, setView] = useExplorerView();
   const {
     projects,
     isLoading,
@@ -49,19 +60,25 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
           >
             {t("costing.list.title")}
           </h2>
-          <Button
-            type="button"
-            size="sm"
-            className="h-8 shrink-0 gap-1"
-            onClick={() => setNewOpen(true)}
-          >
-            <Plus className="size-3.5" aria-hidden />
-            {t("costing.list.newProject")}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExplorerViewControls view={view} onChange={setView} />
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 shrink-0 gap-1"
+              onClick={() => setNewOpen(true)}
+            >
+              <Plus className="size-3.5" aria-hidden />
+              {t("costing.list.newProject")}
+            </Button>
+          </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
           <div className="relative">
-            <Search aria-hidden className="text-muted-foreground absolute left-2 top-1/2 size-3.5 -translate-y-1/2" />
+            <Search
+              aria-hidden
+              className="text-muted-foreground absolute left-2 top-1/2 size-3.5 -translate-y-1/2"
+            />
             <Input
               aria-label={t("costing.list.searchPlaceholder")}
               placeholder={t("costing.list.searchPlaceholder")}
@@ -80,11 +97,16 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
                 })
               }
             >
-              <SelectTrigger className="h-8 w-full text-xs" aria-label={t("costing.list.filter.status")}>
+              <SelectTrigger
+                className="h-8 w-full text-xs"
+                aria-label={t("costing.list.filter.status")}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("costing.list.filter.statusAll")}</SelectItem>
+                <SelectItem value="all">
+                  {t("costing.list.filter.statusAll")}
+                </SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="finalized">Final</SelectItem>
               </SelectContent>
@@ -98,11 +120,16 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
                 setCostingSidebar({ monthFilter: v === "all" ? "" : v })
               }
             >
-              <SelectTrigger className="h-8 w-full text-xs" aria-label={t("costing.list.filter.month")}>
+              <SelectTrigger
+                className="h-8 w-full text-xs"
+                aria-label={t("costing.list.filter.month")}
+              >
                 <SelectValue placeholder={t("costing.list.filter.monthAll")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("costing.list.filter.monthAll")}</SelectItem>
+                <SelectItem value="all">
+                  {t("costing.list.filter.monthAll")}
+                </SelectItem>
                 {availableMonths.map((m) => (
                   <SelectItem key={m.value} value={m.value}>
                     {m.label}
@@ -118,7 +145,9 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
               aria-label={t("costing.list.filter.date")}
               className="h-8 text-xs"
               value={dateFilter}
-              onChange={(e) => setCostingSidebar({ dateFilter: e.target.value })}
+              onChange={(e) =>
+                setCostingSidebar({ dateFilter: e.target.value })
+              }
             />
           </div>
         </div>
@@ -177,35 +206,43 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
                   <p className="text-muted-foreground mb-1.5 text-xs">
                     {month.monthLabel} · {day.dayLabel}
                   </p>
-                  <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                  <ExplorerItems view={view}>
                     {day.items.map((p) => (
-                      <li key={p.id}>
-                        <Link
-                          href={`/costing?project=${encodeURIComponent(p.id)}`}
-                          className="bg-card hover:bg-muted/40 focus-visible:ring-ring block rounded-lg border border-border p-3 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                        >
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="min-w-0 truncate font-medium text-foreground">
-                              {p.name}
+                      <ExplorerItem
+                        key={p.id}
+                        view={view}
+                        href={`/costing?project=${encodeURIComponent(p.id)}`}
+                        title={p.name}
+                        lead={
+                          <span className="bg-primary/10 flex size-9 shrink-0 items-center justify-center rounded-md">
+                            <FolderKanban
+                              className="text-primary size-4"
+                              aria-hidden
+                            />
+                          </span>
+                        }
+                        meta={
+                          <>
+                            <span className="whitespace-nowrap">
+                              {t("costing.list.itemCount", {
+                                count: p.segmentCount,
+                              })}
                             </span>
-                            <Badge variant="outline" className="text-2xs">
-                              {t("costing.list.itemCount", { count: p.segmentCount })}
-                            </Badge>
-                          </div>
-                          <div className="mt-0.5 text-xs text-muted-foreground">
-                            {p.previewAhuModel ?? "—"} · Flow{" "}
-                            {p.previewFlowCMH != null
-                              ? formatNumber(p.previewFlowCMH, 0)
-                              : "—"}{" "}
-                            CMH
-                          </div>
-                          <div className="mt-1.5">{statusBadge(p.status)}</div>
-                        </Link>
-                      </li>
+                            <span className="whitespace-nowrap">
+                              {p.previewAhuModel ?? "—"} · Flow{" "}
+                              {p.previewFlowCMH != null
+                                ? formatNumber(p.previewFlowCMH, 0)
+                                : "—"}{" "}
+                              CMH
+                            </span>
+                          </>
+                        }
+                        trailing={statusBadge(p.status)}
+                      />
                     ))}
-                  </ul>
+                  </ExplorerItems>
                 </div>
-              ))
+              )),
             )}
           </div>
         )}
