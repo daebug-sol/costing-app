@@ -1,263 +1,402 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useSyncExternalStore, type ReactNode } from "react";
-import { LayoutGrid, List } from "lucide-react";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useState, type ReactNode } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Folder,
+  Layers,
+  Loader2,
+  Plus,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
+import { PageShell } from "@/components/page-shell";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 /**
- * Shared "file explorer" building blocks used by every module that lists
- * files/projects (Costing, Documentation, ...). The view choice is one
- * device-local preference so every module looks and behaves the same.
+ * The one file-explorer pattern used by Costing, Documentation and Database:
+ * title + primary action, search + Filter, a folder sidebar (folder list first
+ * on mobile) and a list panel whose rows are all `ExplorerRow`.
  */
 
-export type ExplorerMode = "list" | "grid";
-export type ExplorerSize = "sm" | "md" | "lg";
-export type ExplorerView = { mode: ExplorerMode; size: ExplorerSize };
+export type ExplorerFolder = { key: string; label: string; count: number };
 
-const STORAGE_KEY = "costing-explorer-view";
+const rowClass =
+  "focus-visible:ring-ring flex w-full min-w-0 items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 focus-visible:ring-2 focus-visible:outline-none";
 
-const DEFAULT_VIEW: ExplorerView = { mode: "list", size: "md" };
-const CHANGE_EVENT = "costing-explorer-view-change";
-
-function parseView(raw: string | null): ExplorerView {
-  if (!raw) return DEFAULT_VIEW;
-  try {
-    const v = JSON.parse(raw) as { mode?: string; size?: string };
-    return {
-      mode: v.mode === "grid" ? "grid" : "list",
-      size: v.size === "sm" || v.size === "lg" ? v.size : "md",
-    };
-  } catch {
-    return DEFAULT_VIEW;
-  }
-}
-
-function readRaw(): string | null {
-  try {
-    return window.localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function subscribe(cb: () => void) {
-  window.addEventListener(CHANGE_EVENT, cb);
-  window.addEventListener("storage", cb);
-  return () => {
-    window.removeEventListener(CHANGE_EVENT, cb);
-    window.removeEventListener("storage", cb);
-  };
-}
-
-/** Device-local view preference shared by every explorer; SSR renders the default. */
-export function useExplorerView() {
-  const raw = useSyncExternalStore(subscribe, readRaw, () => null);
-  const view = useMemo(() => parseView(raw), [raw]);
-  const update = (next: Partial<ExplorerView>) => {
-    try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ ...view, ...next }),
-      );
-    } catch {
-      /* ignore */
-    }
-    window.dispatchEvent(new Event(CHANGE_EVENT));
-  };
-  return [view, update] as const;
-}
-
-export function ExplorerViewControls({
-  view,
-  onChange,
-}: {
-  view: ExplorerView;
-  onChange: (next: Partial<ExplorerView>) => void;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="sm"
-        value={view.size}
-        onValueChange={(v) => {
-          if (v === "sm" || v === "md" || v === "lg") onChange({ size: v });
-        }}
-        aria-label="Ukuran tampilan"
-        className="hidden sm:flex"
-      >
-        <ToggleGroupItem value="sm" aria-label="Ukuran kecil">
-          Kecil
-        </ToggleGroupItem>
-        <ToggleGroupItem value="md" aria-label="Ukuran sedang">
-          Sedang
-        </ToggleGroupItem>
-        <ToggleGroupItem value="lg" aria-label="Ukuran besar">
-          Besar
-        </ToggleGroupItem>
-      </ToggleGroup>
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="sm"
-        value={view.mode}
-        onValueChange={(v) => {
-          if (v === "list" || v === "grid") onChange({ mode: v });
-        }}
-        aria-label="Mode tampilan"
-      >
-        <ToggleGroupItem value="list" aria-label="Tampilan daftar">
-          <List className="size-4" />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="grid" aria-label="Tampilan kartu">
-          <LayoutGrid className="size-4" />
-        </ToggleGroupItem>
-      </ToggleGroup>
-    </div>
-  );
-}
-
-const gridCols: Record<ExplorerSize, string> = {
-  sm: "grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]",
-  md: "grid-cols-[repeat(auto-fill,minmax(16rem,1fr))]",
-  lg: "grid-cols-[repeat(auto-fill,minmax(22rem,1fr))]",
-};
-
-const listPad: Record<ExplorerSize, string> = {
-  sm: "py-1.5",
-  md: "py-2.5",
-  lg: "py-3.5",
-};
-
-export function ExplorerItems({
-  view,
-  children,
-}: {
-  view: ExplorerView;
-  children: ReactNode;
-}) {
-  return (
-    <ul
-      className={cn(
-        view.mode === "grid"
-          ? cn("grid gap-3", gridCols[view.size])
-          : "flex flex-col gap-1.5",
-      )}
-    >
-      {children}
-    </ul>
-  );
-}
-
-type ExplorerItemProps = {
-  view: ExplorerView;
-  /** Leading element (file icon or a checkbox). */
-  lead: ReactNode;
-  title: string;
-  /** Small secondary facts (date, status, ...). */
-  meta?: ReactNode;
-  /** Right-aligned value (e.g. total price). */
-  trailing?: ReactNode;
-  href?: string;
-  onClick?: () => void;
-  ariaLabel?: string;
-  ariaExpanded?: boolean;
-  selected?: boolean;
-  highlighted?: boolean;
-  /** Extra control beside the row in list mode (e.g. expand chevron). */
-  action?: ReactNode;
-  /** Content below the row (e.g. expanded progress). */
-  footer?: ReactNode;
-};
-
-export function ExplorerItem({
-  view,
+export function ExplorerRow({
+  icon,
   lead,
   title,
   meta,
-  trailing,
+  amount,
+  amountCompact,
   href,
   onClick,
   ariaLabel,
   ariaExpanded,
   selected,
-  highlighted,
-  action,
+  trailing,
   footer,
-}: ExplorerItemProps) {
-  const isGrid = view.mode === "grid";
-  const rowClass = cn(
-    "focus-visible:ring-ring flex min-w-0 flex-1 gap-3 px-3 text-left hover:bg-muted/40 focus-visible:ring-2 focus-visible:outline-none",
-    isGrid ? "flex-col py-3" : cn("items-center sm:gap-4", listPad[view.size]),
-  );
+}: {
+  /** File icon shown in the 40px tile. */
+  icon?: ReactNode;
+  /** Replaces the tile (e.g. a checkbox while selecting). */
+  lead?: ReactNode;
+  title: string;
+  /** Meta line: date, status badge, ... */
+  meta?: ReactNode;
+  /** Right-aligned amount from `sm` up. */
+  amount?: string;
+  /** Short amount shown in the meta line below `sm`. */
+  amountCompact?: string;
+  href?: string;
+  onClick?: () => void;
+  ariaLabel?: string;
+  ariaExpanded?: boolean;
+  selected?: boolean;
+  /** Replaces the default chevron. */
+  trailing?: ReactNode;
+  footer?: ReactNode;
+}) {
   const body = (
     <>
-      <span className="flex min-w-0 items-center gap-3">
-        {lead}
-        <span className="text-foreground min-w-0 flex-1 truncate font-medium">
+      {lead ?? (
+        <span className="bg-muted text-foreground flex size-10 shrink-0 items-center justify-center rounded-lg">
+          {icon}
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
+        <span className="text-foreground block truncate text-sm font-medium">
           {title}
         </span>
-      </span>
-      {meta ? (
-        <span
-          className={cn(
-            "text-muted-foreground flex min-w-0 text-xs",
-            isGrid
-              ? "flex-wrap gap-x-3"
-              : "ml-auto hidden shrink-0 gap-x-6 sm:flex",
-          )}
-        >
+        <span className="text-muted-foreground mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+          {amountCompact ? (
+            <span className="sm:hidden">{amountCompact}</span>
+          ) : null}
           {meta}
         </span>
-      ) : null}
-      {trailing ? (
-        <span
-          className={cn(
-            "text-foreground text-sm font-medium tabular-nums",
-            !isGrid && "ml-auto shrink-0 text-right sm:ml-0 sm:w-36",
-          )}
-        >
-          {trailing}
+      </span>
+      {amount ? (
+        <span className="text-foreground hidden shrink-0 font-mono text-sm tabular-nums sm:block">
+          {amount}
         </span>
       ) : null}
+      {trailing ?? (
+        <ChevronRight
+          className="text-muted-foreground size-4 shrink-0"
+          aria-hidden
+        />
+      )}
     </>
   );
+  return (
+    <li
+      className={cn(
+        "border-border border-b last:border-b-0",
+        selected && "bg-primary/[0.07]",
+      )}
+    >
+      {href ? (
+        <Link href={href} className={rowClass} aria-label={ariaLabel}>
+          {body}
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={onClick}
+          className={rowClass}
+          aria-label={ariaLabel}
+          aria-expanded={ariaExpanded}
+        >
+          {body}
+        </button>
+      )}
+      {footer}
+    </li>
+  );
+}
+
+export function ExplorerRows({ children }: { children: ReactNode }) {
+  return <ul className="flex flex-col">{children}</ul>;
+}
+
+type ExplorerProps = {
+  title: string;
+  primaryLabel: string;
+  onPrimary: () => void;
+  primaryBusy?: boolean;
+  searchPlaceholder: string;
+  search: string;
+  onSearchChange: (v: string) => void;
+  /** Contents of the Filter popover. */
+  filterContent: ReactNode;
+  filterActive?: boolean;
+  /** "Semua proyek" */
+  allLabel: string;
+  /** "PELANGGAN" */
+  folderHeading: string;
+  /** Singular noun for counts, e.g. "proyek" */
+  noun: string;
+  folders: ExplorerFolder[];
+  totalCount: number;
+  /** null = all folders */
+  selectedKey: string | null;
+  onSelectKey: (key: string | null) => void;
+  /** Extra controls on the right of the list panel header (e.g. "Pilih"). */
+  panelActions?: ReactNode;
+  /** Rendered above the rows (e.g. the bulk-select bar). */
+  panelNotice?: ReactNode;
+  /** Replaces the rows (loading / empty). */
+  panelBody?: ReactNode;
+  children?: ReactNode;
+};
+
+export function Explorer({
+  title,
+  primaryLabel,
+  onPrimary,
+  primaryBusy,
+  searchPlaceholder,
+  search,
+  onSearchChange,
+  filterContent,
+  filterActive,
+  allLabel,
+  folderHeading,
+  noun,
+  folders,
+  totalCount,
+  selectedKey,
+  onSelectKey,
+  panelActions,
+  panelNotice,
+  panelBody,
+  children,
+}: ExplorerProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const selected = folders.find((f) => f.key === selectedKey) ?? null;
+  const showItemsMobile = mobileOpen || search.trim() !== "";
+  const visibleCount = selected ? selected.count : totalCount;
+
+  const pick = (key: string | null) => {
+    onSelectKey(key);
+    setMobileOpen(true);
+  };
+  const toRoot = () => {
+    onSelectKey(null);
+    setMobileOpen(false);
+  };
+
+  const PrimaryIcon = primaryBusy ? Loader2 : Plus;
 
   return (
-    <li>
-      <div
-        className={cn(
-          "bg-card overflow-hidden rounded-lg border transition-colors",
-          selected
-            ? "border-primary/45 bg-primary/[0.07] ring-1 ring-primary/20"
-            : highlighted
-              ? "border-primary/35"
-              : "border-border",
-        )}
-      >
-        <div className="flex min-w-0 items-stretch gap-1">
-          {href ? (
-            <Link href={href} className={rowClass} aria-label={ariaLabel}>
-              {body}
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={onClick}
-              className={rowClass}
-              aria-label={ariaLabel}
-              aria-expanded={ariaExpanded}
-            >
-              {body}
-            </button>
-          )}
-          {!isGrid ? action : null}
+    <PageShell
+      title={title}
+      contentClassName="gap-4"
+      inlineActions
+      actions={
+        <>
+          <Button
+            type="button"
+            className="hidden gap-2 sm:inline-flex"
+            disabled={primaryBusy}
+            onClick={onPrimary}
+          >
+            <PrimaryIcon
+              className={cn("size-4", primaryBusy && "animate-spin")}
+            />
+            {primaryLabel}
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            className="size-10 rounded-full sm:hidden"
+            disabled={primaryBusy}
+            onClick={onPrimary}
+            aria-label={primaryLabel}
+          >
+            <PrimaryIcon
+              className={cn("size-5", primaryBusy && "animate-spin")}
+            />
+          </Button>
+        </>
+      }
+    >
+      <div className="flex items-center gap-2">
+        <div className="relative min-w-0 flex-1">
+          <Search
+            aria-hidden
+            className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
+          />
+          <Input
+            aria-label={searchPlaceholder}
+            placeholder={searchPlaceholder}
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="h-10 pl-9"
+          />
         </div>
-        {footer}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 shrink-0 gap-2"
+              aria-label="Filter"
+            >
+              <SlidersHorizontal className="size-4" />
+              Filter
+              {filterActive ? (
+                <span
+                  className="bg-primary size-1.5 rounded-full"
+                  aria-hidden
+                />
+              ) : null}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72 p-3">
+            {filterContent}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-    </li>
+
+      <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+        {/* Desktop folder sidebar */}
+        <nav
+          aria-label={folderHeading}
+          className="bg-card border-border hidden flex-col gap-0.5 rounded-xl border p-2 lg:flex"
+        >
+          <SidebarItem
+            active={selectedKey === null}
+            icon={<Layers className="size-4" />}
+            label={allLabel}
+            count={totalCount}
+            onClick={() => onSelectKey(null)}
+          />
+          <p className="text-muted-foreground px-3 pt-3 pb-1 text-xs font-medium tracking-wide uppercase">
+            {folderHeading}
+          </p>
+          {folders.map((f) => (
+            <SidebarItem
+              key={f.key}
+              active={selectedKey === f.key}
+              icon={<Folder className="size-4" />}
+              label={f.label}
+              count={f.count}
+              onClick={() => onSelectKey(f.key)}
+            />
+          ))}
+        </nav>
+
+        {/* Mobile folder list (first screen) */}
+        {!showItemsMobile ? (
+          <div className="lg:hidden">
+            <p className="text-foreground mb-3 text-sm font-medium">
+              Semua folder
+            </p>
+            <div className="bg-card border-border overflow-hidden rounded-xl border">
+              <ul>
+                <ExplorerRow
+                  icon={<Layers className="size-5" />}
+                  title={allLabel}
+                  meta={`${totalCount} ${noun}`}
+                  onClick={() => pick(null)}
+                />
+                {folders.map((f) => (
+                  <ExplorerRow
+                    key={f.key}
+                    icon={<Folder className="size-5" />}
+                    title={f.label}
+                    meta={`${f.count} ${noun}`}
+                    onClick={() => pick(f.key)}
+                  />
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
+
+        {/* List panel */}
+        <section
+          aria-label={selected?.label ?? allLabel}
+          className={cn(
+            "flex min-w-0 flex-col gap-3",
+            !showItemsMobile && "hidden lg:flex",
+          )}
+        >
+          <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-sm">
+            <nav
+              aria-label="Lokasi"
+              className="flex min-w-0 items-center gap-1.5"
+            >
+              <ChevronLeft className="size-4 shrink-0 lg:hidden" aria-hidden />
+              <button
+                type="button"
+                onClick={toRoot}
+                className="hover:text-foreground shrink-0"
+              >
+                Semua folder
+              </button>
+              <ChevronRight className="size-4 shrink-0" aria-hidden />
+              <span className="text-foreground truncate font-medium">
+                {selected?.label ?? allLabel}
+              </span>
+            </nav>
+            <div className="flex items-center gap-3 text-xs">
+              <span>
+                {visibleCount} {noun}
+              </span>
+              {panelActions}
+            </div>
+          </div>
+          {panelNotice}
+          <div className="bg-card border-border overflow-hidden rounded-xl border">
+            {panelBody ?? <ExplorerRows>{children}</ExplorerRows>}
+          </div>
+        </section>
+      </div>
+    </PageShell>
+  );
+}
+
+function SidebarItem({
+  active,
+  icon,
+  label,
+  count,
+  onClick,
+}: {
+  active: boolean;
+  icon: ReactNode;
+  label: string;
+  count: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? "true" : undefined}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors",
+        active ? "bg-muted font-medium" : "hover:bg-muted/60",
+      )}
+    >
+      <span className="text-muted-foreground shrink-0">{icon}</span>
+      <span className="text-foreground min-w-0 flex-1 truncate">{label}</span>
+      <span className="text-muted-foreground text-xs tabular-nums">
+        {count}
+      </span>
+    </button>
   );
 }

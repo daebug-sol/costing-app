@@ -24,6 +24,11 @@ export async function GET() {
         updatedAt: true,
         createdAt: true,
         _count: { select: { segments: true } },
+        quotations: {
+          orderBy: { updatedAt: "desc" },
+          take: 1,
+          select: { customer: { select: { name: true } } },
+        },
         segments: {
           orderBy: { sortOrder: "asc" },
           take: 1,
@@ -49,6 +54,7 @@ export async function GET() {
         segmentCount: p._count.segments,
         previewAhuModel: s0?.ahuModel ?? null,
         previewFlowCMH: s0?.flowCMH ?? null,
+        customerName: p.quotations[0]?.customer?.name ?? null,
       };
     });
     return NextResponse.json(rows);

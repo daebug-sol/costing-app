@@ -3,7 +3,6 @@
 import { FolderKanban } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { useI18n } from "@/components/i18n-provider";
-import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CostingProjectList } from "./costing-project-list";
 import { CostingMain } from "./costing-main";
@@ -21,26 +20,14 @@ export function CostingWorkspace() {
     <div
       className={
         isList
-          ? "flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden border-t border-border bg-background"
+          ? "bg-background border-border border-t"
           : "min-h-[calc(100vh-3.5rem)] border-t border-border bg-background"
       }
     >
       {confirmDialog}
 
       {isList ? (
-        <PageHeader
-          variant="band"
-          width="wide"
-          eyebrow="Workspace"
-          title="Costing"
-          className="shrink-0"
-        />
-      ) : null}
-
-      {isList ? (
-        <div className="app-page-gutter-wide flex min-h-0 flex-1 flex-col overflow-hidden py-4 sm:py-5 lg:py-6">
-          <CostingProjectList ed={ed} />
-        </div>
+        <CostingProjectList ed={ed} />
       ) : (
         <div className="w-full px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6">
           {projectView === "ready" ? (

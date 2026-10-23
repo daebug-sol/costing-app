@@ -14,6 +14,7 @@ type PageShellProps = {
   className?: string;
   headerClassName?: string;
   contentClassName?: string;
+  inlineActions?: boolean;
 };
 
 const widthClass = {
@@ -32,6 +33,7 @@ export function PageShell({
   className,
   headerClassName,
   contentClassName,
+  inlineActions,
 }: PageShellProps) {
   return (
     <div className={cn("flex w-full flex-col", className)}>
@@ -42,12 +44,13 @@ export function PageShell({
         actions={actions}
         width={width}
         className={headerClassName}
+        inlineActions={inlineActions}
       />
       <div
         className={cn(
           "mx-auto flex w-full flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8",
           widthClass[width],
-          contentClassName
+          contentClassName,
         )}
       >
         {children}
