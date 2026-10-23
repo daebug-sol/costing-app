@@ -41,3 +41,11 @@ Aplikasi memakai Clerk, dan data dipetakan lewat **organisasi Clerk**. Opsi pali
 4. **Atur peran klien.** Anggota baru otomatis berperan `member`, yang hanya melihat data atas namanya sendiri sehingga dashboard tampak kosong. Setelah klien login sekali, ubah perannya di Pengaturan, Anggota: `ceo` (lihat semua data, hanya baca, paling aman) atau `admin` (boleh mengubah data; jalankan ulang seed untuk mengembalikan data). Alternatif tanpa langkah manual: isi `DEMO_VIEWER_USER_IDS` dengan id user klien (terlihat di Clerk Dashboard, Users) lalu jalankan seed ulang.
 
 Alternatif: satu akun login bersama yang hanya menjadi anggota organisasi demo. Lebih cepat, tetapi kredensial dibagi dan tidak ada jejak per orang, jadi disarankan hanya untuk demo singkat.
+
+## Demo untuk klien (organisasi per klien)
+
+Selain organisasi demo tetap di atas, setiap klien mendapat organisasi demo sendiri lewat kode aktivasi (lihat `docs/superpowers/specs/2026-10-21-demo-trial-activation-design.md`). Generator data yang sama dipakai (`lib/demo-seed.ts`):
+
+- Saat operator membuat kode dengan "Dengan data contoh", aktivasi langsung mengisi data contoh ke organisasi klien.
+- Di Pengaturan, "Data demo" (owner/admin, hanya organisasi demo) menyediakan "Isi data contoh" dan "Kosongkan data". Keduanya mengganti SEMUA data bisnis organisasi itu dan meminta konfirmasi.
+- ID baris diberi awalan per organisasi, jadi beberapa organisasi bisa memiliki data contoh sekaligus.
