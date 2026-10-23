@@ -229,7 +229,6 @@ const id = {
   "dashboard.personal.kpi.winRate": "Win rate",
   "dashboard.personal.kpi.winRateNote": "{approved} dari {total} penawaran disetujui",
   "dashboard.personal.kpi.margin": "Margin",
-  "dashboard.personal.kpi.marginNote": "Rata-rata tertimbang",
   "dashboard.personal.kpi.pipeline": "Pipeline terbuka",
   "dashboard.personal.kpi.pipelineNote": "{count} penawaran menunggu keputusan",
   "dashboard.personal.kpi.up": "Meningkat",
@@ -238,6 +237,7 @@ const id = {
   "dashboard.personal.followUps.title": "Tindak lanjut",
   "dashboard.personal.followUps.count": "{count} butir",
   "dashboard.personal.followUps.empty": "Tidak ada tindak lanjut",
+  "dashboard.personal.followUps.more": "+{count} lainnya",
   "dashboard.personal.followUps.quotation": "Tindak lanjut penawaran {ref}",
   "dashboard.personal.followUps.quotationSub": "{party} · berakhir",
   "dashboard.personal.followUps.invoice": "Tagih faktur {ref}",
@@ -270,7 +270,7 @@ const id = {
   "dashboard.aging.title": "Quotation aging",
   "dashboard.costBreakdown.title": "Cost breakdown",
   "dashboard.costBreakdown.detail": "Tabel breakdown material lengkap.",
-  "dashboard.revenueTrend.title": "Revenue trend",
+  "dashboard.revenueTrend.title": "Pendapatan per bulan",
   "dashboard.revenueTrend.detail": "Tabel tren revenue per bulan.",
 
   // --- dashboard: toolbar
@@ -599,7 +599,6 @@ const en: Record<MessageKey, string> = {
   "dashboard.personal.kpi.winRate": "Win rate",
   "dashboard.personal.kpi.winRateNote": "{approved} of {total} quotations approved",
   "dashboard.personal.kpi.margin": "Margin",
-  "dashboard.personal.kpi.marginNote": "Weighted average",
   "dashboard.personal.kpi.pipeline": "Open pipeline",
   "dashboard.personal.kpi.pipelineNote": "{count} quotations awaiting a decision",
   "dashboard.personal.kpi.up": "Rising",
@@ -608,6 +607,7 @@ const en: Record<MessageKey, string> = {
   "dashboard.personal.followUps.title": "Follow-ups",
   "dashboard.personal.followUps.count": "{count} items",
   "dashboard.personal.followUps.empty": "No follow-ups",
+  "dashboard.personal.followUps.more": "+{count} more",
   "dashboard.personal.followUps.quotation": "Follow up quotation {ref}",
   "dashboard.personal.followUps.quotationSub": "{party} · expires",
   "dashboard.personal.followUps.invoice": "Collect invoice {ref}",
@@ -640,7 +640,7 @@ const en: Record<MessageKey, string> = {
   "dashboard.aging.title": "Quotation aging",
   "dashboard.costBreakdown.title": "Cost breakdown",
   "dashboard.costBreakdown.detail": "Full material breakdown table.",
-  "dashboard.revenueTrend.title": "Revenue trend",
+  "dashboard.revenueTrend.title": "Revenue per month",
   "dashboard.revenueTrend.detail": "Monthly revenue trend table.",
 
   // --- dashboard: toolbar

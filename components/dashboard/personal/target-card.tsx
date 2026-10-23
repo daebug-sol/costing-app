@@ -19,44 +19,41 @@ function monthName(month: string, locale: string): string {
   }).format(new Date(Date.UTC(year, (m ?? 1) - 1, 1)));
 }
 
-export function TargetCard({
-  personal,
-  canEditTarget,
-  onSaved,
-  now,
-}: {
+type TargetProps = {
   personal: DashboardPersonal;
   /** Only true when the dashboard is about the signed-in member. */
   canEditTarget: boolean;
   onSaved: () => void;
   now: Date;
-}) {
+};
+
+export function useTargetTitle(now: Date) {
   const { t, locale } = useI18n();
-  const target = personal.monthlyTarget;
-  const title = t("dashboard.personal.target.title", {
+  return t("dashboard.personal.target.title", {
     month: new Intl.DateTimeFormat(locale === "en" ? "en-US" : "id-ID", {
       month: "long",
       timeZone: "UTC",
     }).format(now),
   });
+}
+
+/** Target progress without its card, for the dashboard overview and for TargetCard. */
+export function TargetBody({ personal, canEditTarget, onSaved }: Omit<TargetProps, "now">) {
+  const { t, locale } = useI18n();
+  const target = personal.monthlyTarget;
 
   if (target === null) {
     return (
-      <Card data-testid="dashboard-target">
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-start gap-4">
-          <p className="text-sm text-muted-foreground">{t("dashboard.personal.target.empty")}</p>
-          {canEditTarget ? (
-            <TargetDialog
-              current={null}
-              triggerLabel={t("dashboard.personal.target.set")}
-              onSaved={onSaved}
-            />
-          ) : null}
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-start gap-4">
+        <p className="text-sm text-muted-foreground">{t("dashboard.personal.target.empty")}</p>
+        {canEditTarget ? (
+          <TargetDialog
+            current={null}
+            triggerLabel={t("dashboard.personal.target.set")}
+            onSaved={onSaved}
+          />
+        ) : null}
+      </div>
     );
   }
 
@@ -64,67 +61,76 @@ export function TargetCard({
   const delta = personal.paceDeltaValue ?? 0;
   const ringLabel = t("dashboard.personal.target.ringLabel", { pct });
   return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center gap-6">
+        <DotRing value={Math.min(pct, 100)} label={ringLabel} pointer className="w-32 shrink-0 sm:w-40">
+          <DotNumber className="text-2xl sm:text-3xl">{pct}%</DotNumber>
+        </DotRing>
+        <div className="flex min-w-0 flex-col gap-1">
+          <p className="tabular-nums">
+            <span className="text-xl font-semibold">{formatRpShort(personal.bookedThisMonth)}</span>{" "}
+            <span className="text-sm text-muted-foreground">
+              {t("dashboard.personal.target.of", { target: formatRpShort(target) })}
+            </span>
+          </p>
+          <p className="text-sm">
+            <RichLine
+              tones={["ink"]}
+              text={t("dashboard.personal.target.remaining", {
+                remaining: formatRpShort(personal.remaining ?? 0),
+                days: personal.daysLeftInMonth,
+              })}
+            />
+          </p>
+          <p className="text-sm text-muted-foreground">
+            <RichLine
+              tones={[delta >= 0 ? "positive" : "signal"]}
+              text={t(
+                delta >= 0 ? "dashboard.personal.target.ahead" : "dashboard.personal.target.behind",
+                { delta: formatRpShort(Math.abs(delta)) }
+              )}
+            />
+          </p>
+        </div>
+      </div>
+      <DotMeter
+        value={Math.min(pct, 100)}
+        pace={personal.idealPct}
+        label={ringLabel}
+        tone={delta >= 0 ? "positive" : "ink"}
+      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {personal.bestMonth ? (
+          <p className="text-sm text-muted-foreground">
+            {t("dashboard.personal.target.best", {
+              value: formatRpShort(personal.bestMonth.booked),
+              month: monthName(personal.bestMonth.month, locale),
+            })}
+          </p>
+        ) : (
+          <span />
+        )}
+        {canEditTarget ? (
+          <TargetDialog
+            current={target}
+            triggerLabel={t("dashboard.personal.target.edit")}
+            onSaved={onSaved}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+export function TargetCard({ personal, canEditTarget, onSaved, now }: TargetProps) {
+  const title = useTargetTitle(now);
+  return (
     <Card data-testid="dashboard-target">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        <div className="flex items-center gap-6">
-          <DotRing value={Math.min(pct, 100)} label={ringLabel} pointer className="w-32 shrink-0 sm:w-40">
-            <DotNumber className="text-2xl sm:text-3xl">{pct}%</DotNumber>
-          </DotRing>
-          <div className="flex min-w-0 flex-col gap-1">
-            <p className="tabular-nums">
-              <span className="text-xl font-semibold">{formatRpShort(personal.bookedThisMonth)}</span>{" "}
-              <span className="text-sm text-muted-foreground">
-                {t("dashboard.personal.target.of", { target: formatRpShort(target) })}
-              </span>
-            </p>
-            <p className="text-sm">
-              <RichLine
-                tones={["ink"]}
-                text={t("dashboard.personal.target.remaining", {
-                  remaining: formatRpShort(personal.remaining ?? 0),
-                  days: personal.daysLeftInMonth,
-                })}
-              />
-            </p>
-            <p className="text-sm text-muted-foreground">
-              <RichLine
-                tones={[delta >= 0 ? "positive" : "signal"]}
-                text={t(
-                  delta >= 0 ? "dashboard.personal.target.ahead" : "dashboard.personal.target.behind",
-                  { delta: formatRpShort(Math.abs(delta)) }
-                )}
-              />
-            </p>
-          </div>
-        </div>
-        <DotMeter
-          value={Math.min(pct, 100)}
-          pace={personal.idealPct}
-          label={ringLabel}
-          tone={delta >= 0 ? "positive" : "ink"}
-        />
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {personal.bestMonth ? (
-            <p className="text-sm text-muted-foreground">
-              {t("dashboard.personal.target.best", {
-                value: formatRpShort(personal.bestMonth.booked),
-                month: monthName(personal.bestMonth.month, locale),
-              })}
-            </p>
-          ) : (
-            <span />
-          )}
-          {canEditTarget ? (
-            <TargetDialog
-              current={target}
-              triggerLabel={t("dashboard.personal.target.edit")}
-              onSaved={onSaved}
-            />
-          ) : null}
-        </div>
+      <CardContent>
+        <TargetBody personal={personal} canEditTarget={canEditTarget} onSaved={onSaved} />
       </CardContent>
     </Card>
   );

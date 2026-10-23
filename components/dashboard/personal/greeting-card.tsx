@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useI18n } from "@/components/i18n-provider";
 import { RichLine } from "@/components/dashboard/personal/rich-line";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import type { DashboardPersonal } from "@/lib/dashboard-personal";
 import { formatRpShort } from "@/lib/utils/format";
 
@@ -17,6 +16,7 @@ export function greetingForHour(hour: number): Greeting {
   return "malam";
 }
 
+/** The inverse greeting band at the top of the dashboard overview. */
 export function GreetingCard({
   name,
   personal,
@@ -26,7 +26,13 @@ export function GreetingCard({
   personal: DashboardPersonal;
   now: Date;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const today = new Intl.DateTimeFormat(locale === "en" ? "en-US" : "id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(now);
   const greeting = t(`dashboard.personal.greeting.${greetingForHour(now.getHours())}`);
   const lines: Array<{ node: React.ReactNode; key: string }> = [];
   if (personal.followUpTotal > 0) {
@@ -69,27 +75,31 @@ export function GreetingCard({
   }
 
   return (
-    <Card tone="feature" data-testid="dashboard-greeting">
-      <CardContent className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <h2 className="font-dot text-3xl font-black tracking-wide sm:text-4xl">
-            {name ? `${greeting}, ${name}` : greeting}
-          </h2>
-          <p className="max-w-prose text-base leading-relaxed text-inverse-foreground/80">
-            {lines.map((line, i) => (
-              <span key={line.key}>
-                {i > 0 ? " " : ""}
-                {line.node}
-              </span>
-            ))}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Button asChild className="bg-inverse-foreground text-inverse hover:bg-inverse-foreground/90">
-            <Link href="/costing">{t("dashboard.personal.cta.newCosting")}</Link>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <div
+      className="flex flex-col gap-6 bg-inverse px-6 py-6 text-inverse-foreground sm:flex-row sm:items-end sm:justify-between sm:px-8 sm:py-8"
+      data-testid="dashboard-greeting"
+    >
+      <div className="flex min-w-0 flex-col gap-2">
+        <p className="text-sm text-inverse-foreground/70" data-volatile>
+          {today}
+        </p>
+        <h2 className="font-dot text-3xl font-black tracking-wide sm:text-4xl">
+          {name ? `${greeting}, ${name}` : greeting}
+        </h2>
+        <p className="max-w-prose text-base leading-relaxed text-inverse-foreground/80">
+          {lines.map((line, i) => (
+            <span key={line.key}>
+              {i > 0 ? " " : ""}
+              {line.node}
+            </span>
+          ))}
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-wrap gap-3">
+        <Button asChild className="bg-inverse-foreground text-inverse hover:bg-inverse-foreground/90">
+          <Link href="/costing">{t("dashboard.personal.cta.newCosting")}</Link>
+        </Button>
+      </div>
+    </div>
   );
 }
