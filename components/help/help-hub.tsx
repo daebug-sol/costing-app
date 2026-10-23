@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  ArrowRight,
-  BookOpen,
-  CheckCircle2,
-  Layers,
-} from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2, Layers } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  ExplorerBadge,
+  ExplorerRow,
+  ExplorerRows,
+} from "@/components/file-explorer";
 import { HelpSearch } from "@/components/help/help-search";
 import { useHelpProgress } from "@/components/help/use-help-progress";
 import { PageShell } from "@/components/page-shell";
@@ -37,15 +37,11 @@ export function HelpHub() {
     : null;
 
   return (
-    <PageShell
-      width="wide"
-      eyebrow="Panduan"
-      title="Help"
-    >
+    <PageShell width="wide" eyebrow="Panduan" title="Help">
       <div className="flex flex-col gap-6" data-testid="help-hub">
         <HelpSearch />
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap [&>*]:w-full sm:[&>*]:w-auto">
           {hydrated && continueLesson ? (
             <Button asChild>
               <Link
@@ -56,7 +52,10 @@ export function HelpHub() {
               </Link>
             </Button>
           ) : null}
-          <Button variant={continueLesson && hydrated ? "outline" : "default"} asChild>
+          <Button
+            variant={continueLesson && hydrated ? "outline" : "default"}
+            asChild
+          >
             <Link href={`/help/${starter.track}/${starter.slug}`}>
               Mulai dari sini
               <BookOpen data-icon="inline-end" />
@@ -64,11 +63,40 @@ export function HelpHub() {
           </Button>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="bg-card border-border overflow-hidden rounded-xl border md:hidden">
+          <ExplorerRows>
+            {tracks.map((track) => {
+              const counts = trackProgressCounts(
+                track.id,
+                progress.completedLessonKeys,
+              );
+              return (
+                <ExplorerRow
+                  key={track.id}
+                  href={`/help/${track.id}`}
+                  icon={<Layers className="size-5" aria-hidden />}
+                  title={track.title}
+                  meta={
+                    <>
+                      <span className="w-full">{track.summary}</span>
+                      <ExplorerBadge>
+                        {hydrated
+                          ? `${counts.completed}/${counts.total} selesai`
+                          : `${counts.total} pelajaran`}
+                      </ExplorerBadge>
+                    </>
+                  }
+                />
+              );
+            })}
+          </ExplorerRows>
+        </div>
+
+        <div className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-3">
           {tracks.map((track) => {
             const counts = trackProgressCounts(
               track.id,
-              progress.completedLessonKeys
+              progress.completedLessonKeys,
             );
             return (
               <Card key={track.id} size="sm" className="shadow-sm">
@@ -109,12 +137,14 @@ export function HelpHub() {
 
         {hydrated && progress.completedLessonKeys.length > 0 ? (
           <p className="text-muted-foreground text-sm">
-            {progress.completedLessonKeys.filter((key) => {
-              const lesson = getLessonByKey(key);
-              return lesson
-                ? isLessonComplete(progress, getLessonKey(lesson))
-                : false;
-            }).length}{" "}
+            {
+              progress.completedLessonKeys.filter((key) => {
+                const lesson = getLessonByKey(key);
+                return lesson
+                  ? isLessonComplete(progress, getLessonKey(lesson))
+                  : false;
+              }).length
+            }{" "}
             pelajaran ditandai selesai di perangkat ini.
           </p>
         ) : null}

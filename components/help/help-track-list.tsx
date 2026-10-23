@@ -11,6 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  ExplorerBadge,
+  ExplorerRow,
+  ExplorerRows,
+} from "@/components/file-explorer";
 import { useHelpProgress } from "@/components/help/use-help-progress";
 import { PageShell } from "@/components/page-shell";
 import {
@@ -51,7 +56,39 @@ export function HelpTrackList({ trackId }: { trackId: string }) {
             : `${counts.total} pelajaran`}
         </Badge>
 
-        <ul className="flex flex-col gap-3">
+        <div className="bg-card border-border overflow-hidden rounded-xl border md:hidden">
+          <ExplorerRows>
+            {lessons.map((lesson) => {
+              const key = getLessonKey(lesson);
+              const done = hydrated && isLessonComplete(progress, key);
+              return (
+                <ExplorerRow
+                  key={key}
+                  href={`/help/${lesson.track}/${lesson.slug}`}
+                  icon={
+                    done ? (
+                      <CheckCircle2
+                        className="size-5 text-emerald-600"
+                        aria-label="Selesai"
+                      />
+                    ) : (
+                      <Circle className="size-5" aria-hidden />
+                    )
+                  }
+                  title={lesson.title}
+                  meta={
+                    <>
+                      <span className="w-full">{lesson.summary}</span>
+                      <ExplorerBadge>{lesson.durationMin} mnt</ExplorerBadge>
+                    </>
+                  }
+                />
+              );
+            })}
+          </ExplorerRows>
+        </div>
+
+        <ul className="hidden flex-col gap-3 md:flex">
           {lessons.map((lesson) => {
             const key = getLessonKey(lesson);
             const done = hydrated && isLessonComplete(progress, key);
