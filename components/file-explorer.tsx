@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -76,12 +77,12 @@ export function ExplorerRow({
         </span>
       )}
       <span className="min-w-0 flex-1">
-        <span className="text-foreground block truncate text-sm font-medium">
+        <span className="text-foreground line-clamp-2 block text-sm font-medium break-words">
           {title}
         </span>
         <span className="text-muted-foreground mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           {amountCompact ? (
-            <span className="sm:hidden">{amountCompact}</span>
+            <span className={cn(amount && "sm:hidden")}>{amountCompact}</span>
           ) : null}
           {meta}
         </span>
@@ -110,7 +111,7 @@ export function ExplorerRow({
         <Link href={href} className={rowClass} aria-label={ariaLabel}>
           {body}
         </Link>
-      ) : (
+      ) : onClick ? (
         <button
           type="button"
           onClick={onClick}
@@ -120,9 +121,152 @@ export function ExplorerRow({
         >
           {body}
         </button>
+      ) : (
+        <div className={cn(rowClass, "hover:bg-transparent")}>{body}</div>
       )}
       {footer}
     </li>
+  );
+}
+
+export function ExplorerToolbar({
+  placeholder,
+  search,
+  onSearchChange,
+  filterContent,
+  filterActive,
+}: {
+  placeholder: string;
+  search: string;
+  onSearchChange: (v: string) => void;
+  /** Contents of the Filter popover; no Filter button when omitted. */
+  filterContent?: ReactNode;
+  filterActive?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="relative min-w-0 flex-1">
+        <Search
+          aria-hidden
+          className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
+        />
+        <Input
+          aria-label={placeholder}
+          placeholder={placeholder}
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-10 pl-9"
+        />
+      </div>
+      {filterContent ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 shrink-0 gap-2"
+              aria-label="Filter"
+            >
+              <SlidersHorizontal className="size-4" />
+              Filter
+              {filterActive ? (
+                <span
+                  className="bg-primary size-1.5 rounded-full"
+                  aria-hidden
+                />
+              ) : null}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72 p-3">
+            {filterContent}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+    </div>
+  );
+}
+
+/** Status badge used in explorer meta lines; `danger` is the red-outline OVERDUE style. */
+export function ExplorerBadge({
+  children,
+  danger,
+}: {
+  children: ReactNode;
+  danger?: boolean;
+}) {
+  return (
+    <Badge
+      variant={danger ? "outline" : "secondary"}
+      className={cn(
+        "uppercase",
+        danger && "border-destructive text-destructive",
+      )}
+    >
+      {children}
+    </Badge>
+  );
+}
+
+/**
+ * Mobile-only list (below `md`) for modules whose desktop view stays a table:
+ * toolbar, count line, then one card of `ExplorerRow`s.
+ */
+export function ExplorerMobileList({
+  placeholder,
+  search,
+  onSearchChange,
+  filterContent,
+  filterActive,
+  countLabel,
+  empty,
+  children,
+}: {
+  placeholder: string;
+  search: string;
+  onSearchChange: (v: string) => void;
+  filterContent?: ReactNode;
+  filterActive?: boolean;
+  /** e.g. "32 sales order" */
+  countLabel: string;
+  /** Shown instead of the rows when there are none. */
+  empty?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3 md:hidden">
+      <ExplorerToolbar
+        placeholder={placeholder}
+        search={search}
+        onSearchChange={onSearchChange}
+        filterContent={filterContent}
+        filterActive={filterActive}
+      />
+      <p className="text-muted-foreground text-xs">{countLabel}</p>
+      <div className="bg-card border-border overflow-hidden rounded-xl border">
+        {empty ?? <ExplorerRows>{children}</ExplorerRows>}
+      </div>
+    </div>
+  );
+}
+
+/** Round "+" in the title row, mobile only. */
+export function ExplorerMobileAdd({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      size="icon"
+      className="size-10 rounded-full md:hidden"
+      onClick={onClick}
+      aria-label={label}
+    >
+      <Plus className="size-5" />
+    </Button>
   );
 }
 
@@ -232,43 +376,13 @@ export function Explorer({
         </>
       }
     >
-      <div className="flex items-center gap-2">
-        <div className="relative min-w-0 flex-1">
-          <Search
-            aria-hidden
-            className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
-          />
-          <Input
-            aria-label={searchPlaceholder}
-            placeholder={searchPlaceholder}
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="h-10 pl-9"
-          />
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-10 shrink-0 gap-2"
-              aria-label="Filter"
-            >
-              <SlidersHorizontal className="size-4" />
-              Filter
-              {filterActive ? (
-                <span
-                  className="bg-primary size-1.5 rounded-full"
-                  aria-hidden
-                />
-              ) : null}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72 p-3">
-            {filterContent}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <ExplorerToolbar
+        placeholder={searchPlaceholder}
+        search={search}
+        onSearchChange={onSearchChange}
+        filterContent={filterContent}
+        filterActive={filterActive}
+      />
 
       <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
         {/* Desktop folder sidebar */}

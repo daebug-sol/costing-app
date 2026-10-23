@@ -1,9 +1,20 @@
 "use client";
 
-import { ArrowLeft, ClipboardList, FileText, Loader2, Truck } from "lucide-react";
+import {
+  ArrowLeft,
+  ClipboardList,
+  FileText,
+  Loader2,
+  Truck,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import {
+  ExplorerBadge,
+  ExplorerMobileList,
+  ExplorerRow,
+} from "@/components/file-explorer";
 import { PageShell } from "@/components/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +39,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { soStatusLabel } from "@/lib/o2c/status";
 import { remainingQty } from "@/lib/o2c/so-status";
-import { formatIDR } from "@/lib/utils/format";
+import { formatDayMonth, formatIDR, formatRpShort } from "@/lib/utils/format";
 import { toastError, toastSuccess } from "@/store/toastStore";
 
 type SoListRow = {
@@ -88,12 +99,26 @@ export function SalesOrdersModule() {
   const [detail, setDetail] = useState<SoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [deliverQty, setDeliverQty] = useState<Record<string, string>>({});
 
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      (r) =>
+        r.soNumber.toLowerCase().includes(q) ||
+        r.customer.name.toLowerCase().includes(q) ||
+        r.customer.company.toLowerCase().includes(q),
+    );
+  }, [list, search]);
+
   const loadList = useCallback(async () => {
     const qs =
-      statusFilter !== "all" ? `?status=${encodeURIComponent(statusFilter)}` : "";
+      statusFilter !== "all"
+        ? `?status=${encodeURIComponent(statusFilter)}`
+        : "";
     const r = await fetch(`/api/sales-orders${qs}`);
     if (!r.ok) throw new Error(await readErr(r));
     setList((await r.json()) as SoListRow[]);
@@ -139,7 +164,7 @@ export function SalesOrdersModule() {
     if (!detail) return 0;
     return detail.items.reduce(
       (s, it) => s + remainingQty(it.qty, it.deliveredQty),
-      0
+      0,
     );
   }, [detail]);
 
@@ -235,7 +260,9 @@ export function SalesOrdersModule() {
             {formatIDR(detail.grandTotal)}
           </span>
           {detail.poNumber ? (
-            <span className="text-sm text-muted-foreground">PO {detail.poNumber}</span>
+            <span className="text-sm text-muted-foreground">
+              PO {detail.poNumber}
+            </span>
           ) : null}
         </div>
 
@@ -362,7 +389,7 @@ export function SalesOrdersModule() {
                               onClick={() => {
                                 window.open(
                                   `/api/delivery-orders/${d.id}/pdf`,
-                                  "_blank"
+                                  "_blank",
                                 );
                               }}
                             >
@@ -433,7 +460,7 @@ export function SalesOrdersModule() {
       title="Sales Order"
       contentClassName="space-y-4"
     >
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="hidden flex-wrap items-end gap-3 md:flex">
         <div className="space-y-1.5">
           <Label>Status</Label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -443,7 +470,9 @@ export function SalesOrdersModule() {
             <SelectContent>
               <SelectItem value="all">Semua</SelectItem>
               <SelectItem value="open">Terbuka</SelectItem>
-              <SelectItem value="partially_delivered">Sebagian dikirim</SelectItem>
+              <SelectItem value="partially_delivered">
+                Sebagian dikirim
+              </SelectItem>
               <SelectItem value="delivered">Terkirim</SelectItem>
               <SelectItem value="closed">Ditutup</SelectItem>
               <SelectItem value="cancelled">Dibatalkan</SelectItem>
@@ -452,14 +481,66 @@ export function SalesOrdersModule() {
         </div>
       </div>
 
+      <ExplorerMobileList
+        placeholder="Cari nomor atau pelanggan…"
+        search={search}
+        onSearchChange={setSearch}
+        filterActive={statusFilter !== "all"}
+        filterContent={
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">Status</Label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-8 w-full text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua</SelectItem>
+                <SelectItem value="open">Terbuka</SelectItem>
+                <SelectItem value="partially_delivered">
+                  Sebagian dikirim
+                </SelectItem>
+                <SelectItem value="delivered">Terkirim</SelectItem>
+                <SelectItem value="closed">Ditutup</SelectItem>
+                <SelectItem value="cancelled">Dibatalkan</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        }
+        countLabel={`${shown.length} sales order`}
+        empty={
+          shown.length === 0 ? (
+            <p className="text-muted-foreground px-4 py-10 text-center text-sm">
+              Belum ada sales order
+            </p>
+          ) : undefined
+        }
+      >
+        {shown.map((row) => (
+          <ExplorerRow
+            key={row.id}
+            icon={<ClipboardList className="size-5" aria-hidden />}
+            title={`${row.soNumber} · ${row.customer.company || row.customer.name}`}
+            amountCompact={formatRpShort(row.grandTotal)}
+            meta={
+              <>
+                <span>{formatDayMonth(row.tanggal)}</span>
+                <ExplorerBadge>{soStatusLabel(row.status)}</ExplorerBadge>
+              </>
+            }
+            href={`/sales-orders?id=${row.id}`}
+          />
+        ))}
+      </ExplorerMobileList>
+
       {list.length === 0 ? (
         <EmptyState
+          className="hidden md:flex"
           icon={ClipboardList}
           title="Belum ada sales order"
           description="Konversi quotation menang dari halaman Documentation."
         />
       ) : (
-        <Card>
+        <Card className="hidden md:block">
           <CardContent className="pt-4">
             <Table>
               <TableHeader>
@@ -478,7 +559,9 @@ export function SalesOrdersModule() {
                     className="cursor-pointer"
                     onClick={() => router.push(`/sales-orders?id=${row.id}`)}
                   >
-                    <TableCell className="font-medium">{row.soNumber}</TableCell>
+                    <TableCell className="font-medium">
+                      {row.soNumber}
+                    </TableCell>
                     <TableCell>
                       {row.customer.company || row.customer.name}
                     </TableCell>

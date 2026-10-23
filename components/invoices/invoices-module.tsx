@@ -2,8 +2,13 @@
 
 import { ArrowLeft, FileText, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import {
+  ExplorerBadge,
+  ExplorerMobileList,
+  ExplorerRow,
+} from "@/components/file-explorer";
 import { PageShell } from "@/components/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { invoiceStatusLabel } from "@/lib/o2c/status";
-import { formatIDR } from "@/lib/utils/format";
+import { formatDayMonth, formatIDR, formatRpShort } from "@/lib/utils/format";
 import { toastError, toastSuccess } from "@/store/toastStore";
 
 type InvRow = {
@@ -68,7 +73,12 @@ async function readErr(res: Response) {
   return res.statusText || "Request failed";
 }
 
-function isOverdue(inv: { dueDate: string | null; status: string; paidTotal: number; grandTotal: number }) {
+function isOverdue(inv: {
+  dueDate: string | null;
+  status: string;
+  paidTotal: number;
+  grandTotal: number;
+}) {
   if (!inv.dueDate) return false;
   if (["paid", "void", "draft"].includes(inv.status)) return false;
   if (inv.paidTotal + 0.01 >= inv.grandTotal) return false;
@@ -84,12 +94,26 @@ export function InvoicesModule() {
   const [detail, setDetail] = useState<InvDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [dueDate, setDueDate] = useState("");
 
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      (r) =>
+        (r.invNumber ?? "draft").toLowerCase().includes(q) ||
+        r.customer.name.toLowerCase().includes(q) ||
+        r.customer.company.toLowerCase().includes(q),
+    );
+  }, [list, search]);
+
   const loadList = useCallback(async () => {
     const qs =
-      statusFilter !== "all" ? `?status=${encodeURIComponent(statusFilter)}` : "";
+      statusFilter !== "all"
+        ? `?status=${encodeURIComponent(statusFilter)}`
+        : "";
     const r = await fetch(`/api/invoices${qs}`);
     if (!r.ok) throw new Error(await readErr(r));
     setList((await r.json()) as InvRow[]);
@@ -179,7 +203,9 @@ export function InvoicesModule() {
             {overdue ? "Jatuh tempo" : invoiceStatusLabel(detail.status)}
           </Badge>
           <Badge variant="outline">{detail.kind.toUpperCase()}</Badge>
-          <span className="tabular-money text-sm">{formatIDR(detail.grandTotal)}</span>
+          <span className="tabular-money text-sm">
+            {formatIDR(detail.grandTotal)}
+          </span>
           <span className="text-sm text-muted-foreground">
             Dibayar {formatIDR(detail.paidTotal)}
           </span>
@@ -208,7 +234,7 @@ export function InvoicesModule() {
                       onClick={() =>
                         void action(
                           { dueDate: dueDate || null },
-                          "Jatuh tempo disimpan"
+                          "Jatuh tempo disimpan",
                         )
                       }
                     >
@@ -219,7 +245,9 @@ export function InvoicesModule() {
                     type="button"
                     size="sm"
                     disabled={busy}
-                    onClick={() => void action({ action: "send" }, "Invoice dikirim")}
+                    onClick={() =>
+                      void action({ action: "send" }, "Invoice dikirim")
+                    }
                   >
                     Kirim (terbitkan nomor)
                   </Button>
@@ -234,7 +262,7 @@ export function InvoicesModule() {
                   onClick={() =>
                     void action(
                       { action: "void", voidReason: "Dibatalkan pengguna" },
-                      "Invoice di-void"
+                      "Invoice di-void",
                     )
                   }
                 >
@@ -283,7 +311,9 @@ export function InvoicesModule() {
             <div className="ml-auto max-w-xs space-y-1 text-sm">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span className="tabular-money">{formatIDR(detail.subtotal)}</span>
+                <span className="tabular-money">
+                  {formatIDR(detail.subtotal)}
+                </span>
               </div>
               {detail.discountAmt > 0 ? (
                 <div className="flex justify-between">
@@ -303,7 +333,9 @@ export function InvoicesModule() {
               </div>
               <div className="flex justify-between font-medium">
                 <span>Grand total</span>
-                <span className="tabular-money">{formatIDR(detail.grandTotal)}</span>
+                <span className="tabular-money">
+                  {formatIDR(detail.grandTotal)}
+                </span>
               </div>
             </div>
           </CardContent>
@@ -319,7 +351,7 @@ export function InvoicesModule() {
       title="Invoice"
       contentClassName="space-y-4"
     >
-      <div className="space-y-1.5">
+      <div className="hidden space-y-1.5 md:block">
         <Label>Status</Label>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-48">
@@ -336,14 +368,74 @@ export function InvoicesModule() {
         </Select>
       </div>
 
+      <ExplorerMobileList
+        placeholder="Cari nomor atau pelanggan…"
+        search={search}
+        onSearchChange={setSearch}
+        filterActive={statusFilter !== "all"}
+        filterContent={
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">Status</Label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-8 w-full text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="sent">Terkirim</SelectItem>
+                <SelectItem value="partially_paid">Sebagian dibayar</SelectItem>
+                <SelectItem value="paid">Lunas</SelectItem>
+                <SelectItem value="void">Void</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        }
+        countLabel={`${shown.length} invoice`}
+        empty={
+          shown.length === 0 ? (
+            <p className="text-muted-foreground px-4 py-10 text-center text-sm">
+              Belum ada invoice
+            </p>
+          ) : undefined
+        }
+      >
+        {shown.map((row) => {
+          const overdue = isOverdue(row);
+          return (
+            <ExplorerRow
+              key={row.id}
+              icon={<FileText className="size-5" aria-hidden />}
+              title={`${row.invNumber ?? "Draft"} · ${row.customer.company || row.customer.name}`}
+              amountCompact={formatRpShort(row.grandTotal)}
+              meta={
+                <>
+                  {row.dueDate ? (
+                    <span>
+                      {overdue ? "lewat" : "jatuh tempo"}{" "}
+                      {formatDayMonth(row.dueDate)}
+                    </span>
+                  ) : null}
+                  <ExplorerBadge danger={overdue}>
+                    {overdue ? "Overdue" : invoiceStatusLabel(row.status)}
+                  </ExplorerBadge>
+                </>
+              }
+              href={`/invoices?id=${row.id}`}
+            />
+          );
+        })}
+      </ExplorerMobileList>
+
       {list.length === 0 ? (
         <EmptyState
+          className="hidden md:flex"
           icon={FileText}
           title="Belum ada invoice"
           description="Buat invoice dari detail Sales Order."
         />
       ) : (
-        <Card>
+        <Card className="hidden md:block">
           <CardContent className="pt-4">
             <Table>
               <TableHeader>
