@@ -190,14 +190,14 @@ export function DocumentationListView({
       primaryLabel={t("common.createQuotation")}
       onPrimary={onCreate}
       primaryBusy={creating}
-      searchPlaceholder="Cari nama / nomor surat / perihal…"
+      searchPlaceholder={t("explorer.documentation.search")}
       search={search}
       onSearchChange={onSearchChange}
       filterContent={filterContent}
       filterActive={filtersActive}
-      allLabel="Semua penawaran"
-      folderHeading="Pelanggan"
-      noun="penawaran"
+      allLabel={t("explorer.documentation.all")}
+      folderHeading={t("explorer.customers")}
+      noun={t("explorer.documentation.noun")}
       folders={folders.map((f) => ({
         key: f.key,
         label: f.name,
@@ -215,7 +215,7 @@ export function DocumentationListView({
             className="text-muted-foreground hover:text-primary h-7 tracking-normal normal-case"
             onClick={() => onSelectModeChange(true)}
           >
-            Pilih file
+            {t("explorer.selectFiles")}
           </Button>
         ) : null
       }
@@ -255,7 +255,9 @@ export function DocumentationListView({
                     }
                   }}
                 >
-                  {allVisibleSelected ? "Batalkan semua" : "Pilih semua"}
+                  {allVisibleSelected
+                    ? t("explorer.deselectAll")
+                    : t("explorer.selectAll")}
                 </Button>
               ) : null}
               <Button

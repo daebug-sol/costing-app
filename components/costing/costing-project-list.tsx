@@ -49,7 +49,7 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
     if (cur) cur.count += 1;
     else
       folderMap.set(key, {
-        label: key === NO_CUSTOMER ? "Tanpa pelanggan" : key,
+        label: key === NO_CUSTOMER ? t("explorer.noCustomer") : key,
         count: 1,
       });
   }
@@ -186,9 +186,9 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
       onSearchChange={(v) => setCostingSidebar({ search: v })}
       filterContent={filterContent}
       filterActive={filtersActive}
-      allLabel="Semua proyek"
-      folderHeading="Pelanggan"
-      noun="proyek"
+      allLabel={t("explorer.costing.all")}
+      folderHeading={t("explorer.customers")}
+      noun={t("explorer.costing.noun")}
       folders={folders}
       totalCount={filteredProjects.length}
       selectedKey={folderKey}

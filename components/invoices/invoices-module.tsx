@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { ArrowLeft, FileText, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -86,6 +87,7 @@ function isOverdue(inv: {
 }
 
 export function InvoicesModule() {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const idParam = searchParams.get("id");
@@ -369,7 +371,7 @@ export function InvoicesModule() {
       </div>
 
       <ExplorerMobileList
-        placeholder="Cari nomor atau pelanggan…"
+        placeholder={t("explorer.numberOrCustomer")}
         search={search}
         onSearchChange={setSearch}
         filterActive={statusFilter !== "all"}
@@ -391,11 +393,11 @@ export function InvoicesModule() {
             </Select>
           </div>
         }
-        countLabel={`${shown.length} invoice`}
+        countLabel={t("explorer.invoice.count", { count: shown.length })}
         empty={
           shown.length === 0 ? (
             <p className="text-muted-foreground px-4 py-10 text-center text-sm">
-              Belum ada invoice
+              {t("explorer.invoice.empty")}
             </p>
           ) : undefined
         }
@@ -412,7 +414,7 @@ export function InvoicesModule() {
                 <>
                   {row.dueDate ? (
                     <span>
-                      {overdue ? "lewat" : "jatuh tempo"}{" "}
+                      {overdue ? t("explorer.invoice.overdue") : t("explorer.invoice.due")}{" "}
                       {formatDayMonth(row.dueDate)}
                     </span>
                   ) : null}
