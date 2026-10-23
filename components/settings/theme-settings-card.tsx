@@ -16,9 +16,6 @@ export function ThemeSettingsCard() {
     <Card size="sm" className="border-border shadow-sm" data-testid="theme-settings-card">
       <CardHeader>
         <CardTitle className="text-lg">{t("settings.appearance.title")}</CardTitle>
-        <p className="text-xs font-normal text-muted-foreground">
-          {t("settings.appearance.description")}
-        </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
@@ -77,9 +74,6 @@ export function ThemeSettingsCard() {
         </div>
         <div className="flex flex-col gap-2">
           <Label id="locale-label">{t("language.settingsTitle")}</Label>
-          <p className="text-xs text-muted-foreground">
-            {t("language.settingsDescription")}
-          </p>
           <ToggleGroup
             type="single"
             variant="outline"

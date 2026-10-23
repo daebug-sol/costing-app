@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { costingErrorMessage } from "@/lib/costing-error-message";
 import type { CostingWorkspaceState } from "./use-costing-workspace";
 
@@ -116,23 +115,6 @@ export function ProjectHeader({ ed }: { ed: CostingWorkspaceState }) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Label htmlFor="project-qty" className="text-muted-foreground text-xs normal-case">
-          {t("costing.page.qty")}
-        </Label>
-        <Input
-          id="project-qty"
-          className="h-8 w-24 text-sm"
-          type="number"
-          min={1}
-          defaultValue={currentProject.qty}
-          key={`pq-${currentProject.id}-${currentProject.qty}`}
-          onBlur={(e) =>
-            updateProject({ qty: Math.max(1, Math.floor(Number(e.target.value) || 1)) }).catch(fail)
-          }
-        />
       </div>
     </header>
   );

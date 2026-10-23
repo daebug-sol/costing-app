@@ -157,8 +157,6 @@ const id = {
   "language.id": "Bahasa Indonesia",
   "language.en": "English",
   "language.settingsTitle": "Bahasa",
-  "language.settingsDescription":
-    "Pilih bahasa tampilan aplikasi. Pilihan disimpan di perangkat ini.",
 
   // --- navbar
   "nav.dashboard": "Dashboard",
@@ -350,7 +348,6 @@ const id = {
   "dashboard.pctOfGross": "% dari gross",
   "dashboard.itemCount": "{count} item",
   "settings.appearance.title": "Tampilan",
-  "settings.appearance.description": "Preferensi perangkat — disimpan di browser Anda, bukan di server.",
   "settings.appearance.palette": "Palet warna",
   "settings.appearance.paletteDotmatrix": "Dot Matrix",
   "settings.appearance.paletteProfessional": "Profesional",
@@ -527,8 +524,6 @@ const en: Record<MessageKey, string> = {
   "language.id": "Bahasa Indonesia",
   "language.en": "English",
   "language.settingsTitle": "Language",
-  "language.settingsDescription":
-    "Choose the display language of the app. Your choice is saved on this device.",
 
   // --- navbar
   "nav.dashboard": "Dashboard",
@@ -719,7 +714,6 @@ const en: Record<MessageKey, string> = {
   "dashboard.pctOfGross": "% of gross",
   "dashboard.itemCount": "{count} items",
   "settings.appearance.title": "Appearance",
-  "settings.appearance.description": "Device preferences — saved in your browser, not on the server.",
   "settings.appearance.palette": "Color palette",
   "settings.appearance.paletteDotmatrix": "Dot Matrix",
   "settings.appearance.paletteProfessional": "Professional",

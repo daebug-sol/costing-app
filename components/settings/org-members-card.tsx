@@ -110,8 +110,7 @@ export function OrgMembersCard({
       <CardHeader>
         <CardTitle className="text-lg">Anggota</CardTitle>
         <CardDescription>
-          Peran aplikasi di organisasi ini (terpisah dari undangan Clerk). Owner
-          dapat menunjuk owner lain; admin tidak dapat mengubah owner.
+          Owner bisa menunjuk owner lain. Admin tidak bisa mengubah owner.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -121,15 +120,15 @@ export function OrgMembersCard({
           </div>
         ) : members.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Belum ada anggota tercatat. Undang via OrganizationSwitcher; peran
-            default adalah Member.
+            Belum ada anggota. Undang lewat menu organisasi di header; anggota
+            baru berperan Member.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="py-2 pr-3 font-medium">User ID</th>
+                  <th className="py-2 pr-3 font-medium">Pengguna</th>
                   <th className="py-2 pr-3 font-medium">Peran</th>
                   <th className="py-2 font-medium">Aksi</th>
                 </tr>
