@@ -7,7 +7,9 @@ test.describe("Help ('/help')", () => {
     await expect(page.getByTestId("help-hub")).toBeVisible();
     await expect(page.getByTestId("help-search")).toBeVisible();
     await expect(page.getByRole("link", { name: "Mulai dari sini" })).toBeVisible();
-    await expect(page.getByText("Mulai cepat", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Mulai cepat", { exact: true }).filter({ visible: true })
+    ).toBeVisible();
   });
 
   // Baselines not committed yet — re-enable after `npx playwright test tests/ui/help.visual.spec.ts --update-snapshots`
