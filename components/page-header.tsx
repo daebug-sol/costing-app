@@ -24,6 +24,8 @@ export type PageHeaderProps = {
    * inline — tighter variant for embedded layouts (e.g. Costing).
    */
   variant?: "band" | "inline";
+  /** Keep actions on the title row below `sm` instead of stacking under it. */
+  inlineActions?: boolean;
 };
 
 export function PageHeader({
@@ -34,6 +36,7 @@ export function PageHeader({
   className,
   innerClassName,
   variant = "band",
+  inlineActions = false,
 }: PageHeaderProps) {
   const inner = (
     <div
@@ -41,10 +44,15 @@ export function PageHeader({
         "mx-auto flex w-full flex-col gap-3 px-4 sm:px-6 lg:px-8",
         widthClass[width],
         variant === "band" ? "pt-5 pb-1" : "pt-4 pb-2",
-        innerClassName
+        innerClassName,
       )}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div
+        className={cn(
+          "flex gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+          inlineActions ? "flex-row items-center justify-between" : "flex-col",
+        )}
+      >
         <div className="min-w-0 flex-1 space-y-1">
           <h1 className="text-foreground text-xl font-semibold tracking-tight text-balance">
             {title}

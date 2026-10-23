@@ -39,6 +39,8 @@ export type CostingProjectListItem = Pick<
   segmentCount: number;
   previewAhuModel: string | null;
   previewFlowCMH: number | null;
+  /** Customer of the latest quotation for this project; absent until the list is reloaded. */
+  customerName?: string | null;
 };
 
 export type AppSettingsModules = OrgModules;
