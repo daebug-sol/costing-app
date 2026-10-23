@@ -73,7 +73,15 @@ export function formatRpShort(value: number): string {
   if (!Number.isFinite(value)) return "—";
   const sign = value < 0 ? "-" : "";
   const abs = Math.abs(value);
-  if (abs >= 1_000_000_000) return `${sign}Rp ${shortNumber(abs / 1_000_000_000)} M`;
+  if (abs >= 1_000_000_000)
+    return `${sign}Rp ${shortNumber(abs / 1_000_000_000)} M`;
   if (abs >= 1_000_000) return `${sign}Rp ${shortNumber(abs / 1_000_000)} jt`;
   return formatIDR(value).replace(/ /g, " ");
+}
+
+/** "23/10" for compact meta lines. */
+export function formatDayMonth(iso: string | Date): string {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (Number.isNaN(d.getTime())) return "—";
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
 }

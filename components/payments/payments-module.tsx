@@ -4,6 +4,12 @@ import { useI18n } from "@/components/i18n-provider";
 import { Loader2, Wallet } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import {
+  ExplorerBadge,
+  ExplorerMobileAdd,
+  ExplorerMobileList,
+  ExplorerRow,
+} from "@/components/file-explorer";
 import { PageShell } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatIDR } from "@/lib/utils/format";
+import { formatDayMonth, formatIDR, formatRpShort } from "@/lib/utils/format";
 import { toastError, toastSuccess } from "@/store/toastStore";
 import { useConfirm } from "@/components/confirm-dialog";
 
@@ -66,6 +72,10 @@ export function PaymentsModule() {
   const [openInvoices, setOpenInvoices] = useState<OpenInv[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  // Below `md` the receipt form is a full-screen sheet opened by the round "+".
+  const [formOpen, setFormOpen] = useState(false);
 
   const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
@@ -110,8 +120,9 @@ export function PaymentsModule() {
         : [];
       const rows = [...all, ...partial].filter((i) => {
         // customer id is nested — list API includes customer object
-        const cid = (i as unknown as { customerId?: string; customer?: { id: string } })
-          .customerId ??
+        const cid =
+          (i as unknown as { customerId?: string; customer?: { id: string } })
+            .customerId ??
           (i as unknown as { customer?: { id: string } }).customer?.id;
         return cid === customerId;
       });
@@ -124,13 +135,25 @@ export function PaymentsModule() {
     })();
   }, [customerId]);
 
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return payments.filter(
+      (p) =>
+        (statusFilter === "all" || p.status === statusFilter) &&
+        (!q ||
+          p.payNumber.toLowerCase().includes(q) ||
+          p.customer.name.toLowerCase().includes(q) ||
+          p.customer.company.toLowerCase().includes(q)),
+    );
+  }, [payments, search, statusFilter]);
+
   const openBalance = useMemo(
     () =>
       openInvoices.reduce(
         (s, i) => s + Math.max(0, i.grandTotal - i.paidTotal),
-        0
+        0,
       ),
-    [openInvoices]
+    [openInvoices],
   );
 
   const submit = async (useFifo: boolean) => {
@@ -164,6 +187,7 @@ export function PaymentsModule() {
       });
       if (!r.ok) throw new Error(await readErr(r));
       toastSuccess("Pembayaran dicatat");
+      setFormOpen(false);
       setAmount("");
       setReference("");
       await load();
@@ -177,7 +201,14 @@ export function PaymentsModule() {
   };
 
   const voidPayment = async (id: string) => {
-    if (!(await confirm({ title: t("payments.voidTitle"), description: t("payments.voidDescription"), confirmLabel: t("confirm.void") }))) return;
+    if (
+      !(await confirm({
+        title: t("payments.voidTitle"),
+        description: t("payments.voidDescription"),
+        confirmLabel: t("confirm.void"),
+      }))
+    )
+      return;
     try {
       const r = await fetch(`/api/payments/${id}`, {
         method: "PUT",
@@ -206,17 +237,102 @@ export function PaymentsModule() {
       eyebrow="Order-to-Cash"
       title="Pembayaran"
       contentClassName="space-y-6"
+      inlineActions
+      actions={
+        <ExplorerMobileAdd
+          label="Penerimaan baru"
+          onClick={() => setFormOpen(true)}
+        />
+      }
     >
       {confirmDialog}
+      <ExplorerMobileList
+        placeholder="Cari nomor atau pelanggan…"
+        search={search}
+        onSearchChange={setSearch}
+        filterActive={statusFilter !== "all"}
+        filterContent={
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">Status</Label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-8 w-full text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua</SelectItem>
+                <SelectItem value="posted">Posted</SelectItem>
+                <SelectItem value="void">Void</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        }
+        countLabel={`${shown.length} pembayaran`}
+        empty={
+          shown.length === 0 ? (
+            <p className="text-muted-foreground px-4 py-10 text-center text-sm">
+              Belum ada pembayaran
+            </p>
+          ) : undefined
+        }
+      >
+        {shown.map((p) => (
+          <ExplorerRow
+            key={p.id}
+            icon={<Wallet className="size-5" aria-hidden />}
+            title={`${p.payNumber} · ${p.customer.company || p.customer.name}`}
+            amountCompact={formatRpShort(p.amount)}
+            meta={
+              <>
+                <span>{formatDayMonth(p.tanggal)}</span>
+                <ExplorerBadge>{p.status}</ExplorerBadge>
+              </>
+            }
+            trailing={
+              p.status === "posted" ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  aria-label={`Void ${p.payNumber}`}
+                  onClick={() => void voidPayment(p.id)}
+                >
+                  Void
+                </Button>
+              ) : (
+                <span className="w-4" aria-hidden />
+              )
+            }
+          />
+        ))}
+      </ExplorerMobileList>
+
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-        <Card>
-          <CardHeader>
+        <Card
+          className={
+            formOpen
+              ? "fixed inset-0 z-50 overflow-y-auto rounded-none md:static md:z-auto md:rounded-xl"
+              : "hidden md:block"
+          }
+        >
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Penerimaan baru</CardTitle>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="md:hidden"
+              onClick={() => setFormOpen(false)}
+            >
+              Tutup
+            </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
               <Label>Pelanggan</Label>
-              <Select value={customerId || "__none__"} onValueChange={(v) => setCustomerId(v === "__none__" ? "" : v)}>
+              <Select
+                value={customerId || "__none__"}
+                onValueChange={(v) => setCustomerId(v === "__none__" ? "" : v)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih pelanggan" />
                 </SelectTrigger>
@@ -326,7 +442,7 @@ export function PaymentsModule() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hidden md:block">
           <CardHeader>
             <CardTitle className="text-base">Riwayat pembayaran</CardTitle>
           </CardHeader>
