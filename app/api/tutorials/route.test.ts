@@ -21,6 +21,7 @@ jest.mock("@/lib/api-guard", () => ({
 
 jest.mock("@/lib/auth", () => ({
   getDisplayName: jest.fn(async () => "Rina W."),
+  isAuthBypassed: jest.fn(() => false),
 }));
 
 const put = (body: unknown) =>
@@ -39,10 +40,16 @@ describe("/api/tutorials", () => {
     expect(await res.json()).toEqual({
       progress: { welcome: "done", costing: "skipped" },
       displayName: "Rina W.",
+      autoStart: true,
     });
     expect(prisma.tutorialProgress.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { organizationId: "org-a", userId: "user-1" } })
     );
+  });
+
+  it("GET turns autoStart off under AUTH_BYPASS", async () => {
+    jest.requireMock("@/lib/auth").isAuthBypassed.mockReturnValueOnce(true);
+    expect((await (await GET()).json()).autoStart).toBe(false);
   });
 
   it("PUT upserts by organizationId_userId_tutorialKey", async () => {

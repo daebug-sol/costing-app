@@ -50,12 +50,13 @@ describe("tour progress client", () => {
     fetchMock.mockResolvedValue(new Response("{}", { status: 500 }));
     await saveProgress("costing", "done");
     fetchMock.mockResolvedValue(
-      Response.json({ progress: { welcome: "done" }, displayName: "Rina" })
+      Response.json({ progress: { welcome: "done" }, displayName: "Rina", autoStart: true })
     );
     const result = await loadProgress();
     expect(result).toEqual({
       progress: { costing: "done", welcome: "done" },
       displayName: "Rina",
+      autoStart: true,
     });
     expect(readLocalProgress()).toEqual({ costing: "done", welcome: "done" });
   });

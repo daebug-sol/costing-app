@@ -436,6 +436,14 @@ const id = {
   "database.explorer.searchFile": "Cari nama file…",
   "database.explorer.loadingFolders": "Memuat folder…",
   "database.explorer.folderActions": "Aksi folder",
+  "tour.skip": "Lewati",
+  "tour.next": "Lanjut",
+  "tour.done": "Selesai",
+  "tour.start": "Mulai",
+  "tour.actionHint": "Klik yang disorot untuk lanjut",
+  "tour.stepOf": "{current} / {total}",
+  "tour.replayWelcome": "Ulangi tur selamat datang",
+  "tour.inviteMinutes": "{minutes} menit",
 } as const;
 
 export type MessageKey = keyof typeof id;
@@ -870,6 +878,14 @@ const en: Record<MessageKey, string> = {
   "database.explorer.searchFile": "Search file name…",
   "database.explorer.loadingFolders": "Loading folders…",
   "database.explorer.folderActions": "Folder actions",
+  "tour.skip": "Skip",
+  "tour.next": "Next",
+  "tour.done": "Done",
+  "tour.start": "Start",
+  "tour.actionHint": "Click the highlighted item to continue",
+  "tour.stepOf": "{current} / {total}",
+  "tour.replayWelcome": "Replay welcome tour",
+  "tour.inviteMinutes": "{minutes} min",
 };
 
 export const MESSAGES = { id, en } as const;

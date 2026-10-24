@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
-import { getDisplayName } from "@/lib/auth";
+import { getDisplayName, isAuthBypassed } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isTourKey, type TourProgress, type TourStatus } from "@/lib/tour/types";
 
@@ -24,7 +24,12 @@ export async function GET() {
       progress[row.tutorialKey] = row.status;
     }
   }
-  return NextResponse.json({ progress, displayName: await getDisplayName() });
+  return NextResponse.json({
+    progress,
+    displayName: await getDisplayName(),
+    /** Off for the Playwright harness so tutorials show only when forced (?tour=). */
+    autoStart: !isAuthBypassed(),
+  });
 }
 
 /** Save one tutorial's status; `status: null` clears it (replay). */

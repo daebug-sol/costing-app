@@ -60,11 +60,15 @@ export async function saveProgress(key: TourKey, status: TourStatus | null): Pro
  * failed earlier) are sent again. Null when the server refuses (e.g. an
  * expired demo), which means no tutorial should show.
  */
-export async function loadProgress(): Promise<{
+export type LoadedProgress = {
   progress: TourProgress;
   displayName: string | null;
-} | null> {
-  let json: { progress?: TourProgress; displayName?: string | null };
+  /** False in the test harness: tutorials then open only via ?tour=. */
+  autoStart: boolean;
+};
+
+export async function loadProgress(): Promise<LoadedProgress | null> {
+  let json: { progress?: TourProgress; displayName?: string | null; autoStart?: boolean };
   try {
     const res = await fetch("/api/tutorials", { cache: "no-store" });
     if (!res.ok) return null;
@@ -79,5 +83,9 @@ export async function loadProgress(): Promise<{
   }
   const progress = { ...local, ...server };
   writeLocalProgress(progress);
-  return { progress, displayName: json.displayName ?? null };
+  return {
+    progress,
+    displayName: json.displayName ?? null,
+    autoStart: json.autoStart !== false,
+  };
 }

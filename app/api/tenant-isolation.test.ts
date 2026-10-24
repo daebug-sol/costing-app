@@ -29,6 +29,7 @@ jest.mock("@/lib/api-guard", () => ({
 
 jest.mock("@/lib/auth", () => ({
   getDisplayName: jest.fn(async () => null),
+  isAuthBypassed: jest.fn(() => false),
 }));
 
 jest.mock("@/lib/permissions", () => ({
