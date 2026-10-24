@@ -1,3 +1,4 @@
+import { routeMatches } from "@/lib/tour/machine";
 import type { TourDefinition, TourKey } from "@/lib/tour/types";
 import { costingTour } from "./costing";
 import { dashboardTour } from "./dashboard";
@@ -30,13 +31,9 @@ export const TUTORIALS: Record<TourKey, TourDefinition> = {
 
 /** Module tutorial whose route matches; "/" matches only the dashboard itself. */
 export function tutorialForRoute(pathname: string): TourDefinition | null {
-  for (const def of Object.values(TUTORIALS)) {
-    if (!def.route) continue;
-    if (def.route === "/") {
-      if (pathname === "/") return def;
-    } else if (pathname === def.route || pathname.startsWith(`${def.route}/`)) {
-      return def;
-    }
-  }
-  return null;
+  return (
+    Object.values(TUTORIALS).find(
+      (def) => def.route !== undefined && routeMatches(def.route, pathname)
+    ) ?? null
+  );
 }
