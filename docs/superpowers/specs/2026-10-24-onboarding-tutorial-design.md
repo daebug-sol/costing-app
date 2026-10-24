@@ -81,7 +81,7 @@ Saat user pertama kali membuka rute modul (dan tur selamat datang sudah selesai 
 
 ### Mengulang
 
-- Menu Help (ikon ? di header) mendapat item "Ulangi tur selamat datang".
+- Menu akun (tombol avatar, yang juga memuat Help dan Pengaturan) mendapat item "Ulangi tur selamat datang". Ikon ? tetap tautan langsung ke Help.
 - Hub `/help` mendapat bagian "Tutorial interaktif": satu baris per tutorial yang boleh diakses user, status (Belum, Selesai, Dilewati) dan tombol Mulai / Ulangi. Memulai tutorial modul dari Help menavigasi ke rutenya lalu langsung memulai tanpa kartu ajakan.
 
 ## Arsitektur
@@ -175,7 +175,7 @@ PR 0 harus merge lebih dulu. Setelah itu PR A sampai F dikerjakan bersamaan dan 
 
 | PR | Isi | File |
 | --- | --- | --- |
-| 0 Fondasi | Engine, Popover, model + migrasi + API, `content/tutorials/` lengkap dengan kerangka (`steps: []` untuk modul, isi penuh untuk `welcome`), target `nav.*` di Navbar dan bottom bar, item "Ulangi tur" di menu Help, teks tombol di i18n, update dokumen aturan | `components/tour/`, `lib/tour/`, `components/ui/popover.tsx`, `prisma/`, `app/api/tutorials/`, `content/tutorials/`, `components/Navbar.tsx`, `components/bottom-nav.tsx`, `components/app-providers.tsx`, `lib/i18n/messages.ts`, `docs/` |
+| 0 Fondasi | Engine, Popover, model + migrasi + API, `content/tutorials/` lengkap dengan kerangka (`steps: []` untuk modul, isi penuh untuk `welcome`), target `nav.*` di Navbar dan bottom bar, item "Ulangi tur selamat datang" di menu akun, teks tombol di i18n, update dokumen aturan | `components/tour/`, `lib/tour/`, `components/ui/popover.tsx`, `prisma/`, `app/api/tutorials/`, `content/tutorials/`, `components/Navbar.tsx`, `components/bottom-nav.tsx`, `components/app-providers.tsx`, `lib/i18n/messages.ts`, `docs/` |
 | A Costing | Tutorial `costing` | `components/costing/`, `content/tutorials/costing.ts`, `tests/` file sendiri |
 | B Dashboard | Tutorial `dashboard` | `components/dashboard/`, `content/tutorials/dashboard.ts`, `tests/` file sendiri |
 | C Database | Tutorial `database` | `components/database/`, `content/tutorials/database.ts`, `tests/` file sendiri |
