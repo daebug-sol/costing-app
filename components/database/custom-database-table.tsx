@@ -40,7 +40,7 @@ export function CustomDatabaseTable({ ed }: { ed: PanelCtx }) {
     <>
       <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-card shadow-sm">
         <table className="min-w-full border-separate border-spacing-0 text-sm">
-          <thead>
+          <thead data-tour="database.grid">
             <tr>
               {columns.map((col) => (
                 <th

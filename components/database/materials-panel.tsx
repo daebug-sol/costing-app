@@ -31,7 +31,10 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
 import { TableLoadingSkeleton } from "@/components/table-loading-skeleton";
+import { useTour } from "@/components/tour/tour-provider";
 import { FIXED_UOMS } from "@/lib/custom-db";
+import { tourEvent } from "@/lib/tour/events";
+import { cn } from "@/lib/utils";
 import { formatIDR, formatNumber } from "@/lib/utils/format";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
 import { DatabaseExplorer } from "./database-explorer";
@@ -50,6 +53,12 @@ export function MaterialsPanel({ show }: { show: (t: "success" | "error", m: str
   const [editing, setEditing] = useState<Material | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Material | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const tour = useTour();
+  // While the tutorial points at the pencil, show it without hover (touch screens).
+  const revealFirstActions =
+    tour.state.status === "running" &&
+    tour.state.key === "database" &&
+    ["edit", "price"].includes(tour.state.steps[tour.state.index]?.id ?? "");
 
   const [fCode, setFCode] = useState("");
   const [fName, setFName] = useState("");
@@ -97,6 +106,19 @@ export function MaterialsPanel({ show }: { show: (t: "success" | "error", m: str
     });
   }, [rows, search, cat]);
 
+  const hasResults = filtered.length > 0;
+  useEffect(() => {
+    if (!search.trim() || !hasResults) return;
+    const id = window.setTimeout(() => tourEvent("database.searched"), 500);
+    return () => window.clearTimeout(id);
+  }, [search, hasResults]);
+
+  const wasDialogOpen = useRef(false);
+  useEffect(() => {
+    if (wasDialogOpen.current && !dialogOpen) tourEvent("database.cell-editor-closed");
+    wasDialogOpen.current = dialogOpen;
+  }, [dialogOpen]);
+
   const openAdd = () => {
     setEditing(null);
     setFCode("");
@@ -121,6 +143,7 @@ export function MaterialsPanel({ show }: { show: (t: "success" | "error", m: str
     setFUnit(m.unit);
     setFNotes(m.notes ?? "");
     setDialogOpen(true);
+    tourEvent("database.cell-editor-opened");
   };
 
   const submit = async () => {
@@ -335,6 +358,7 @@ export function MaterialsPanel({ show }: { show: (t: "success" | "error", m: str
             Kembali ke file
           </Button>
           <Input
+            data-tour="database.search"
             placeholder="Cari kode, nama, kategori…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -418,7 +442,7 @@ export function MaterialsPanel({ show }: { show: (t: "success" | "error", m: str
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((m) => (
+              {filtered.map((m, i) => (
                 <TableRow key={m.id} className="group">
                   <TableCell className="font-mono text-xs">{m.code}</TableCell>
                   <TableCell className="max-w-[200px] whitespace-normal">
@@ -430,14 +454,23 @@ export function MaterialsPanel({ show }: { show: (t: "success" | "error", m: str
                   <TableCell className="text-right tabular-nums">
                     {formatNumber(m.density, 3)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell
+                    data-tour={i === 0 ? "database.price-cell" : undefined}
+                    className="text-right tabular-nums"
+                  >
                     {formatIDR(m.pricePerKg)}
                   </TableCell>
                   <TableCell>{m.unit}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div
+                      className={cn(
+                        "flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100",
+                        i === 0 && revealFirstActions && "opacity-100"
+                      )}
+                    >
                       <Button
                         type="button"
+                        data-tour={i === 0 ? "database.price-edit" : undefined}
                         size="icon-sm"
                         variant="ghost"
                         className="text-muted-foreground"
@@ -562,7 +595,7 @@ export function MaterialsPanel({ show }: { show: (t: "success" | "error", m: str
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter data-tour="database.price-editor-actions">
             <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
               Batal
             </Button>
