@@ -25,6 +25,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useI18n } from "@/components/i18n-provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DEFAULT_QUOTATION_INTRO } from "@/lib/merge-quotation-doc";
@@ -96,6 +98,7 @@ function SortableItemRow({
 }
 
 export function DocumentationForm({ ed }: { ed: EditorCtx }) {
+  const { t } = useI18n();
   const {
     quotation,
     available,
@@ -506,6 +509,24 @@ export function DocumentationForm({ ed }: { ed: EditorCtx }) {
                     </SortableContext>
                     </DndContext>
                   </table>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label id="quotation-detail-mode-label">{t("documentation.detailMode.label")}</Label>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    size="sm"
+                    value={form.detailMode}
+                    onValueChange={(v) => {
+                      if (v === "flat" || v === "nested") setForm((f) => ({ ...f, detailMode: v }));
+                    }}
+                    aria-labelledby="quotation-detail-mode-label"
+                    data-testid="quotation-detail-mode"
+                  >
+                    <ToggleGroupItem value="flat">{t("documentation.detailMode.flat")}</ToggleGroupItem>
+                    <ToggleGroupItem value="nested">{t("documentation.detailMode.nested")}</ToggleGroupItem>
+                  </ToggleGroup>
                 </div>
 
                 <div className="space-y-2 rounded-lg border bg-card p-4 text-sm">

@@ -470,6 +470,8 @@ model Quotation {
   ppnEnabled      Boolean         @default(true)
   pphEnabled      Boolean         @default(false)
   pphRate         Float           @default(0.0)
+  /// Rincian material di dokumen: "flat" (Rata, material sama digabung) | "nested" (Per bagian, bertingkat).
+  detailMode      String          @default("flat")
   totalBeforeDisc Float           @default(0.0)
   totalAfterDisc  Float           @default(0.0)
   totalPPN        Float           @default(0.0)

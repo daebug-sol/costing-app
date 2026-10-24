@@ -2,6 +2,7 @@
 
 import { DEFAULT_QUOTATION_INTRO } from "@/lib/merge-quotation-doc";
 import { formatIDR } from "@/lib/utils/format";
+import { cn } from "@/lib/utils";
 import type { EditorCtx } from "./use-documentation-editor";
 
 export function DocumentationPreview({ ed }: { ed: EditorCtx }) {
@@ -162,11 +163,15 @@ export function DocumentationPreview({ ed }: { ed: EditorCtx }) {
                         {cb.sections.map((sec, si) => (
                           <div
                             key={`${cb.project.name}-${si}-${sec.category}`}
-                            className="flex justify-between gap-4"
+                            className={cn(
+                              "flex justify-between gap-4",
+                              sec.depth === 2 && "pl-3",
+                              sec.depth === 3 && "pl-6"
+                            )}
                           >
                             <span className="min-w-0 break-words">{sec.category}</span>
                             <span className="tabular-nums shrink-0">
-                              {formatIDR(sec.subtotal)}
+                              {formatIDR(sec.total ?? sec.subtotal)}
                             </span>
                           </div>
                         ))}

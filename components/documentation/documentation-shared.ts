@@ -100,6 +100,7 @@ export type QuotationApi = {
   ppnEnabled?: boolean;
   pphEnabled: boolean;
   pphRate: number;
+  detailMode?: string;
   totalBeforeDisc: number;
   totalAfterDisc: number;
   totalPPN: number;

@@ -249,13 +249,28 @@ function addBreakdownSheet(
   includeUnitDetail: boolean
 ) {
   let r = 1;
-  const sorted = [...sections].sort((a, b) => a.category.localeCompare(b.category));
+  // Rincian "Per bagian" sudah berurutan induk lalu sub-bagian; jangan diurutkan ulang.
+  const nested = sections.some((sec) => sec.depth != null);
+  const sorted = nested
+    ? sections
+    : [...sections].sort((a, b) => a.category.localeCompare(b.category));
 
   for (const sec of sorted) {
     const head = sheet.getRow(r);
     head.getCell(1).value = sec.category;
     head.getCell(1).font = { bold: true, size: 12 };
+    if (sec.depth != null && sec.depth > 1) {
+      head.getCell(1).alignment = { indent: (sec.depth - 1) * 2 };
+    }
+    if (sec.total != null) {
+      idrCell(head.getCell(includeUnitDetail ? 5 : 2), sec.total);
+      head.getCell(includeUnitDetail ? 5 : 2).font = { bold: true };
+    }
     r++;
+    if (sec.lineItems.length === 0) {
+      r++;
+      continue;
+    }
 
     const hdr = sheet.getRow(r);
     if (includeUnitDetail) {
@@ -288,11 +303,11 @@ function addBreakdownSheet(
 
     const sub = sheet.getRow(r);
     if (includeUnitDetail) {
-      sub.getCell(4).value = "Subtotal kategori";
+      sub.getCell(4).value = sec.depth != null ? "Subtotal bagian" : "Subtotal kategori";
       sub.getCell(4).font = { bold: true };
       idrCell(sub.getCell(5), sec.subtotal);
     } else {
-      sub.getCell(1).value = "Subtotal kategori";
+      sub.getCell(1).value = sec.depth != null ? "Subtotal bagian" : "Subtotal kategori";
       sub.getCell(1).font = { bold: true };
       idrCell(sub.getCell(2), sec.subtotal);
     }

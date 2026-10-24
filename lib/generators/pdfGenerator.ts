@@ -635,26 +635,35 @@ function drawCostSectionsLineItems(
   let y = yIn;
   const W = doc.internal.pageSize.getWidth();
   for (const sec of sections) {
+    // Per bagian: sub-bagian menjorok 4 mm per tingkat, total bertingkat di kanan judul.
+    const X = MARGIN + Math.max(0, (sec.depth ?? 1) - 1) * 4;
     y = ensureSpace(doc, y, LINE * 4);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.text(sec.category, MARGIN, y);
+    doc.text(sec.category, X, y);
+    if (sec.total != null) {
+      doc.text(formatIDR(sec.total), W - MARGIN - 2, y, { align: "right" });
+    }
     y += LINE;
+    if (sec.lineItems.length === 0) {
+      y += 1;
+      continue;
+    }
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.text("Deskripsi", MARGIN, y);
+    doc.text("Deskripsi", X, y);
     doc.text("UOM", MARGIN + 78, y);
     doc.text("Qty", MARGIN + 92, y);
     doc.text("Harga sat.", MARGIN + 108, y);
     doc.text("Subtotal", W - MARGIN - 2, y, { align: "right" });
     y += LINE * 0.7;
-    doc.line(MARGIN, y, W - MARGIN, y);
+    doc.line(X, y, W - MARGIN, y);
     y += LINE * 0.5;
 
     for (const li of sec.lineItems) {
-      const descLines = wrapMultilineForPdf(doc, li.description, 72);
+      const descLines = wrapMultilineForPdf(doc, li.description, 72 - (X - MARGIN));
       y = ensureSpace(doc, y, descLines.length * LINE + LINE);
-      doc.text(descLines, MARGIN, y);
+      doc.text(descLines, X, y);
       doc.text(li.uom, MARGIN + 78, y);
       doc.text(formatNumber(li.qty, 3), MARGIN + 92, y);
       doc.text(formatIDR(li.unitPrice), MARGIN + 108, y);
@@ -662,7 +671,7 @@ function drawCostSectionsLineItems(
       y += Math.max(LINE, descLines.length * LINE * 0.85);
     }
     doc.setFont("helvetica", "bold");
-    doc.text("Subtotal kategori", MARGIN + 78, y);
+    doc.text(sec.depth != null ? "Subtotal bagian" : "Subtotal kategori", MARGIN + 78, y);
     doc.text(formatIDR(sec.subtotal), W - MARGIN - 2, y, { align: "right" });
     doc.setFont("helvetica", "normal");
     y += LINE + 2;
