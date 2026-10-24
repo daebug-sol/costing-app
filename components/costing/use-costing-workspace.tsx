@@ -14,6 +14,7 @@ import { useCostingStore, type CostingSegmentDetail } from "@/store/costingStore
 import { EMPTY_BOOL_MAP, mergeOpenSegmentsForProject, useUiWorkflowStore } from "@/store/uiWorkflowStore";
 import { costingErrorMessage } from "@/lib/costing-error-message";
 import { resolveProjectView, type ProjectLoadState } from "@/lib/costing-project-view";
+import { tourEvent } from "@/lib/tour/events";
 import { catKey } from "./costing-workspace-shared";
 
 export function useCostingWorkspace() {
@@ -89,7 +90,9 @@ export function useCostingWorkspace() {
 
   /** Flat manual segment (default “Kelompok utama”). */
   const addManualItem = () => {
-    addSegment("manual").catch((e) => showToast(costingErrorMessage(e)));
+    addSegment("manual")
+      .then(() => tourEvent("costing.item-added"))
+      .catch((e) => showToast(costingErrorMessage(e)));
   };
 
   /**
@@ -127,7 +130,9 @@ export function useCostingWorkspace() {
           error?: string;
         } | null;
         showToast(j?.error ?? "Gagal membuat item grup");
+        return;
       }
+      tourEvent("costing.item-added");
     } catch (e) {
       showToast(costingErrorMessage(e));
     }
@@ -401,6 +406,7 @@ export function useCostingWorkspace() {
       setNewName("");
       const createdId = useCostingStore.getState().currentProject?.id;
       if (createdId) openProject(createdId);
+      tourEvent("costing.project-created");
     } catch (e) {
       showToast(costingErrorMessage(e));
     }

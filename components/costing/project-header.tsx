@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, MoreHorizontal, Pencil } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useI18n } from "@/components/i18n-provider";
@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,15 @@ export function isFinalizedStatus(status: string) {
 
 export function ProjectHeader({ ed }: { ed: CostingWorkspaceState }) {
   const { t } = useI18n();
-  const { currentProject, updateProject, confirm, showToast, statusBadge } = ed;
+  const {
+    currentProject,
+    updateProject,
+    confirm,
+    showToast,
+    statusBadge,
+    loadProjects,
+    closeProject,
+  } = ed;
   const [editingName, setEditingName] = useState(false);
 
   if (!currentProject) return null;
@@ -39,6 +48,25 @@ export function ProjectHeader({ ed }: { ed: CostingWorkspaceState }) {
       destructive: false,
     }).then((ok) => {
       if (ok) updateProject({ status: finalized ? "draft" : "finalized" }).catch(fail);
+    });
+
+  const deleteProject = () =>
+    void confirm({
+      title: t("costing.page.deleteProjectTitle", { name: currentProject.name }),
+      description: t("costing.page.deleteProjectDescription"),
+      confirmLabel: t("costing.page.deleteProject"),
+    }).then(async (ok) => {
+      if (!ok) return;
+      const r = await fetch(`/api/projects/${encodeURIComponent(currentProject.id)}`, {
+        method: "DELETE",
+      }).catch(() => null);
+      if (r?.status === 409) return showToast(t("costing.page.deleteProjectInUse"));
+      if (!r?.ok) {
+        const j = (await r?.json().catch(() => null)) as { error?: string } | null;
+        return showToast(costingErrorMessage(j?.error));
+      }
+      closeProject();
+      loadProjects().catch(fail);
     });
 
   const saveName = (value: string) => {
@@ -92,7 +120,7 @@ export function ProjectHeader({ ed }: { ed: CostingWorkspaceState }) {
         </div>
 
         <div className="flex items-center gap-2 sm:ml-auto">
-          <Button asChild>
+          <Button asChild data-tour="costing.create-quote">
             <Link href={`/documentation?fromProject=${encodeURIComponent(currentProject.id)}`}>
               {t("costing.page.createQuotation")}
             </Link>
@@ -104,6 +132,7 @@ export function ProjectHeader({ ed }: { ed: CostingWorkspaceState }) {
                 variant="outline"
                 size="icon"
                 aria-label={t("costing.page.moreActions")}
+                data-tour="costing.project-menu"
               >
                 <MoreHorizontal aria-hidden />
               </Button>
@@ -111,6 +140,11 @@ export function ProjectHeader({ ed }: { ed: CostingWorkspaceState }) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={toggleStatus}>
                 {finalized ? t("costing.page.backToDraft") : t("costing.page.finalize")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onClick={deleteProject}>
+                <Trash2 aria-hidden />
+                {t("costing.page.deleteProject")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
