@@ -395,6 +395,17 @@ const id = {
   "explorer.invoice.overdue": "lewat",
   "explorer.payment.count": "{count} pembayaran",
   "explorer.payment.empty": "Belum ada pembayaran",
+  "database.explorer.system": "Sistem",
+  "database.explorer.myFolders": "Folder saya",
+  "database.explorer.ahu": "AHU Database",
+  "database.explorer.ahuDataset": "Dataset AHU",
+  "database.explorer.folders": "Daftar folder",
+  "database.explorer.new": "Baru",
+  "database.explorer.newFolder": "Folder baru",
+  "database.explorer.newFile": "File baru",
+  "database.explorer.searchFile": "Cari nama file…",
+  "database.explorer.loadingFolders": "Memuat folder…",
+  "database.explorer.folderActions": "Aksi folder",
 } as const;
 
 export type MessageKey = keyof typeof id;
@@ -788,6 +799,17 @@ const en: Record<MessageKey, string> = {
   "explorer.invoice.overdue": "overdue",
   "explorer.payment.count": "{count} payments",
   "explorer.payment.empty": "No payments yet",
+  "database.explorer.system": "System",
+  "database.explorer.myFolders": "My folders",
+  "database.explorer.ahu": "AHU Database",
+  "database.explorer.ahuDataset": "AHU dataset",
+  "database.explorer.folders": "Folder list",
+  "database.explorer.new": "New",
+  "database.explorer.newFolder": "New folder",
+  "database.explorer.newFile": "New file",
+  "database.explorer.searchFile": "Search file name…",
+  "database.explorer.loadingFolders": "Loading folders…",
+  "database.explorer.folderActions": "Folder actions",
 };
 
 export const MESSAGES = { id, en } as const;

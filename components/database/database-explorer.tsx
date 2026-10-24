@@ -1,16 +1,27 @@
 "use client";
 
 import {
+  ChevronLeft,
+  ChevronRight,
+  Database,
+  FileSpreadsheet,
   Folder,
   FolderOpen,
   MoreHorizontal,
   Pencil,
   Plus,
-  Search,
   Trash2,
+  type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import {
+  ExplorerRow,
+  ExplorerRows,
+  ExplorerSidebarItem,
+  ExplorerToolbar,
+} from "@/components/file-explorer";
+import { useI18n } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,8 +40,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { AhuDatasetKind, DatabaseScope, FolderSummary } from "@/lib/database-folders";
 import { cn } from "@/lib/utils";
+import { DatabaseShell } from "./database-shell";
+import { formatDayMonth } from "@/lib/utils/format";
+
+/** Set when a file is opened so closing it returns to the folder, not the folder list (mobile). */
+let resumeFolderView = false;
 
 type FileRow = {
   id: string;
@@ -64,6 +87,13 @@ export type DatabaseExplorerProps = {
   newFileDialogContent?: React.ReactNode;
   onCreateFile?: (name: string) => Promise<boolean>;
   createFileLabel?: string;
+  /** Root (custom) explorer only: the "SISTEM > AHU Database" sidebar entry. */
+  ahuEntry?: {
+    selected: boolean;
+    onSelect: () => void;
+    onOpen: (kind: AhuDatasetKind) => void;
+    datasets: { key: AhuDatasetKind; label: string; Icon: LucideIcon }[];
+  };
 };
 
 export function DatabaseExplorer({
@@ -80,7 +110,15 @@ export function DatabaseExplorer({
   newFileDialogContent,
   onCreateFile,
   createFileLabel = "Buat file",
+  ahuEntry,
 }: DatabaseExplorerProps) {
+  const { t } = useI18n();
+  const layout = scope === "custom" ? "root" : "embedded";
+  const [mobileOpen, setMobileOpen] = useState(() => {
+    const resume = resumeFolderView;
+    resumeFolderView = false;
+    return resume;
+  });
   const [folders, setFolders] = useState<FolderSummary[]>([]);
   const [files, setFiles] = useState<FileRow[]>([]);
   const [loadingFolders, setLoadingFolders] = useState(true);
@@ -283,244 +321,8 @@ export function DatabaseExplorer({
     }
   };
 
-  if (loadingFolders) {
-    return (
-      <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-        Memuat folder…
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="relative max-w-md flex-1">
-          <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Cari nama file…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="bg-card pl-8"
-            aria-label="Cari file"
-            disabled={!activeFolderId}
-          />
-        </div>
-        {toolbarExtra ? (
-          <div className="flex flex-wrap items-center gap-2">{toolbarExtra}</div>
-        ) : null}
-      </div>
-
-      <div className="grid min-h-[24rem] gap-4 lg:grid-cols-[minmax(11rem,16rem)_1fr]">
-        <nav
-          className="overflow-hidden rounded-lg border border-border bg-card"
-          aria-label="Daftar folder"
-        >
-          <div className="flex items-center justify-between gap-2 border-b bg-muted/50 px-2 py-1.5">
-            <span className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Folder
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 px-2 text-xs"
-              onClick={() => setNewFolderOpen(true)}
-            >
-              <Plus className="size-3.5" />
-              Folder baru
-            </Button>
-          </div>
-          <div className="h-[22rem] overflow-y-auto">
-            {folders.length === 0 ? (
-              <div className="p-3 text-sm text-muted-foreground">
-                Belum ada folder. Buat folder untuk mulai.
-              </div>
-            ) : (
-              <ul className="p-1" role="listbox" aria-label="Folder database">
-                {folders.map((f) => {
-                  const selected = f.id === activeFolderId;
-                  return (
-                    <li key={f.id} className="group relative">
-                      <div
-                        className={cn(
-                          "flex w-full items-center gap-1 rounded-md transition-colors",
-                          selected
-                            ? "bg-primary/10 text-foreground"
-                            : "hover:bg-muted/60"
-                        )}
-                      >
-                        <button
-                          type="button"
-                          role="option"
-                          aria-selected={selected}
-                          className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-left text-sm"
-                          onClick={() => onFolderSelect(f.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              onFolderSelect(f.id);
-                            }
-                          }}
-                        >
-                          {selected ? (
-                            <FolderOpen className="size-4 shrink-0 text-primary" aria-hidden />
-                          ) : (
-                            <Folder className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                          )}
-                          <span className="min-w-0 flex-1 truncate">{f.name}</span>
-                          <span className="text-xs text-muted-foreground">{f.filesCount}</span>
-                        </button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className={cn(
-                                "size-7 shrink-0 opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 data-[state=open]:opacity-100",
-                                selected && "opacity-70"
-                              )}
-                              aria-label={`Aksi folder ${f.name}`}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="size-3.5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="min-w-36">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setRenameFolder(f);
-                                setRenameFolderName(f.name);
-                              }}
-                            >
-                              <Pencil className="size-3.5" />
-                              Ubah nama
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => setDeleteFolderTarget(f)}
-                            >
-                              <Trash2 className="size-3.5" />
-                              Hapus
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        </nav>
-
-        <section
-          className="overflow-hidden rounded-lg border border-border bg-card"
-          aria-label="Daftar file dalam folder"
-        >
-          <div className="flex items-center justify-between gap-2 border-b bg-muted/50 px-3 py-1.5">
-            <span className="truncate text-xs font-medium text-muted-foreground">
-              {activeFolder ? `File · ${activeFolder.name}` : "File"}
-            </span>
-            <Button
-              type="button"
-              size="sm"
-              className="h-7 gap-1 px-2 text-xs"
-              onClick={() => setNewFileOpen(true)}
-              disabled={!activeFolderId}
-            >
-              <Plus className="size-3.5" />
-              File baru
-            </Button>
-          </div>
-          {loadingFiles ? (
-            <div className="p-4 text-sm text-muted-foreground">Memuat file…</div>
-          ) : !activeFolderId ? (
-            <EmptyState
-              icon={Folder}
-              title="Pilih folder"
-              description="Pilih folder di panel kiri untuk melihat file di dalamnya."
-            />
-          ) : filteredFiles.length === 0 ? (
-            <EmptyState
-              icon={FolderOpen}
-              title={emptyFileTitle}
-              description={emptyFileDescription}
-              actionLabel={createFileLabel}
-              onAction={() => setNewFileOpen(true)}
-            />
-          ) : (
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/60">
-                  <th className="px-4 py-2.5 text-left">Nama file</th>
-                  <th className="px-4 py-2.5 text-left">Baris</th>
-                  {scope === "custom" ? (
-                    <th className="px-4 py-2.5 text-left">Kolom</th>
-                  ) : null}
-                  <th className="px-4 py-2.5 text-left">Diperbarui</th>
-                  <th className="px-4 py-2.5 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredFiles.map((f) => (
-                  <tr
-                    key={f.id}
-                    className="cursor-pointer border-b last:border-b-0 hover:bg-muted/50 focus-within:bg-muted/50"
-                    tabIndex={0}
-                    onDoubleClick={() => onFileOpen(f.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        onFileOpen(f.id);
-                      }
-                    }}
-                  >
-                    <td className="px-4 py-2.5 font-medium">{f.name}</td>
-                    <td className="px-4 py-2.5">{f.rowsCount}</td>
-                    {scope === "custom" ? (
-                      <td className="px-4 py-2.5">{f.columnsCount ?? "—"}</td>
-                    ) : null}
-                    <td className="px-4 py-2.5">
-                      {new Date(f.updatedAt).toLocaleString("id-ID")}
-                    </td>
-                    <td
-                      className="px-4 py-2.5 text-right"
-                      onClick={(e) => e.stopPropagation()}
-                      onDoubleClick={(e) => e.stopPropagation()}
-                    >
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Ubah nama ${f.name}`}
-                        onClick={() => {
-                          setRenameFile(f);
-                          setRenameFileName(f.name);
-                        }}
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        aria-label={`Hapus ${f.name}`}
-                        onClick={() => setDeleteFileTarget(f)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
-      </div>
-
+  const dialogs = (
+    <>
       <Dialog open={newFolderOpen} onOpenChange={setNewFolderOpen}>
         <DialogContent>
           <DialogHeader>
@@ -665,6 +467,398 @@ export function DatabaseExplorer({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
+  );
+
+  if (loadingFolders) {
+    const loadingBox = (
+      <div className="rounded-lg border p-4 text-sm text-muted-foreground">
+        {t("database.explorer.loadingFolders")}
+      </div>
+    );
+    return layout === "root" ? <DatabaseShell>{loadingBox}</DatabaseShell> : loadingBox;
+  }
+
+  const ahuSelected = ahuEntry?.selected === true;
+  const showItemsMobile = mobileOpen || search.trim() !== "";
+  const pickFolder = (id: string) => {
+    onFolderSelect(id);
+    setMobileOpen(true);
+  };
+  const pickAhu = () => {
+    ahuEntry?.onSelect();
+    setMobileOpen(true);
+  };
+  const openFile = (id: string) => {
+    resumeFolderView = true;
+    onFileOpen(id);
+  };
+  const toRoot = () => setMobileOpen(false);
+
+  const folderMenu = activeFolder ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          aria-label={`${t("database.explorer.folderActions")} ${activeFolder.name}`}
+        >
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-36">
+        <DropdownMenuItem
+          onClick={() => {
+            setRenameFolder(activeFolder);
+            setRenameFolderName(activeFolder.name);
+          }}
+        >
+          <Pencil className="size-3.5" />
+          Ubah nama
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={() => setDeleteFolderTarget(activeFolder)}
+        >
+          <Trash2 className="size-3.5" />
+          Hapus
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : null;
+
+  const fileRows =
+    loadingFiles ? (
+      <div className="p-4 text-sm text-muted-foreground">Memuat file…</div>
+    ) : !activeFolderId ? (
+      <EmptyState
+        icon={Folder}
+        title="Pilih folder"
+        description="Pilih folder untuk melihat file di dalamnya."
+      />
+    ) : filteredFiles.length === 0 ? (
+      <EmptyState
+        icon={FolderOpen}
+        title={emptyFileTitle}
+        description={emptyFileDescription}
+        actionLabel={createFileLabel}
+        onAction={() => setNewFileOpen(true)}
+      />
+    ) : (
+      <ExplorerRows>
+        {filteredFiles.map((f) => (
+          <ExplorerRow
+            key={f.id}
+            icon={<FileSpreadsheet className="size-5" aria-hidden />}
+            title={f.name}
+            meta={
+              <>
+                <span>{f.rowsCount} baris</span>
+                {scope === "custom" && f.columnsCount != null ? (
+                  <span>{f.columnsCount} kolom</span>
+                ) : null}
+                <span>{formatDayMonth(f.updatedAt)}</span>
+              </>
+            }
+            onClick={() => openFile(f.id)}
+            trailing={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Aksi file ${f.name}`}
+                    className="text-muted-foreground hover:bg-muted flex size-8 shrink-0 items-center justify-center rounded-md"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-36">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setRenameFile(f);
+                      setRenameFileName(f.name);
+                    }}
+                  >
+                    <Pencil className="size-3.5" />
+                    Ubah nama
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => setDeleteFileTarget(f)}
+                  >
+                    <Trash2 className="size-3.5" />
+                    Hapus
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+        ))}
+      </ExplorerRows>
+    );
+
+  const newFileButton = (
+    <Button
+      type="button"
+      size="sm"
+      className="h-8 gap-1.5"
+      onClick={() => setNewFileOpen(true)}
+      disabled={!activeFolderId}
+    >
+      <Plus className="size-4" />
+      {t("database.explorer.newFile")}
+    </Button>
+  );
+
+  const datasetRows = ahuEntry ? (
+    <ExplorerRows>
+      {ahuEntry.datasets.map((d) => (
+        <ExplorerRow
+          key={d.key}
+          icon={<d.Icon className="size-5" aria-hidden />}
+          title={d.label}
+          meta={<span>{t("database.explorer.ahuDataset")}</span>}
+          onClick={() => ahuEntry.onOpen(d.key)}
+        />
+      ))}
+    </ExplorerRows>
+  ) : null;
+
+  if (layout === "embedded") {
+    return (
+      <div className="flex flex-col gap-3">
+        <ExplorerToolbar
+          placeholder={t("database.explorer.searchFile")}
+          search={search}
+          onSearchChange={setSearch}
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={activeFolderId ?? undefined}
+            onValueChange={(v) => onFolderSelect(v)}
+          >
+            <SelectTrigger className="h-8 w-48" aria-label="Folder">
+              <SelectValue placeholder="Folder" />
+            </SelectTrigger>
+            <SelectContent>
+              {folders.map((f) => (
+                <SelectItem key={f.id} value={f.id}>
+                  {f.name} ({f.filesCount})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {folderMenu}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5"
+            onClick={() => setNewFolderOpen(true)}
+          >
+            <Plus className="size-4" />
+            {t("database.explorer.newFolder")}
+          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            {toolbarExtra}
+            {newFileButton}
+          </div>
+        </div>
+        <div className="bg-card border-border overflow-hidden rounded-xl border">
+          {fileRows}
+        </div>
+        {dialogs}
+      </div>
+    );
+  }
+
+  const shellActions = !ahuSelected ? (
+    <>
+      <Button
+        type="button"
+        className="hidden gap-2 sm:inline-flex"
+        disabled={!activeFolderId}
+        onClick={() => setNewFileOpen(true)}
+      >
+        <Plus className="size-4" />
+        {t("database.explorer.newFile")}
+      </Button>
+      <Button
+        type="button"
+        size="icon"
+        className="size-10 rounded-full sm:hidden"
+        disabled={!activeFolderId}
+        onClick={() => setNewFileOpen(true)}
+        aria-label={t("database.explorer.newFile")}
+      >
+        <Plus className="size-5" />
+      </Button>
+    </>
+  ) : null;
+
+  return (
+    <DatabaseShell actions={shellActions}>
+      <ExplorerToolbar
+        placeholder={t("database.explorer.searchFile")}
+        search={search}
+        onSearchChange={setSearch}
+      />
+
+      <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+        {/* Desktop sidebar */}
+        <nav
+          aria-label={t("database.explorer.folders")}
+          className="bg-card border-border hidden flex-col gap-0.5 rounded-xl border p-2 lg:flex"
+        >
+          {ahuEntry ? (
+            <>
+              <p className="text-muted-foreground px-3 pt-1 pb-1 text-xs font-medium tracking-wide uppercase">
+                {t("database.explorer.system")}
+              </p>
+              <ExplorerSidebarItem
+                active={ahuSelected}
+                icon={<Database className="size-4" />}
+                label={t("database.explorer.ahu")}
+                count={ahuEntry.datasets.length}
+                onClick={pickAhu}
+              />
+            </>
+          ) : null}
+          <div className="flex items-center justify-between px-3 pt-3 pb-1">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              {t("database.explorer.myFolders")}
+            </p>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-primary text-xs font-medium"
+              onClick={() => setNewFolderOpen(true)}
+              aria-label={t("database.explorer.newFolder")}
+            >
+              + {t("database.explorer.new")}
+            </button>
+          </div>
+          {folders.length === 0 ? (
+            <p className="text-muted-foreground px-3 py-2 text-sm">
+              Belum ada folder. Buat folder untuk mulai.
+            </p>
+          ) : null}
+          {folders.map((f) => (
+            <ExplorerSidebarItem
+              key={f.id}
+              active={!ahuSelected && f.id === activeFolderId}
+              icon={<Folder className="size-4" />}
+              label={f.name}
+              count={f.filesCount}
+              onClick={() => onFolderSelect(f.id)}
+            />
+          ))}
+        </nav>
+
+        {/* Mobile folder list (first screen) */}
+        {!showItemsMobile ? (
+          <div className="flex flex-col gap-3 lg:hidden">
+            {ahuEntry ? (
+              <div>
+                <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+                  {t("database.explorer.system")}
+                </p>
+                <div className="bg-card border-border overflow-hidden rounded-xl border">
+                  <ul>
+                    <ExplorerRow
+                      icon={<Database className="size-5" />}
+                      title={t("database.explorer.ahu")}
+                      meta={`${ahuEntry.datasets.length} dataset`}
+                      onClick={pickAhu}
+                    />
+                  </ul>
+                </div>
+              </div>
+            ) : null}
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  {t("database.explorer.myFolders")}
+                </p>
+                <button
+                  type="button"
+                  className="text-primary text-xs font-medium"
+                  onClick={() => setNewFolderOpen(true)}
+                  aria-label={t("database.explorer.newFolder")}
+                >
+                  + {t("database.explorer.new")}
+                </button>
+              </div>
+              <div className="bg-card border-border overflow-hidden rounded-xl border">
+                <ul>
+                  {folders.map((f) => (
+                    <ExplorerRow
+                      key={f.id}
+                      icon={<Folder className="size-5" />}
+                      title={f.name}
+                      meta={`${f.filesCount} file`}
+                      onClick={() => pickFolder(f.id)}
+                    />
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* List panel */}
+        <section
+          aria-label={ahuSelected ? t("database.explorer.ahu") : (activeFolder?.name ?? "File")}
+          className={cn(
+            "flex min-w-0 flex-col gap-3",
+            !showItemsMobile && "hidden lg:flex",
+          )}
+        >
+          <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-sm">
+            <nav
+              aria-label={t("explorer.location")}
+              className="flex min-w-0 items-center gap-1.5"
+            >
+              <ChevronLeft className="size-4 shrink-0 lg:hidden" aria-hidden />
+              <button
+                type="button"
+                onClick={toRoot}
+                className="hover:text-foreground shrink-0"
+              >
+                {t("explorer.allFolders")}
+              </button>
+              <ChevronRight className="size-4 shrink-0" aria-hidden />
+              <span className="text-foreground truncate font-medium">
+                {ahuSelected
+                  ? t("database.explorer.ahu")
+                  : (activeFolder?.name ?? "—")}
+              </span>
+            </nav>
+            <div className="flex items-center gap-2 text-xs">
+              {ahuSelected ? (
+                <span>{ahuEntry?.datasets.length} dataset</span>
+              ) : (
+                <>
+                  <span>{filteredFiles.length} file</span>
+                  {toolbarExtra}
+                  {folderMenu}
+                </>
+              )}
+            </div>
+          </div>
+          <div className="bg-card border-border overflow-hidden rounded-xl border">
+            {ahuSelected ? datasetRows : fileRows}
+          </div>
+        </section>
+      </div>
+
+      {dialogs}
+    </DatabaseShell>
   );
 }

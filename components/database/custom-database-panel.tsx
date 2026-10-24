@@ -2,7 +2,9 @@
 
 import { useI18n } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
-import { DatabaseExplorer } from "./database-explorer";
+import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
+import { DatabaseShell } from "./database-shell";
+import { DatabaseExplorer, type DatabaseExplorerProps } from "./database-explorer";
 import { PAGE_SIZE, FORMULA_REF_TONES } from "./custom-database-shared";
 import { CustomDatabaseToolbar } from "./custom-database-toolbar";
 import { CustomDatabaseTable } from "./custom-database-table";
@@ -14,10 +16,13 @@ import { useCustomDatabase, type PanelCtx } from "./use-custom-database";
 
 export function CustomDatabasePanel({
   show,
+  ahuEntry,
 }: {
   show: (t: "success" | "error", m: string) => void;
+  ahuEntry?: DatabaseExplorerProps["ahuEntry"];
 }) {
   const { t } = useI18n();
+  const setDatabaseActiveTab = useUiWorkflowStore((s) => s.setDatabaseActiveTab);
   const ed = useCustomDatabase({ show });
   const {
     table,
@@ -34,7 +39,12 @@ export function CustomDatabasePanel({
     customColumnSchema,
   } = ed;
 
-  if (loading) return <div className="rounded-lg border p-4 text-sm">{t("database.custom.loading")}</div>;
+  if (loading)
+    return (
+      <DatabaseShell>
+        <div className="rounded-lg border p-4 text-sm">{t("database.custom.loading")}</div>
+      </DatabaseShell>
+    );
 
   if (!activeFileId || !table) {
     return (
@@ -50,10 +60,15 @@ export function CustomDatabasePanel({
           scope="custom"
           activeFolderId={customFolderId}
           activeFileId={activeFileId}
-          onFolderSelect={(id) =>
-            setDatabaseCustomNav({ customFolderId: id || null, customFileId: null })
-          }
-          onFileOpen={(id) => void openFile(id)}
+          ahuEntry={ahuEntry}
+          onFolderSelect={(id) => {
+            setDatabaseActiveTab("custom");
+            setDatabaseCustomNav({ customFolderId: id || null, customFileId: null });
+          }}
+          onFileOpen={(id) => {
+            setDatabaseActiveTab("custom");
+            void openFile(id);
+          }}
           show={show}
           emptyFileTitle="Belum ada custom database"
           emptyFileDescription="Buat file baru di folder ini atau impor Excel."
@@ -61,7 +76,7 @@ export function CustomDatabasePanel({
           onCreateFile={createCustomFile}
           newFileDialogContent={customColumnSchema}
           toolbarExtra={
-            <Button type="button" variant="outline" onClick={() => importRef.current?.click()}>
+            <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => importRef.current?.click()}>
               Import Excel
             </Button>
           }
@@ -73,6 +88,7 @@ export function CustomDatabasePanel({
   const ctx: PanelCtx = { ...ed, table, activeFileId };
 
   return (
+    <DatabaseShell>
     <div className="flex h-[calc(100vh-11rem)] min-h-0 flex-col gap-3 overflow-hidden">
       <CustomDatabaseToolbar ed={ctx} />
 
@@ -113,5 +129,6 @@ export function CustomDatabasePanel({
 
       <CustomDatabaseAddColumnDialog ed={ctx} />
     </div>
+    </DatabaseShell>
   );
 }
