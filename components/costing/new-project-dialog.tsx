@@ -18,7 +18,7 @@ export function NewProjectDialog({ ed }: { ed: CostingWorkspaceState }) {
   return (
     <>
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" data-tour="costing.new-project-dialog">
           <DialogHeader>
             <DialogTitle>Buat proyek costing</DialogTitle>
             <DialogDescription>

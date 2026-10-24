@@ -36,6 +36,7 @@ import {
 import { useConfirm } from "@/components/confirm-dialog";
 import { useCostingStore } from "@/store/costingStore";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
+import { tourEvent } from "@/lib/tour/events";
 
 /** Must match `ensureDefaultUmumGroup` in lib/manual-costing-rollup.ts */
 const DEFAULT_MANUAL_GROUP_NAME = "Kelompok utama";
@@ -393,6 +394,7 @@ export function ManualWorkspace({
   const openPickerForGroup = (groupId: string) => {
     setPickerLockGroupId(groupId);
     setPickerOpen(true);
+    tourEvent("costing.material-picker-opened");
   };
 
   const onPickerConfirm = async (
@@ -417,6 +419,7 @@ export function ManualWorkspace({
     if (!r.ok) throw new Error(await readErr(r));
     await loadManual();
     await loadProject(projectId);
+    tourEvent("costing.material-added");
   };
 
   const createGroupFromName = async (
@@ -486,6 +489,7 @@ export function ManualWorkspace({
     if (groups.length > 1 || (groups.length === 1 && !isFlat)) {
       setPickerLockGroupId(null);
       setPickerOpen(true);
+      tourEvent("costing.material-picker-opened");
       return;
     }
     if (groups[0]?.id) {
@@ -665,7 +669,11 @@ export function ManualWorkspace({
             {t("costing.manual.empty")}
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            <Button type="button" onClick={() => void addMaterialFromBottom()}>
+            <Button
+              type="button"
+              onClick={() => void addMaterialFromBottom()}
+              data-tour="costing.add-material"
+            >
               <Plus data-icon="inline-start" aria-hidden />
               {t("costing.manual.addRow")}
             </Button>
@@ -717,7 +725,11 @@ export function ManualWorkspace({
 
       {!loading && !isManualEmpty ? (
         <div className="flex flex-wrap gap-2 border-t border-border pt-3">
-          <Button type="button" onClick={() => void addMaterialFromBottom()}>
+          <Button
+            type="button"
+            onClick={() => void addMaterialFromBottom()}
+            data-tour="costing.add-material"
+          >
             <Plus data-icon="inline-start" aria-hidden />
             {t("costing.manual.addRow")}
           </Button>

@@ -116,7 +116,10 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
       </div>
       {/* Below xl the aside dissolves (contents) and children keep their own order. */}
       <aside className="contents xl:sticky xl:top-[4.5rem] xl:col-start-2 xl:row-start-2 xl:flex xl:flex-col xl:gap-4">
-        <div className="order-2 sticky top-14 z-30 xl:static">
+        <div
+          className="order-2 sticky top-14 z-30 xl:static"
+          data-tour="costing.price-bar"
+        >
           <ProjectPriceBar
             totals={totals}
             saveState={save.state}
@@ -129,7 +132,7 @@ export function CostingMain({ ed }: { ed: CostingWorkspaceState }) {
             }
           />
         </div>
-        <div className="order-4">
+        <div className="order-4" data-tour="costing.margins">
           <MarginsCard
             marginPct={marginPct}
             setMarginPct={setMarginPct}

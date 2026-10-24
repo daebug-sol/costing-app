@@ -80,6 +80,7 @@ export function MarginsCard({
             <li
               key={key}
               className="col-span-4 grid grid-cols-subgrid items-center py-2.5"
+              data-tour={key === "margin" ? "costing.margins.margin" : undefined}
             >
               {toggle ? (
                 <Switch

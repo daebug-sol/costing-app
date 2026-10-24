@@ -49,6 +49,7 @@ export function ExplorerRow({
   selected,
   trailing,
   footer,
+  dataTour,
 }: {
   /** File icon shown in the 40px tile. */
   icon?: ReactNode;
@@ -69,6 +70,8 @@ export function ExplorerRow({
   /** Replaces the default chevron. */
   trailing?: ReactNode;
   footer?: ReactNode;
+  /** Tutorial target (`data-tour`) on the row. */
+  dataTour?: string;
 }) {
   const body = (
     <>
@@ -103,6 +106,7 @@ export function ExplorerRow({
   );
   return (
     <li
+      data-tour={dataTour}
       className={cn(
         "border-border border-b last:border-b-0",
         selected && "bg-primary/[0.07]",
@@ -255,13 +259,17 @@ export function ExplorerMobileList({
 export function ExplorerMobileAdd({
   label,
   onClick,
+  dataTour,
 }: {
   label: string;
   onClick: () => void;
+  /** Tutorial target (`data-tour`) on the button. */
+  dataTour?: string;
 }) {
   return (
     <Button
       type="button"
+      data-tour={dataTour}
       size="icon"
       className="size-10 rounded-full md:hidden"
       onClick={onClick}
@@ -305,6 +313,10 @@ type ExplorerProps = {
   /** Replaces the rows (loading / empty). */
   panelBody?: ReactNode;
   children?: ReactNode;
+  /** Tutorial targets: folders get `data-tour="<prefix>.folder.<key>"` ("all" for Semua). */
+  tourPrefix?: string;
+  /** Tutorial target (`data-tour`) on the primary button, desktop and mobile. */
+  primaryTour?: string;
 };
 
 export function Explorer({
@@ -328,6 +340,8 @@ export function Explorer({
   panelNotice,
   panelBody,
   children,
+  tourPrefix,
+  primaryTour,
 }: ExplorerProps) {
   const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -345,6 +359,8 @@ export function Explorer({
   };
 
   const PrimaryIcon = primaryBusy ? Loader2 : Plus;
+  const folderTour = (key: string) =>
+    tourPrefix ? `${tourPrefix}.folder.${key}` : undefined;
 
   return (
     <PageShell
@@ -356,6 +372,7 @@ export function Explorer({
           <Button
             type="button"
             className="hidden gap-2 sm:inline-flex"
+            data-tour={primaryTour}
             disabled={primaryBusy}
             onClick={onPrimary}
           >
@@ -368,6 +385,7 @@ export function Explorer({
             type="button"
             size="icon"
             className="size-10 rounded-full sm:hidden"
+            data-tour={primaryTour}
             disabled={primaryBusy}
             onClick={onPrimary}
             aria-label={primaryLabel}
@@ -399,6 +417,7 @@ export function Explorer({
             label={allLabel}
             count={totalCount}
             onClick={() => onSelectKey(null)}
+            dataTour={folderTour("all")}
           />
           <p className="text-muted-foreground px-3 pt-3 pb-1 text-xs font-medium tracking-wide uppercase">
             {folderHeading}
@@ -411,6 +430,7 @@ export function Explorer({
               label={f.label}
               count={f.count}
               onClick={() => onSelectKey(f.key)}
+              dataTour={folderTour(f.key)}
             />
           ))}
         </nav>
@@ -428,6 +448,7 @@ export function Explorer({
                   title={allLabel}
                   meta={`${totalCount} ${noun}`}
                   onClick={() => pick(null)}
+                  dataTour={folderTour("all")}
                 />
                 {folders.map((f) => (
                   <ExplorerRow
@@ -436,6 +457,7 @@ export function Explorer({
                     title={f.label}
                     meta={`${f.count} ${noun}`}
                     onClick={() => pick(f.key)}
+                    dataTour={folderTour(f.key)}
                   />
                 ))}
               </ul>
@@ -492,16 +514,20 @@ export function ExplorerSidebarItem({
   label,
   count,
   onClick,
+  dataTour,
 }: {
   active: boolean;
   icon: ReactNode;
   label: string;
   count: number;
   onClick: () => void;
+  /** Tutorial target (`data-tour`) on the item. */
+  dataTour?: string;
 }) {
   return (
     <button
       type="button"
+      data-tour={dataTour}
       onClick={onClick}
       aria-current={active ? "true" : undefined}
       className={cn(

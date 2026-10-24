@@ -9,19 +9,22 @@ import { Toaster } from "@/components/Toast";
 import { TrialBanner } from "@/components/trial-banner";
 import { ThemeProvider, useTheme } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { TourProvider } from "@/components/tour/tour-provider";
 
 function AppShell({ children }: { children: React.ReactNode }) {
   const { resolvedAppearance } = useTheme();
 
   const shell = (
     <TooltipProvider>
-      <Navbar />
-      <main className="min-h-screen bg-background pt-14 pb-16 lg:pb-0">
-        <TrialBanner />
-        {children}
-      </main>
-      <BottomNav />
-      <Toaster />
+      <TourProvider>
+        <Navbar />
+        <main className="min-h-screen bg-background pt-14 pb-16 lg:pb-0">
+          <TrialBanner />
+          {children}
+        </main>
+        <BottomNav />
+        <Toaster />
+      </TourProvider>
     </TooltipProvider>
   );
 

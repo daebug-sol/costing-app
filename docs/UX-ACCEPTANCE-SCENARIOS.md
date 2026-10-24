@@ -288,7 +288,7 @@ persists after reload on the same browser profile.
    `prefers-reduced-motion`), **Tandai selesai**, Prev/Next, and
    **Buka di aplikasi**.
 3. U activates **Buka di aplikasi**. A navigates to the related module route
-   (e.g. `/` or `/settings`) without a product tour overlay.
+   (e.g. `/` or `/settings`).
 4. U returns to the lesson and activates **Tandai selesai**. The button
    becomes **Sudah selesai** (disabled). Progress is stored under
    `localStorage` key `costing-help-progress`.
@@ -296,8 +296,32 @@ persists after reload on the same browser profile.
    **Lanjutkan** on the hub from `lastOpenedKey`.
 
 **Done when:** keyboard can reach search → track/lesson links → mark
-complete → deep link; no video embed; no interactive tour; copy is
+complete → deep link; no video embed; copy is
 Indonesian sentence case in lesson body.
+
+---
+
+## Scenario 12 — Welcome tour on first sign-in
+
+**Trigger.** U signs in for the first time in an org (no `TutorialProgress` row
+for `welcome`), or opens `/?tour=welcome`.
+
+1. A dims the page and shows a centered card `1 / 6` "Selamat datang, {nama}"
+   with **Lewati** and **Lanjut**.
+2. U presses **Lanjut**. Steps 2–5 highlight Dashboard, Database, Costing and
+   Dokumentasi: header links from `lg`, bottom bar items below `lg`, with the
+   card beside the target (desktop) or docked above the bottom bar (tablet,
+   phone). Clicks on the dimmed area do nothing.
+3. Step 6 highlights the account menu and shows **Selesai**. U presses it; the
+   tour closes and does not open again on any device.
+4. Alternatively U presses **Lewati** or Esc at any step; the tour closes and is
+   saved as skipped.
+5. On the next visit to a module with a tutorial, an invite card offers
+   **Mulai** / **Lewati**.
+
+**Done when:** identical steps and copy at 1280, 768 and 390px; no horizontal
+scroll at 390; the card never covers its target; replay from the account menu
+"Ulangi tur selamat datang".
 
 ---
 
@@ -318,6 +342,7 @@ Indonesian sentence case in lesson body.
 | 9 Override harga kategori | | x | | x | | |
 | 10 Theme | x | x | x | x | x | |
 | 11 Help | | | | | | x |
+| 12 Welcome tour | x | x | x | x | x | x |
 
 When a PR adds a new flow, append a scenario here and add a row to the
 matrix. When deleting a flow, remove the scenario rather than letting it

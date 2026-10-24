@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { tourEvent } from "@/lib/tour/events";
 import { formatIDR, formatNumber, formatRpShort } from "@/lib/utils/format";
 import type { CostingWorkspaceState } from "./use-costing-workspace";
 
@@ -36,6 +37,10 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
     statusBadge,
   } = ed;
   const [folderKey, setFolderKey] = useState<string | null>(null);
+  const openNew = () => {
+    setNewOpen(true);
+    tourEvent("costing.new-project-dialog-opened");
+  };
 
   const filtersActive =
     statusFilter !== "all" || monthFilter !== "" || dateFilter !== "";
@@ -167,7 +172,8 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
           <Button
             type="button"
             className="mt-4"
-            onClick={() => setNewOpen(true)}
+            onClick={openNew}
+            data-tour="costing.new-project"
           >
             {t("costing.list.newProject")}
           </Button>
@@ -180,7 +186,8 @@ export function CostingProjectList({ ed }: { ed: CostingWorkspaceState }) {
     <Explorer
       title="Costing"
       primaryLabel={t("costing.list.newProject")}
-      onPrimary={() => setNewOpen(true)}
+      onPrimary={openNew}
+      primaryTour="costing.new-project"
       searchPlaceholder={t("costing.list.searchPlaceholder")}
       search={search}
       onSearchChange={(v) => setCostingSidebar({ search: v })}
