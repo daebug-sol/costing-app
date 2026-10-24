@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { DocumentationHeader } from "./documentation-header";
 import { DocumentationForm } from "./documentation-form";
 import { DocumentationPreview } from "./documentation-preview";
-import { DocumentationExportDialog } from "./documentation-export-dialog";
 import { useDocumentationEditor, type EditorCtx } from "./use-documentation-editor";
 
 export function DocumentationModule() {
@@ -133,13 +132,12 @@ export function DocumentationModule() {
       <DocumentationHeader ed={ctx} />
 
 
-      <div className="grid min-h-0 w-full flex-1 grid-cols-1 gap-4 overflow-hidden px-4 py-4 sm:gap-5 sm:px-6 sm:py-5 lg:grid-cols-[minmax(0,34%)_minmax(0,66%)] lg:px-8 lg:py-6">
-        <DocumentationForm ed={ctx} />
-
-        <DocumentationPreview ed={ctx} />
+      <div className={`grid min-h-0 w-full flex-1 grid-cols-1 gap-4 overflow-hidden px-4 py-4 sm:gap-5 sm:px-6 sm:py-5 ${ed.previewOpen ? "lg:grid-cols-[minmax(0,34%)_minmax(0,66%)]" : ""} lg:px-8 lg:py-6`}>
+        <div className={`min-h-0 min-w-0 flex-col ${ed.previewOpen ? "hidden lg:flex" : "flex"}`}>
+          <DocumentationForm ed={ctx} />
+        </div>
+        {ed.previewOpen ? <DocumentationPreview ed={ctx} /> : null}
       </div>
-
-      <DocumentationExportDialog ed={ctx} />
     </div>
   );
 }
