@@ -46,6 +46,10 @@ const id = {
   "costing.summary.totalCost": "Total biaya",
   "costing.page.saving": "Menyimpan…",
   "costing.page.renameProject": "Ganti nama proyek",
+  "costing.page.deleteProject": "Hapus proyek",
+  "costing.page.deleteProjectTitle": "Hapus proyek {name}?",
+  "costing.page.deleteProjectDescription":
+    "Semua item di proyek ini ikut terhapus. Penawaran yang sudah dibuat tetap ada di Dokumentasi.",
   "costing.page.saved": "Tersimpan",
   "costing.page.saveFailed": "Gagal menyimpan",
   "costing.page.retry": "Coba lagi",
@@ -488,6 +492,10 @@ const en: Record<MessageKey, string> = {
   "costing.summary.totalCost": "Total cost",
   "costing.page.saving": "Saving…",
   "costing.page.renameProject": "Rename project",
+  "costing.page.deleteProject": "Delete project",
+  "costing.page.deleteProjectTitle": "Delete project {name}?",
+  "costing.page.deleteProjectDescription":
+    "All items in this project are deleted too. Quotations already created stay in Documentation.",
   "costing.page.saved": "Saved",
   "costing.page.saveFailed": "Save failed",
   "costing.page.retry": "Try again",
