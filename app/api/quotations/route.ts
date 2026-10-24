@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { guardApiRoute } from "@/lib/api-guard";
 import { requirePermission } from "@/lib/permissions";
+import { nextDocumentNumber } from "@/lib/doc-numbering";
+import { DOC_TYPES } from "@/lib/o2c/status";
 import { assertWithinPlanLimits } from "@/lib/org-entitlements";
 import { prisma } from "@/lib/prisma";
 import { computeQuotationTotals } from "@/lib/quotation-financials";
@@ -136,10 +138,13 @@ export async function POST() {
     const warrantyTerms = settings.warrantyTerms ?? "12 months since delivery";
     const termsConditions = settings.termsConditions ?? "";
 
-    const quotation = await prisma.quotation.create({
+    const quotation = await prisma.$transaction(async (tx) => {
+      const noSurat = await nextDocumentNumber(DOC_TYPES.QUO, orgId, tx);
+      return tx.quotation.create({
       data: {
         id: randomUUID(),
         organizationId: orgId,
+        noSurat,
         status: "draft",
         tanggal: new Date(),
         perihal: "Penawaran Harga AHU",
@@ -161,6 +166,7 @@ export async function POST() {
         termsConditions,
       },
       include: quotationPostInclude,
+      });
     });
 
     return NextResponse.json(quotation, { status: 201 });

@@ -1,14 +1,11 @@
 "use client";
 
-import { FileStack, FileText, PenLine } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { DEFAULT_QUOTATION_INTRO } from "@/lib/merge-quotation-doc";
 import { formatIDR } from "@/lib/utils/format";
 import type { EditorCtx } from "./use-documentation-editor";
 
 export function DocumentationPreview({ ed }: { ed: EditorCtx }) {
   const {
-    setDocumentationUi,
     previewMode,
     settings,
     form,
@@ -27,44 +24,6 @@ export function DocumentationPreview({ ed }: { ed: EditorCtx }) {
   return (
     <>
         <div className="flex min-h-0 min-w-0 flex-col gap-2 overflow-hidden">
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <Button
-              type="button"
-              variant={previewMode === "quotation" ? "default" : "outline"}
-              size="sm"
-              className="gap-1"
-              onClick={() =>
-                setDocumentationUi({ previewMode: "quotation" })
-              }
-            >
-              <FileText className="size-3.5" />
-              Quotation
-            </Button>
-            <Button
-              type="button"
-              variant={previewMode === "detailed" ? "default" : "outline"}
-              size="sm"
-              className="gap-1"
-              onClick={() =>
-                setDocumentationUi({ previewMode: "detailed" })
-              }
-            >
-              <PenLine className="size-3.5" />
-              Detailed costing
-            </Button>
-            <Button
-              type="button"
-              variant={previewMode === "internal" ? "default" : "outline"}
-              size="sm"
-              className="gap-1"
-              onClick={() =>
-                setDocumentationUi({ previewMode: "internal" })
-              }
-            >
-              <FileStack className="size-3.5" />
-              Internal costing
-            </Button>
-          </div>
           <div className="relative min-h-0 flex-1 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3 sm:p-4 lg:p-5">
             <div
               className={`relative z-0 mx-auto box-border w-full max-w-[min(100%,56rem)] rounded-md bg-white p-6 shadow-md sm:p-8 ${

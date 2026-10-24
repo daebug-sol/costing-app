@@ -83,7 +83,9 @@ export function useDocumentationEditor() {
     items: [] as FormLine[],
   });
 
-  const [exportOpen, setExportOpen] = useState<"pdf" | "excel" | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches
+  );
   const fromProjectHandled = useRef(false);
   const [previewBreakdowns, setPreviewBreakdowns] = useState<CostingBreakdown[]>([]);
 
@@ -862,7 +864,6 @@ export function useDocumentationEditor() {
     a.download = name;
     a.click();
     URL.revokeObjectURL(url);
-    setExportOpen(null);
   };
 
   const filteredAvailable = useMemo(() => {
@@ -930,8 +931,8 @@ export function useDocumentationEditor() {
     setO2cBusy,
     form,
     setForm,
-    exportOpen,
-    setExportOpen,
+    previewOpen,
+    setPreviewOpen,
     fromProjectHandled,
     previewBreakdowns,
     setPreviewBreakdowns,

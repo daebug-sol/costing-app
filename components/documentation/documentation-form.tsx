@@ -1,7 +1,25 @@
 "use client";
 
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Plus, X } from "lucide-react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { AlertTriangle, ChevronDown, ChevronUp, GripVertical, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +32,68 @@ import { formatIDR } from "@/lib/utils/format";
 import { toastError, toastSuccess } from "@/store/toastStore";
 import { SPEC_MAX_CHARS, readErr, CustomerOption } from "./documentation-shared";
 import type { EditorCtx } from "./use-documentation-editor";
+
+function SortableItemRow({
+  id,
+  index,
+  count,
+  onMove,
+  children,
+}: {
+  id: string;
+  index: number;
+  count: number;
+  onMove: (delta: -1 | 1) => void;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  return (
+    <tr
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={`border-t ${isDragging ? "bg-muted relative z-10 shadow-md" : ""}`}
+    >
+      <td className="px-1 py-2 align-top">
+        <div className="flex flex-col items-center gap-0.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            aria-label="Naikkan item"
+            disabled={index === 0}
+            onClick={() => onMove(-1)}
+          >
+            <ChevronUp className="size-4" />
+          </Button>
+          <button
+            type="button"
+            ref={setActivatorNodeRef}
+            className="text-muted-foreground flex size-8 touch-none cursor-grab items-center justify-center rounded-md active:cursor-grabbing"
+            aria-label="Geser untuk mengurutkan item"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="size-4" />
+          </button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            aria-label="Turunkan item"
+            disabled={index === count - 1}
+            onClick={() => onMove(1)}
+          >
+            <ChevronDown className="size-4" />
+          </Button>
+        </div>
+      </td>
+      {children}
+    </tr>
+  );
+}
 
 export function DocumentationForm({ ed }: { ed: EditorCtx }) {
   const {
@@ -41,9 +121,24 @@ export function DocumentationForm({ ed }: { ed: EditorCtx }) {
     presetApproved,
   } = ed;
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+  const moveItem = (from: number, to: number) => {
+    if (to < 0 || to >= form.items.length || from === to) return;
+    setForm((f) => ({ ...f, items: arrayMove(f.items, from, to) }));
+  };
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const ids = form.items.map((it) => it.localId);
+    moveItem(ids.indexOf(String(active.id)), ids.indexOf(String(over.id)));
+  };
+
   return (
     <>
-        <Card className="border-border flex min-h-0 flex-col overflow-hidden">
+        <Card className="border-border flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0">
           <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
             <Tabs
               defaultValue="identitas"
@@ -75,8 +170,12 @@ export function DocumentationForm({ ed }: { ed: EditorCtx }) {
                   <Label>No. Surat</Label>
                   <Input
                     value={form.noSurat}
+                    placeholder="Otomatis saat penawaran dikirim"
                     onChange={(e) => setForm((f) => ({ ...f, noSurat: e.target.value }))}
                   />
+                  <p className="text-muted-foreground text-xs leading-snug">
+                    Dibuat otomatis (QT-TahunBulan-Urutan). Ubah hanya jika perlu nomor khusus.
+                  </p>
                 </div>
                 <div className="grid gap-2">
                   <Label>Tanggal</Label>
@@ -307,6 +406,7 @@ export function DocumentationForm({ ed }: { ed: EditorCtx }) {
                   <table className="w-full text-left text-sm">
                     <thead className="bg-muted/40">
                       <tr>
+                        <th className="w-10 px-1 py-2" aria-label="Urutan" />
                         <th className="px-2 py-2">No</th>
                         <th className="px-2 py-2">Deskripsi</th>
                         <th className="px-2 py-2">Spesifikasi</th>
@@ -317,6 +417,8 @@ export function DocumentationForm({ ed }: { ed: EditorCtx }) {
                         <th className="w-8" />
                       </tr>
                     </thead>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                    <SortableContext items={form.items.map((it) => it.localId)} strategy={verticalListSortingStrategy}>
                     <tbody>
                       {form.items.map((it, idx) => {
                         const apiItem = quotation?.items?.find((x) => x.id === it.id);
@@ -326,7 +428,13 @@ export function DocumentationForm({ ed }: { ed: EditorCtx }) {
                         const stale =
                           live != null && Math.abs(live - it.unitPrice) > 0.5;
                         return (
-                          <tr key={it.localId} className="border-t">
+                          <SortableItemRow
+                            key={it.localId}
+                            id={it.localId}
+                            index={idx}
+                            count={form.items.length}
+                            onMove={(d) => moveItem(idx, idx + d)}
+                          >
                             <td className="px-2 py-2 align-top">{idx + 1}</td>
                             <td className="px-2 py-2 align-top">
                               <Input
@@ -402,10 +510,12 @@ export function DocumentationForm({ ed }: { ed: EditorCtx }) {
                                 <X className="size-4" />
                               </Button>
                             </td>
-                          </tr>
+                          </SortableItemRow>
                         );
                       })}
                     </tbody>
+                    </SortableContext>
+                    </DndContext>
                   </table>
                 </div>
 
