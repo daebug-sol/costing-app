@@ -29,6 +29,7 @@ import {
   type QuotationWithChain,
 } from "@/lib/o2c/project-progress";
 import { quotationStatusLabel } from "@/lib/o2c/status";
+import { tourEvent } from "@/lib/tour/events";
 import { formatIDR, formatRpShort } from "@/lib/utils/format";
 
 export type QuotationListRow = QuotationWithChain & {
@@ -205,7 +206,11 @@ export function DocumentationListView({
       }))}
       totalCount={projectCount}
       selectedKey={folderKey}
-      onSelectKey={setFolderKey}
+      onSelectKey={(key) => {
+        setFolderKey(key);
+        tourEvent("documentation.folder-opened");
+      }}
+      tourPrefix="documentation"
       panelActions={
         projectCount > 0 && !selectMode ? (
           <Button
@@ -312,7 +317,7 @@ export function DocumentationListView({
         ) : undefined
       }
     >
-      {rows.map((q) => {
+      {rows.map((q, index) => {
         const checked = selectedIds.has(q.id);
         const expanded = expandedId === q.id;
         const title =
@@ -345,10 +350,18 @@ export function DocumentationListView({
             }
             ariaExpanded={!selectMode ? expanded : undefined}
             selected={selectMode && checked}
+            dataTour={
+              (expandedId ? expanded : index === 0)
+                ? "documentation.quote-row"
+                : undefined
+            }
             onClick={() => {
               if (selectMode) onToggleSelect(q.id, !checked);
               else if (expanded) onOpenLatest(q.id);
-              else onToggleExpand(q.id);
+              else {
+                onToggleExpand(q.id);
+                tourEvent("documentation.quote-expanded");
+              }
             }}
             lead={
               selectMode ? (

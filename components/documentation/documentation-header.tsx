@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { tourEvent } from "@/lib/tour/events";
 import { toastError, toastSuccess } from "@/store/toastStore";
 import { readErr, QuotationApi } from "./documentation-shared";
 import type { EditorCtx } from "./use-documentation-editor";
@@ -179,6 +180,7 @@ export function DocumentationHeader({ ed }: { ed: EditorCtx }) {
             size="icon"
             variant="secondary"
             className={iconBtn}
+            data-tour="documentation.to-sales-order"
             aria-label="Ke Sales Order"
             title="Ke Sales Order"
             disabled={
@@ -227,6 +229,7 @@ export function DocumentationHeader({ ed }: { ed: EditorCtx }) {
             size="icon"
             variant={previewOpen ? "secondary" : "outline"}
             className={iconBtn}
+            data-tour="documentation.preview-toggle"
             aria-label={
               previewOpen ? "Sembunyikan pratinjau" : "Tampilkan pratinjau"
             }
@@ -242,13 +245,18 @@ export function DocumentationHeader({ ed }: { ed: EditorCtx }) {
               <Eye className="size-4" />
             )}
           </Button>
-          <DropdownMenu>
+          <DropdownMenu
+            onOpenChange={(open) => {
+              if (open) tourEvent("documentation.export-menu-opened");
+            }}
+          >
             <DropdownMenuTrigger asChild>
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
                 className="h-9 gap-1"
+                data-tour="documentation.export"
                 aria-label="Export"
                 disabled={!quotation}
               >
@@ -259,6 +267,7 @@ export function DocumentationHeader({ ed }: { ed: EditorCtx }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-auto min-w-40">
               <DropdownMenuItem
+                data-tour="documentation.export-pdf"
                 onSelect={() => void runExport("pdf", previewMode)}
               >
                 <FileText className="text-destructive size-4" />

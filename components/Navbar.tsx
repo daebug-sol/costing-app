@@ -7,11 +7,12 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
-import { CircleHelp, Settings } from "lucide-react";
+import { CircleHelp, RotateCcw, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { useI18n } from "@/components/i18n-provider";
+import { useTour } from "@/components/tour/tour-provider";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -50,8 +51,8 @@ function NavLinks() {
       className="flex items-center gap-0.5"
       aria-label={t("nav.mainLabel")}
     >
-      {visible.map(({ href, labelKey }) => (
-        <Link key={href} href={href} className={linkClass(href)}>
+      {visible.map(({ href, labelKey, icon }) => (
+        <Link key={href} href={href} className={linkClass(href)} data-tour={`nav.${icon}`}>
           {t(labelKey)}
         </Link>
       ))}
@@ -68,7 +69,8 @@ function useHelpHref() {
   return lesson ? `/help/${lesson.track}/${lesson.slug}` : "/help";
 }
 
-function HelpLink({ className }: { className?: string }) {
+/** Header Help icon; only without Clerk (dev), where there is no account menu to hold Help. */
+function HelpLink() {
   const { t } = useI18n();
   const href = useHelpHref();
   return (
@@ -78,7 +80,6 @@ function HelpLink({ className }: { className?: string }) {
           variant="ghost"
           size="icon"
           asChild
-          className={className}
           aria-label={t("nav.helpAria")}
         >
           <Link href={href} data-testid="header-help-link">
@@ -93,10 +94,14 @@ function HelpLink({ className }: { className?: string }) {
 
 function AuthControls() {
   const { t } = useI18n();
+  const helpHref = useHelpHref();
+  const { start } = useTour();
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     return (
       <Button variant="ghost" size="sm" asChild>
-        <Link href="/settings">{t("nav.settings")}</Link>
+        <Link href="/settings" data-tour="account.menu">
+          {t("nav.settings")}
+        </Link>
       </Button>
     );
   }
@@ -110,22 +115,29 @@ function AuthControls() {
             elements: { rootBox: "hidden sm:flex" },
           }}
         />
-        <UserButton>
-          <UserButton.MenuItems>
-            <UserButton.Link
-              label={t("nav.userSettings")}
-              labelIcon={<Settings className="size-4" aria-hidden />}
-              href="/settings"
-            />
-            <UserButton.Link
-              label={t("nav.help")}
-              labelIcon={<CircleHelp className="size-4" aria-hidden />}
-              href="/help"
-            />
-            <UserButton.Action label="manageAccount" />
-            <UserButton.Action label="signOut" />
-          </UserButton.MenuItems>
-        </UserButton>
+        <span data-tour="account.menu" className="inline-flex">
+          <UserButton>
+            <UserButton.MenuItems>
+              <UserButton.Link
+                label={t("nav.userSettings")}
+                labelIcon={<Settings className="size-4" aria-hidden />}
+                href="/settings"
+              />
+              <UserButton.Link
+                label={t("nav.help")}
+                labelIcon={<CircleHelp className="size-4" aria-hidden />}
+                href={helpHref}
+              />
+              <UserButton.Action
+                label={t("tour.replayWelcome")}
+                labelIcon={<RotateCcw className="size-4" aria-hidden />}
+                onClick={() => start("welcome")}
+              />
+              <UserButton.Action label="manageAccount" />
+              <UserButton.Action label="signOut" />
+            </UserButton.MenuItems>
+          </UserButton>
+        </span>
       </Show>
       <Show when="signed-out">
         <SignInButton mode="modal">
@@ -165,7 +177,7 @@ export function Navbar() {
         </div>
 
         <div className="flex shrink-0 items-center justify-end gap-2 lg:min-w-[200px]">
-          <HelpLink className={HAS_CLERK ? "hidden sm:inline-flex" : undefined} />
+          {HAS_CLERK ? null : <HelpLink />}
           <AuthControls />
         </div>
       </div>
