@@ -3,55 +3,17 @@
 import { costingErrorMessage } from "@/lib/costing-error-message";
 import { toastError } from "@/store/toastStore";
 import { useI18n } from "@/components/i18n-provider";
-import {
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
-  ChevronDown,
-  ChevronRight,
-  GripVertical,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Trash2,
-} from "lucide-react";
+import { FolderPlus, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AssemblyTypeBadge } from "@/components/costing/assembly-type-badge";
-import { CostingShell } from "@/components/costing/costing-shell";
+import { ManualGroupTree } from "@/components/costing/manual-group-tree";
 import {
   ItemPickerModal,
   type PickerSelection,
 } from "@/components/costing/ItemPickerModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,13 +22,17 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { formatIDR } from "@/lib/utils/format";
 import { computeCostSummary, finite } from "@/lib/cost-summary";
 import { cn } from "@/lib/utils";
+import {
+  buildGroupTree,
+  canAddSubgroup,
+  flattenGroupTree,
+  materialUsage,
+} from "@/lib/manual-group-tree";
 import { useConfirm } from "@/components/confirm-dialog";
 import { useCostingStore } from "@/store/costingStore";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
@@ -103,15 +69,12 @@ type ManualItem = {
 
 type ManualGroup = {
   id: string;
+  parentId?: string | null;
   name: string;
   sortOrder: number;
   subtotal: number;
   items: ManualItem[];
 };
-
-function rowKey(sourceType: string, sourceId: string) {
-  return `${sourceType}:${sourceId}`;
-}
 
 async function readErr(res: Response): Promise<string> {
   try {
@@ -121,82 +84,6 @@ async function readErr(res: Response): Promise<string> {
     /* ignore */
   }
   return res.statusText || "Request failed";
-}
-
-function SortableGroupWrap({
-  id,
-  children,
-}: {
-  id: string;
-  children: (args: {
-    setNodeRef: (node: HTMLElement | null) => void;
-    style: React.CSSProperties;
-    dragProps: React.HTMLAttributes<HTMLDivElement>;
-  }) => React.ReactNode;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.3 : 1,
-  };
-  const dragProps: React.HTMLAttributes<HTMLDivElement> = {
-    ...attributes,
-    ...listeners,
-    className:
-      "cursor-grab touch-none select-none active:cursor-grabbing rounded-md px-1 py-0.5 -mx-1 -my-0.5",
-    title: "Tahan lalu seret untuk mengurutkan kelompok",
-  };
-  return (
-    <>{children({ setNodeRef, style, dragProps })}</>
-  );
-}
-
-function SortableItemRow({
-  id,
-  children,
-}: {
-  id: string;
-  children: (handle: React.ReactNode) => React.ReactNode;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.85 : 1,
-  };
-  const handle = (
-    <span
-      className="inline-flex cursor-grab text-muted-foreground active:cursor-grabbing"
-      {...attributes}
-      {...listeners}
-    >
-      <GripVertical className="size-4" />
-    </span>
-  );
-  return (
-    <tr
-      ref={setNodeRef}
-      style={style}
-      className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
-    >
-      {children(handle)}
-    </tr>
-  );
 }
 
 type ManualWorkspaceProps = {
@@ -253,7 +140,7 @@ export function ManualWorkspace({
 
   const [priceEditId, setPriceEditId] = useState<string | null>(null);
   const [priceDraft, setPriceDraft] = useState("");
-  const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
   const [qtyDraft, setQtyDraft] = useState<Record<string, string>>({});
 
   const projectId = currentProject?.id;
@@ -431,96 +318,78 @@ export function ManualWorkspace({
     }
   };
 
-  const existingKeys = useMemo(() => {
-    const s = new Set<string>();
-    for (const g of groups) {
-      for (const it of g.items) {
-        s.add(rowKey(it.sourceType, it.sourceId));
-      }
-    }
-    return s;
-  }, [groups]);
+  const tree = useMemo(() => buildGroupTree(groups), [groups]);
+  const usage = useMemo(() => materialUsage(groups), [groups]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { delay: 220, tolerance: 8 },
-    }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const groupIds = useMemo(
-    () => groups.map((g) => `g-${g.id}`),
-    [groups]
-  );
-
-  const onDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || !projectId) return;
-    const aid = String(active.id);
-    const oid = String(over.id);
-    if (aid === oid) return;
-
-    if (aid.startsWith("g-") && oid.startsWith("g-")) {
-      const oldIndex = groups.findIndex((g) => `g-${g.id}` === aid);
-      const newIndex = groups.findIndex((g) => `g-${g.id}` === oid);
-      if (oldIndex < 0 || newIndex < 0) return;
-      const next = arrayMove(groups, oldIndex, newIndex);
-      setGroups(next);
-      try {
-        await Promise.all(
-          next.map((g, i) =>
-            fetch(`${manualBase}/groups/${g.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ sortOrder: i }),
-            })
-          )
-        );
-        await loadManual();
-      } catch (e) {
-        showToast(costingErrorMessage(e));
-      }
-      return;
-    }
-
-    if (aid.startsWith("i-") && oid.startsWith("i-")) {
-      const activeItemId = aid.slice(2);
-      const overItemId = oid.slice(2);
-      let group: ManualGroup | undefined;
-      for (const g of groups) {
-        if (g.items.some((i) => i.id === activeItemId)) {
-          group = g;
-          break;
+  /** Label bagian untuk picker: "Kaki / Tapak" untuk sub-bagian. */
+  const groupOptions = useMemo(
+    () =>
+      flattenGroupTree(tree).map((n) => {
+        const names: string[] = [];
+        let cur: ManualGroup | undefined = n.group;
+        const byId = new Map(groups.map((g) => [g.id, g]));
+        while (cur) {
+          names.unshift(cur.name);
+          cur = cur.parentId ? byId.get(cur.parentId) : undefined;
         }
-      }
-      if (!group) return;
-      const idxOld = group.items.findIndex((i) => i.id === activeItemId);
-      const idxNew = group.items.findIndex((i) => i.id === overItemId);
-      if (idxOld < 0 || idxNew < 0) return;
-      const newItems = arrayMove(group.items, idxOld, idxNew);
-      const gIdx = groups.findIndex((g) => g.id === group.id);
-      if (gIdx < 0) return;
-      const nextGroups = [...groups];
-      nextGroups[gIdx] = { ...group, items: newItems };
-      setGroups(nextGroups);
-      try {
-        await Promise.all(
-          newItems.map((it, i) =>
-            fetch(`${manualBase}/items/${it.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ sortOrder: i }),
-            })
-          )
-        );
-        await loadManual();
-        await loadProject(projectId);
-      } catch (e) {
-        showToast(costingErrorMessage(e));
-      }
+        return { id: n.group.id, name: names.join(" / ") };
+      }),
+    [tree, groups]
+  );
+
+  const persistOrder = async (
+    list: { id: string }[],
+    url: (id: string) => string
+  ) => {
+    const results = await Promise.all(
+      list.map((x, i) =>
+        fetch(url(x.id), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sortOrder: i }),
+        })
+      )
+    );
+    const bad = results.find((r) => !r.ok);
+    if (bad) throw new Error(await readErr(bad));
+  };
+
+  const moveGroup = async (groupId: string, dir: -1 | 1) => {
+    if (!projectId) return;
+    const g = groups.find((x) => x.id === groupId);
+    if (!g) return;
+    const siblings = groups
+      .filter((x) => (x.parentId ?? null) === (g.parentId ?? null))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+    const from = siblings.findIndex((x) => x.id === groupId);
+    const to = from + dir;
+    if (from < 0 || to < 0 || to >= siblings.length) return;
+    const next = [...siblings];
+    [next[from], next[to]] = [next[to], next[from]];
+    try {
+      await persistOrder(next, (id) => `${manualBase}/groups/${id}`);
+      await loadManual();
+    } catch (e) {
+      showToast(costingErrorMessage(e));
     }
   };
 
+  const moveItem = async (groupId: string, itemId: string, dir: -1 | 1) => {
+    if (!projectId) return;
+    const g = groups.find((x) => x.id === groupId);
+    if (!g) return;
+    const from = g.items.findIndex((i) => i.id === itemId);
+    const to = from + dir;
+    if (from < 0 || to < 0 || to >= g.items.length) return;
+    const next = [...g.items];
+    [next[from], next[to]] = [next[to], next[from]];
+    try {
+      await persistOrder(next, (id) => `${manualBase}/items/${id}`);
+      await loadManual();
+    } catch (e) {
+      showToast(costingErrorMessage(e));
+    }
+  };
   const openPickerForGroup = (groupId: string) => {
     setPickerLockGroupId(groupId);
     setPickerOpen(true);
@@ -582,13 +451,43 @@ export function ManualWorkspace({
     await loadManual();
   };
 
-  const createKelompok = async () => {
-    const id = await createGroupFromName(`Kelompok ${groups.length + 1}`);
-    if (!id) return;
-    setOpenCats((prev) => ({ ...prev, [id]: true }));
+  /** Bagian baru (atau sub-bagian) lalu langsung minta nama. */
+  const createBagian = async (parentId: string | null) => {
+    if (!projectId) return;
+    if (parentId && !canAddSubgroup(groups, parentId)) {
+      showToast(t("costing.manual.maxDepth"));
+      return;
+    }
+    const siblings = groups.filter((g) => (g.parentId ?? null) === parentId).length;
+    const r = await fetch(`${manualBase}/groups`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: t("costing.manual.defaultGroupName", { n: String(siblings + 1) }),
+        parentId,
+      }),
+    });
+    if (!r.ok) {
+      showToast(await readErr(r));
+      return;
+    }
+    const created = (await r.json()) as { id: string };
+    await loadManual();
+    setOpenCats((prev) => ({
+      ...prev,
+      [created.id]: true,
+      ...(parentId ? { [parentId]: true } : {}),
+    }));
+    setRenamingId(created.id);
   };
 
-  const ensureDefaultAndOpenPicker = async () => {
+  /** Tombol bawah: item tunggal langsung ke bagian bawaan; kalau sudah ada bagian, pilih di picker. */
+  const addMaterialFromBottom = async () => {
+    if (groups.length > 1 || (groups.length === 1 && !isFlat)) {
+      setPickerLockGroupId(null);
+      setPickerOpen(true);
+      return;
+    }
     if (groups[0]?.id) {
       openPickerForGroup(groups[0].id);
       return;
@@ -649,14 +548,15 @@ export function ManualWorkspace({
       method: "DELETE",
     });
     if (!r.ok) showToast(await readErr(r));
-    setDeleteItemId(null);
     await loadManual();
     await loadProject(projectId);
   };
 
-  const renderQtyInput = (row: ManualItem, className = "tabular-money ml-auto h-8 w-24 text-right") => (
+  const renderQtyInput = (row: ManualItem, className: string) => (
     <Input
       className={className}
+      inputMode="decimal"
+      aria-label={t("costing.manual.qtyFor", { name: row.name })}
       value={
         qtyDraft[row.id] ??
         String(row.qty)
@@ -687,74 +587,45 @@ export function ManualWorkspace({
     />
   );
 
-  const renderPriceControl = (row: ManualItem) => (
-    <>
-    {priceEditId === row.id ? (
-      <div className="flex items-center justify-end gap-1">
-        <Input
-          className="tabular-money h-8 w-28 text-right"
-          value={priceDraft}
-          autoFocus
-          onChange={(e) =>
-            setPriceDraft(e.target.value)
-          }
-          onBlur={() => {
-            const v = Number(priceDraft);
-            if (Number.isFinite(v) && v >= 0)
-              void applyPriceOverride(
-                row.id,
-                v
-              );
-            else setPriceEditId(null);
-          }}
-        />
-      </div>
+  const startPriceEdit = (row: { id: string; overridePrice: number | null; basePrice: number }) => {
+    setPriceEditId(row.id);
+    setPriceDraft(String(row.overridePrice ?? row.basePrice));
+  };
+
+  const renderPriceControl = (row: ManualItem) =>
+    priceEditId === row.id ? (
+      <Input
+        className="tabular-money ml-auto h-8 w-28 px-2 text-right"
+        value={priceDraft}
+        autoFocus
+        inputMode="decimal"
+        aria-label={t("costing.manual.priceFor", { name: row.name })}
+        onChange={(e) => setPriceDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "Escape") setPriceEditId(null);
+        }}
+        onBlur={() => {
+          const v = Number(priceDraft);
+          if (Number.isFinite(v) && v >= 0) void applyPriceOverride(row.id, v);
+          else setPriceEditId(null);
+        }}
+      />
     ) : (
       <button
         type="button"
         className={cn(
-          "tabular-money inline-flex items-center gap-1 hover:underline",
-          row.overridePrice != null
-            ? "text-amber-700"
-            : ""
+          "tabular-money inline-flex items-center gap-1 rounded-sm hover:underline",
+          row.overridePrice != null && "text-amber-700"
         )}
-        onClick={() => {
-          setPriceEditId(row.id);
-          setPriceDraft(
-            String(
-              row.overridePrice ??
-                row.basePrice
-            )
-          );
-        }}
+        title={row.overridePrice != null ? t("costing.manual.overridden") : undefined}
+        aria-label={`${t("costing.manual.editPrice")}: ${row.name}`}
+        onClick={() => startPriceEdit(row)}
       >
-        {formatIDR(
-          row.overridePrice ??
-            row.basePrice
-        )}
-        <Pencil className="size-3 opacity-60" />
+        {formatIDR(row.overridePrice ?? row.basePrice)}
+        <Pencil className="hidden size-3 opacity-60 md:inline" aria-hidden />
       </button>
-    )}
-    {row.overridePrice != null ? (
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="size-7 text-amber-700"
-        title="Kembalikan harga DB"
-        aria-label={`Kembalikan harga DB untuk ${row.name}`}
-        onClick={() =>
-          void applyPriceOverride(
-            row.id,
-            null
-          )
-        }
-      >
-        <RotateCcw className="size-3.5" />
-      </Button>
-    ) : null}
-    </>
-  );
+    );
 
   if (!currentProject) return null;
 
@@ -783,269 +654,75 @@ export function ManualWorkspace({
       )}
 
       {loading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-40 w-full" />
+        <div className="space-y-3">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
         </div>
       ) : isManualEmpty ? (
-        <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-10">
+        <div className="flex min-h-32 flex-col items-center justify-center gap-3 py-8">
           <p className="text-muted-foreground text-sm">
-            Belum ada item untuk saat ini.
+            {t("costing.manual.empty")}
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            <Button type="button" onClick={() => void ensureDefaultAndOpenPicker()}>
+            <Button type="button" onClick={() => void addMaterialFromBottom()}>
               <Plus data-icon="inline-start" aria-hidden />
               {t("costing.manual.addRow")}
             </Button>
-            <Button type="button" variant="outline" onClick={() => void createKelompok()}>
+            <Button type="button" variant="outline" onClick={() => void createBagian(null)}>
+              <FolderPlus data-icon="inline-start" aria-hidden />
               {t("costing.manual.addGroup")}
             </Button>
           </div>
         </div>
       ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={(e) => void onDragEnd(e)}
-        >
-          <SortableContext
-          id="manual-groups"
-          items={groupIds}
-          strategy={verticalListSortingStrategy}
-        >
-            <div className="flex flex-col gap-2">
-              {groups.map((g) => {
-                const open = openCats[g.id] ?? true;
-                const itemIds = g.items.map((i) => `i-${i.id}`);
-                return (
-                  <SortableGroupWrap key={g.id} id={`g-${g.id}`}>
-                    {({ setNodeRef, style, dragProps }) => {
-                    const groupShell = (
-                      <>
-                      {!isFlat ? (
-                      <div className="flex min-w-0 items-center gap-2 border-b border-border px-3 py-2.5 sm:px-4">
-                        <div
-                          {...dragProps}
-                          className={cn(
-                            "text-muted-foreground hover:text-foreground hover:bg-muted/60 flex size-8 shrink-0 cursor-grab items-center justify-center rounded-md active:cursor-grabbing",
-                            dragProps.className
-                          )}
-                        >
-                          <GripVertical className="size-4" aria-hidden />
-                        </div>
-                        <button
-                          type="button"
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={() =>
-                            setOpenCats((o) => ({ ...o, [g.id]: !open }))
-                          }
-                          className="text-muted-foreground hover:text-foreground hover:bg-muted/60 flex size-8 shrink-0 items-center justify-center rounded-md transition-colors"
-                          aria-expanded={open}
-                          aria-label={
-                            open
-                              ? `Ciutkan kelompok ${g.name}`
-                              : `Buka kelompok ${g.name}`
-                          }
-                        >
-                          {open ? (
-                            <ChevronDown className="size-4 shrink-0" />
-                          ) : (
-                            <ChevronRight className="size-4 shrink-0" />
-                          )}
-                        </button>
-                        <div className="min-w-0 flex-1 sm:max-w-[12rem]">
-                          <Input
-                            className="h-8 w-full min-w-0 bg-background text-sm font-medium"
-                            defaultValue={g.name}
-                            key={`gname-${g.id}-${g.name}`}
-                            title={g.name}
-                            aria-label={`Nama kelompok ${g.name}`}
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onBlur={(e) => void renameGroup(g.id, e.target.value)}
-                          />
-                        </div>
-                        <span
-                          className="tabular-money text-muted-foreground min-w-0 flex-1 truncate text-right text-xs sm:text-xs"
-                          title={`Subtotal HPP: ${formatIDR(g.subtotal)}`}
-                        >
-                          Subtotal HPP: {formatIDR(g.subtotal)}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={() => openPickerForGroup(g.id)}
-                        >
-                          + {t("costing.manual.addRow")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-destructive size-8 shrink-0"
-                          title="Hapus kelompok"
-                          aria-label={`Hapus kelompok ${g.name}`}
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={() => {
-                            void confirm({
-                              title: t("costing.deleteGroupTitle", { name: g.name }),
-                              description: t("costing.deleteGroupDescription"),
-                            }).then((ok) => {
-                              if (ok) void removeGroup(g.id);
-                            });
-                          }}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
-                      ) : null}
-                      {(isFlat || open) && (
-                          <SortableContext
-                            id={`manual-items-${g.id}`}
-                            items={itemIds}
-                            strategy={verticalListSortingStrategy}
-                          >
-                            <div className="hidden md:block">
-                            <Table>
-                              <TableHeader>
-                                <TableRow className="hover:bg-transparent">
-                                  <TableHead className="w-10" />
-                                  <TableHead>{t("costing.manual.colName")}</TableHead>
-                                  <TableHead className="w-20">{t("costing.manual.colUnit")}</TableHead>
-                                  <TableHead className="w-28 text-right">
-                                    Qty
-                                  </TableHead>
-                                  <TableHead className="text-right">
-                                    {t("costing.manual.colUnitPrice")}
-                                  </TableHead>
-                                  <TableHead className="text-right">
-                                    {t("costing.manual.colSubtotal")}
-                                  </TableHead>
-                                  <TableHead className="w-10" />
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {g.items.map((row) => (
-                                  <SortableItemRow
-                                    key={row.id}
-                                    id={`i-${row.id}`}
-                                  >
-                                    {(handle) => (
-                                      <>
-                                        <TableCell className="align-middle">
-                                          {handle}
-                                        </TableCell>
-                                        <TableCell className="max-w-[200px] text-sm">
-                                          {row.name}
-                                        </TableCell>
-                                        <TableCell className="text-sm">
-                                          {row.uom}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                          {renderQtyInput(row)}
-                                        </TableCell>
-                                        <TableCell className="text-right text-sm">
-                                          {renderPriceControl(row)}
-                                        </TableCell>
-                                        <TableCell className="tabular-money text-right text-sm font-medium">
-                                          {formatIDR(row.subtotal)}
-                                        </TableCell>
-                                        <TableCell>
-                                          <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="size-8 text-muted-foreground"
-                                            aria-label={`Hapus baris ${row.name}`}
-                                            onClick={() =>
-                                              setDeleteItemId(row.id)
-                                            }
-                                          >
-                                            <Trash2 className="size-4" />
-                                          </Button>
-                                        </TableCell>
-                                      </>
-                                    )}
-                                  </SortableItemRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                            </div>
-                            <ul className="divide-border divide-y md:hidden">
-                              {g.items.map((row) => (
-                                <li key={row.id} className="space-y-2 px-3 py-3">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <p className="min-w-0 text-sm font-medium break-words">{row.name}</p>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="text-muted-foreground size-8 shrink-0"
-                                      aria-label={`Hapus baris ${row.name}`}
-                                      onClick={() => setDeleteItemId(row.id)}
-                                    >
-                                      <Trash2 className="size-4" />
-                                    </Button>
-                                  </div>
-                                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-                                    <div>
-                                      <dt className="text-muted-foreground text-xs">{t("costing.manual.qty")} ({row.uom})</dt>
-                                      <dd>{renderQtyInput(row, "tabular-money h-9 w-full text-right")}</dd>
-                                    </div>
-                                    <div>
-                                      <dt className="text-muted-foreground text-xs">{t("costing.manual.colUnitPrice")}</dt>
-                                      <dd className="flex min-h-9 items-center">{renderPriceControl(row)}</dd>
-                                    </div>
-                                  </dl>
-                                  <p className="flex items-baseline justify-between text-sm">
-                                    <span className="text-muted-foreground text-xs">{t("costing.manual.colSubtotal")}</span>
-                                    <span className="tabular-money font-medium">{formatIDR(row.subtotal)}</span>
-                                  </p>
-                                </li>
-                              ))}
-                            </ul>
-                          </SortableContext>
-                        )}
-                      </>
-                    );
-                    return embedded ? (
-                      <div ref={setNodeRef} style={style} className="overflow-hidden">
-                        {isFlat ? (
-                          groupShell
-                        ) : (
-                          <CostingShell level="module">{groupShell}</CostingShell>
-                        )}
-                      </div>
-                    ) : (
-                      <div
-                        ref={setNodeRef}
-                        style={style}
-                        className={cn(
-                          "overflow-hidden",
-                          !isFlat && "border-border/60 rounded-md border"
-                        )}
-                      >
-                        {groupShell}
-                      </div>
-                    );
-                    }}
-                  </SortableGroupWrap>
-                );
-              })}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <ManualGroupTree
+          nodes={tree}
+          flat={isFlat}
+          openCats={openCats}
+          onToggle={(id) => setOpenCats((o) => ({ ...o, [id]: !(o[id] ?? true) }))}
+          renamingId={renamingId}
+          onStartRename={setRenamingId}
+          onCommitRename={(id, name) => {
+            setRenamingId(null);
+            if (name != null) void renameGroup(id, name);
+          }}
+          usage={usage}
+          onAddMaterial={openPickerForGroup}
+          onAddSubgroup={(id) => void createBagian(id)}
+          onMoveGroup={(id, dir) => void moveGroup(id, dir)}
+          onDeleteGroup={(g) => {
+            void confirm({
+              title: t("costing.deleteGroupTitle", { name: g.name }),
+              description: t("costing.deleteGroupDescription"),
+            }).then((ok) => {
+              if (ok) void removeGroup(g.id);
+            });
+          }}
+          onMoveItem={(gid, iid, dir) => void moveItem(gid, iid, dir)}
+          onDeleteItem={(row) => {
+            void confirm({
+              title: t("costing.manual.deleteRowTitle", { name: row.name }),
+              description: t("costing.manual.deleteRowDescription"),
+            }).then((ok) => {
+              if (ok) void removeItem(row.id);
+            });
+          }}
+          onEditPrice={startPriceEdit}
+          onResetPrice={(row) => void applyPriceOverride(row.id, null)}
+          renderQtyInput={(row, className) => renderQtyInput(row as ManualItem, className)}
+          renderPrice={(row) => renderPriceControl(row as ManualItem)}
+        />
       )}
 
       {!loading && !isManualEmpty ? (
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={() => void ensureDefaultAndOpenPicker()}>
+        <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+          <Button type="button" onClick={() => void addMaterialFromBottom()}>
             <Plus data-icon="inline-start" aria-hidden />
             {t("costing.manual.addRow")}
           </Button>
-          <Button type="button" variant="outline" onClick={() => void createKelompok()}>
+          <Button type="button" variant="outline" onClick={() => void createBagian(null)}>
+            <FolderPlus data-icon="inline-start" aria-hidden />
             {t("costing.manual.addGroup")}
           </Button>
         </div>
@@ -1292,42 +969,14 @@ export function ManualWorkspace({
           setPickerOpen(o);
           if (!o) setPickerLockGroupId(null);
         }}
-        existingKeys={existingKeys}
-        groups={groups.map((g) => ({ id: g.id, name: g.name }))}
+        usage={usage}
+        groups={groupOptions}
         lockGroupId={pickerLockGroupId ?? undefined}
         onConfirm={async (groupId, items) => {
           await onPickerConfirm(groupId, items);
         }}
         onCreateGroup={(name) => createGroupFromName(name)}
       />
-
-      <Dialog
-        open={deleteItemId != null}
-        onOpenChange={(o) => !o && setDeleteItemId(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Hapus baris?</DialogTitle>
-          </DialogHeader>
-          <p className="text-muted-foreground text-sm">
-            Baris akan dihapus dari item ini. Tindakan ini dapat
-            dibatalkan dengan menambahkan ulang dari database.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteItemId(null)}>
-              Batal
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() =>
-                deleteItemId && void removeItem(deleteItemId)
-              }
-            >
-              Hapus
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

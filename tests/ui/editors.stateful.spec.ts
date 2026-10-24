@@ -84,8 +84,8 @@ test.describe("Stateful editors", () => {
     try {
       await page.goto(`/costing?project=${encodeURIComponent(id)}`);
       await page.getByRole("button", { name: "Single Item" }).click();
-      await expect(page.getByRole("button", { name: "Tambah baris" })).toBeVisible({ timeout: 30_000 });
-      await expect(page.getByRole("button", { name: "Tambah grup" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Tambah material" })).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByRole("button", { name: "Tambah bagian" })).toBeVisible();
 
       await page.getByRole("button", { name: "Tambah item" }).click();
       await page.getByRole("menuitem", { name: "Auto-AHU" }).click();

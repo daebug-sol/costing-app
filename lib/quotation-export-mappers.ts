@@ -10,6 +10,7 @@ import {
   resolveActiveModules,
 } from "@/lib/costing-scope";
 import { effectiveSectionSubtotal } from "@/lib/section-subtotal";
+import { orderGroupsDepthFirst } from "@/lib/manual-group-tree";
 import { formatNumber } from "@/lib/utils/format";
 
 type LineRow = {
@@ -36,6 +37,9 @@ type ManualItemApi = {
 };
 
 type ManualGroupApi = {
+  id?: string;
+  parentId?: string | null;
+  sortOrder?: number;
   name: string;
   subtotal: number;
   items: ManualItemApi[];
@@ -77,6 +81,14 @@ export type CostingProjectApi = {
     manualGroups?: ManualGroupApi[];
   }[];
 };
+
+/** Bagian + sub-bagian diratakan, induk dulu lalu anaknya. */
+function flatManualGroups(groups: ManualGroupApi[]): ManualGroupApi[] {
+  if (!groups.every((g) => typeof g.id === "string")) return groups;
+  return orderGroupsDepthFirst(
+    groups.map((g, i) => ({ ...g, id: g.id as string, sortOrder: g.sortOrder ?? i }))
+  );
+}
 
 function segmentLabel(
   seg: { title?: string; type: string },
@@ -143,7 +155,7 @@ export function costingProjectToSectionDocs(p: CostingProjectApi): SectionDoc[] 
     }
 
     if (seg.type === "manual" && seg.manualGroups?.length) {
-      for (const g of seg.manualGroups) {
+      for (const g of flatManualGroups(seg.manualGroups)) {
         out.push({
           category: multi ? `${label} — ${g.name}` : g.name,
           subtotal: g.subtotal,
@@ -423,7 +435,7 @@ function buildSubAssemblyRollupMeta(p: CostingProjectApi): SectionRollupMeta[] {
 
     if (seg.type === "manual" && seg.manualGroups?.length) {
       const specManual = segmentSpecLineFromSegment(seg);
-      for (const g of seg.manualGroups) {
+      for (const g of flatManualGroups(seg.manualGroups)) {
         out.push({
           category: multi ? `${label} — ${g.name}` : g.name,
           weight: Math.max(0, g.subtotal),

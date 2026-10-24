@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatIDR } from "@/lib/utils/format";
-import { cn } from "@/lib/utils";
+import type { MaterialUsage } from "@/lib/manual-group-tree";
 
 export type PickerSelection = {
   sourceType: "material" | "profile" | "component" | "custom";
@@ -60,7 +60,7 @@ function rowKey(sourceType: string, sourceId: string) {
 export function ItemPickerModal({
   open,
   onOpenChange,
-  existingKeys,
+  usage,
   groups,
   lockGroupId,
   onConfirm,
@@ -68,7 +68,8 @@ export function ItemPickerModal({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  existingKeys: Set<string>;
+  /** Material yang sudah dipakai tetap bisa dipilih lagi untuk bagian lain. */
+  usage?: Map<string, MaterialUsage>;
   groups: { id: string; name: string }[];
   lockGroupId?: string | null;
   onConfirm: (groupId: string, items: PickerSelection[]) => Promise<void>;
@@ -332,23 +333,17 @@ export function ItemPickerModal({
                     </p>
                     <div className="space-y-1">
                       {rows.map((r) => {
-                        const exists = existingKeys.has(
-                          rowKey(r.sourceType, r.sourceId)
-                        );
-                        const disabled = exists;
+                        const usedIn =
+                          usage?.get(rowKey(r.sourceType, r.sourceId))
+                            ?.groupCount ?? 0;
                         return (
                           <label
                             key={r.key}
-                            className={cn(
-                              "flex cursor-pointer items-start gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm hover:bg-muted",
-                              disabled && "cursor-not-allowed opacity-60"
-                            )}
+                            className="flex cursor-pointer items-start gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm hover:bg-muted"
                           >
                             <Checkbox
                               checked={Boolean(checked[r.key])}
-                              disabled={disabled}
                               onCheckedChange={(v) =>
-                                !disabled &&
                                 toggle(r.key, r, Boolean(v))
                               }
                               className="mt-0.5"
@@ -359,12 +354,9 @@ export function ItemPickerModal({
                               </span>
                               <span className="text-muted-foreground block text-xs">
                                 {r.subtitle} · {r.priceLabel}
-                                {exists ? (
-                                  <span className="text-amber-700">
-                                    {" "}
-                                    (sudah ada)
-                                  </span>
-                                ) : null}
+                                {usedIn > 0
+                                  ? ` · ${t("costing.manual.pickerUsage", { count: String(usedIn) })}`
+                                  : null}
                               </span>
                             </span>
                           </label>
@@ -383,13 +375,13 @@ export function ItemPickerModal({
             </p>
             {!lockGroupId ? (
               <div className="mb-3 space-y-1">
-                <Label className="text-xs">Tambahkan ke grup</Label>
+                <Label className="text-xs">{t("costing.manual.pickerTarget")}</Label>
                 <Select
                   value={selectedGroupId}
                   onValueChange={selectGroupValue}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Pilih grup" />
+                    <SelectValue placeholder={t("costing.manual.pickerTargetPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {groups.map((g) => (
@@ -402,7 +394,7 @@ export function ItemPickerModal({
                         value="__create__"
                         className="text-muted-foreground"
                       >
-                        + Buat grup baru…
+                        {t("costing.manual.pickerCreate")}
                       </SelectItem>
                     ) : null}
                   </SelectContent>
