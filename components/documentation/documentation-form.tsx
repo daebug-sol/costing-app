@@ -167,17 +167,6 @@ export function DocumentationForm({ ed }: { ed: EditorCtx }) {
                 className="mt-0 min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5"
               >
                 <div className="grid gap-2">
-                  <Label>No. Surat</Label>
-                  <Input
-                    value={form.noSurat}
-                    placeholder="Otomatis saat penawaran dikirim"
-                    onChange={(e) => setForm((f) => ({ ...f, noSurat: e.target.value }))}
-                  />
-                  <p className="text-muted-foreground text-xs leading-snug">
-                    Dibuat otomatis (QT-TahunBulan-Urutan). Ubah hanya jika perlu nomor khusus.
-                  </p>
-                </div>
-                <div className="grid gap-2">
                   <Label>Tanggal</Label>
                   <Input
                     type="date"
