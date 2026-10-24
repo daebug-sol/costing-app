@@ -48,6 +48,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { AhuDatasetKind, DatabaseScope, FolderSummary } from "@/lib/database-folders";
+import { tourEvent } from "@/lib/tour/events";
 import { cn } from "@/lib/utils";
 import { DatabaseShell } from "./database-shell";
 import { formatDayMonth } from "@/lib/utils/format";
@@ -484,14 +485,17 @@ export function DatabaseExplorer({
   const pickFolder = (id: string) => {
     onFolderSelect(id);
     setMobileOpen(true);
+    tourEvent("database.folder-opened");
   };
   const pickAhu = () => {
     ahuEntry?.onSelect();
     setMobileOpen(true);
+    tourEvent("database.ahu-opened");
   };
   const openFile = (id: string) => {
     resumeFolderView = true;
     onFileOpen(id);
+    tourEvent("database.file-opened");
   };
   const toRoot = () => setMobileOpen(false);
 
@@ -549,9 +553,10 @@ export function DatabaseExplorer({
       />
     ) : (
       <ExplorerRows>
-        {filteredFiles.map((f) => (
+        {filteredFiles.map((f, i) => (
           <ExplorerRow
             key={f.id}
+            dataTour={i === 0 ? "database.file" : undefined}
             icon={<FileSpreadsheet className="size-5" aria-hidden />}
             title={f.name}
             meta={
@@ -622,10 +627,14 @@ export function DatabaseExplorer({
       {ahuEntry.datasets.map((d) => (
         <ExplorerRow
           key={d.key}
+          dataTour={d.key === "materials" ? "database.folder.material" : undefined}
           icon={<d.Icon className="size-5" aria-hidden />}
           title={d.label}
           meta={<span>{t("database.explorer.ahuDataset")}</span>}
-          onClick={() => ahuEntry.onOpen(d.key)}
+          onClick={() => {
+            ahuEntry.onOpen(d.key);
+            tourEvent("database.folder-opened");
+          }}
         />
       ))}
     </ExplorerRows>
@@ -683,6 +692,7 @@ export function DatabaseExplorer({
     <>
       <Button
         type="button"
+        data-tour="database.new-file"
         className="hidden gap-2 sm:inline-flex"
         disabled={!activeFolderId}
         onClick={() => setNewFileOpen(true)}
@@ -692,6 +702,7 @@ export function DatabaseExplorer({
       </Button>
       <Button
         type="button"
+        data-tour="database.new-file"
         size="icon"
         className="size-10 rounded-full sm:hidden"
         disabled={!activeFolderId}
@@ -723,6 +734,7 @@ export function DatabaseExplorer({
                 {t("database.explorer.system")}
               </p>
               <ExplorerSidebarItem
+                dataTour="database.folder.ahu"
                 active={ahuSelected}
                 icon={<Database className="size-4" />}
                 label={t("database.explorer.ahu")}
@@ -749,14 +761,18 @@ export function DatabaseExplorer({
               Belum ada folder. Buat folder untuk mulai.
             </p>
           ) : null}
-          {folders.map((f) => (
+          {folders.map((f, i) => (
             <ExplorerSidebarItem
               key={f.id}
+              dataTour={i === 0 ? "database.folder.mine" : undefined}
               active={!ahuSelected && f.id === activeFolderId}
               icon={<Folder className="size-4" />}
               label={f.name}
               count={f.filesCount}
-              onClick={() => onFolderSelect(f.id)}
+              onClick={() => {
+                onFolderSelect(f.id);
+                tourEvent("database.folder-opened");
+              }}
             />
           ))}
         </nav>
@@ -772,6 +788,7 @@ export function DatabaseExplorer({
                 <div className="bg-card border-border overflow-hidden rounded-xl border">
                   <ul>
                     <ExplorerRow
+                      dataTour="database.folder.ahu"
                       icon={<Database className="size-5" />}
                       title={t("database.explorer.ahu")}
                       meta={`${ahuEntry.datasets.length} dataset`}
@@ -797,9 +814,10 @@ export function DatabaseExplorer({
               </div>
               <div className="bg-card border-border overflow-hidden rounded-xl border">
                 <ul>
-                  {folders.map((f) => (
+                  {folders.map((f, i) => (
                     <ExplorerRow
                       key={f.id}
+                      dataTour={i === 0 ? "database.folder.mine" : undefined}
                       icon={<Folder className="size-5" />}
                       title={f.name}
                       meta={`${f.filesCount} file`}

@@ -79,9 +79,28 @@ by `node scripts/check-theme-contrast.mjs`.
 `costing-help-progress` (`completedLessonKeys`, `lastOpenedKey`, `updatedAt`).
 Lesson steps may reference a `demoId` rendered by `components/help/help-demo-registry.tsx`
 with `motion/react` — honor `useReducedMotion()` (static end-frame). No video
-embeds, no product tour. Nav label is **Help**; body copy is Indonesian
-sentence case. Entry points: Navbar, Settings onboarding CTA, `ContextualHelpLink`,
-and optional `EmptyState` secondary action.
+embeds. Nav label is **Help**; body copy is Indonesian sentence case. Entry
+points: the account (avatar) menu item Help, which opens the lesson for the
+current route (`lessonsForRoute`) or the hub; Settings onboarding CTA,
+`ContextualHelpLink`, and optional `EmptyState` secondary action. There is no
+`?` icon in the header when Clerk is on (it remains only in dev without Clerk).
+
+**Tutorials (`components/tour/`, `content/tutorials/`):** a 6-step welcome tour
+shows once per user, then each module offers a "Coba sendiri" tutorial on first
+visit (invite card: Mulai / Lewati). Spec:
+`docs/superpowers/specs/2026-10-24-onboarding-tutorial-design.md`. Rules:
+at most two buttons per card (info step: Lewati + Lanjut/Selesai; action step:
+Lewati + hint, advances when the user does the action). Steps are data in
+`content/tutorials/<key>.ts` with `{ id, en }` copy; targets are
+`data-tour="<module>.<element>"` attributes, actions call
+`tourEvent("<module>.<past-tense>")` from the existing success handler. From
+`lg` the card floats beside the target; below `lg` it docks above the bottom
+bar (or at the top when the target is down there) and collapses to one line
+while the on-screen keyboard is open. A missing target is skipped after 3s.
+Progress is per user in `TutorialProgress` (`/api/tutorials`), mirrored in
+`localStorage` key `costing-tour-progress`. Under `AUTH_BYPASS` nothing opens by
+itself; force one with `?tour=<key>`. Replay: account menu "Ulangi tur selamat
+datang" and the Help hub.
 
 **Density:** match neighboring screens. The dashboard, costing workspace, and
 database module all use the `w-full px-4 py-6 sm:px-6 lg:px-8` (full width, no max-width)
