@@ -17,7 +17,7 @@ Keputusan ini menggantikan aturan lama "no product tour" di `docs/UI-HARNESS.md`
 
 ### Kartu tutorial
 
-Layar diredupkan, elemen target disorot (lubang di lapisan redup), dan kartu kecil (Popover) muncul di sebelahnya: penanda langkah (`2 / 7`), judul, 1 sampai 2 kalimat, tombol.
+Layar diredupkan, elemen target disorot (lubang di lapisan redup), dan kartu kecil (Popover) muncul di sebelahnya: penanda langkah (`2 / 6`), judul, 1 sampai 2 kalimat, tombol.
 
 | Jenis langkah | Tombol | Maju ketika |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ Permintaan dae (2026-10-24): pengalaman di desktop dan mobile harus seimbang. Ke
 - **Isi sama persis.** Langkah, urutan, teks, dan jumlah tombol sama di semua ukuran. Yang berbeda hanya target sorotan dan posisi kartu.
 - **Posisi kartu.** Mulai `lg` (1024px), kartu adalah Popover di samping target, lebar maksimal 22rem. Di bawah `lg`, kartu menempel di bawah selebar layar dikurangi gutter 16px, tepat di atas bottom bar dan `safe-area-inset-bottom`, sehingga mudah dijangkau jempol.
 - **Tombol.** Tinggi minimal 44px. Di bawah `lg`, Lewati (ghost, kiri) dan Lanjut (primary, kanan) berbagi lebar kartu.
-- **Target per ukuran.** Menu utama memakai `nav.*` di header (mulai `lg`) dan `nav-mobile.*` di bottom bar (di bawah `lg`). Di bawah `sm` ikon Help di header disembunyikan, jadi di bawah `lg` langkah Help dan Pengaturan sama-sama menyorot tombol akun (`account.menu`), yang menu-nya berisi keduanya.
+- **Target per ukuran.** Menu utama memakai `nav.*` di header (mulai `lg`) dan `nav-mobile.*` di bottom bar (di bawah `lg`). Langkah menu akun menyorot tombol akun (`account.menu`) di semua ukuran.
 - **Scroll otomatis.** Target digulir ke area terlihat dengan memperhitungkan header (56px) dan, di bawah `lg`, bottom bar serta kartu yang menempel di bawah. Kartu tidak pernah menutupi target.
 - **Keyboard di layar.** Saat input di dalam target sedang fokus di ponsel, kartu mengecil jadi satu baris petunjuk di atas layar (judul langkah dan Lewati), dan posisinya mengikuti `visualViewport` supaya tidak menutupi input maupun keyboard.
 - **Dialog dan sheet.** Bila langkah `action` membuka dialog atau sheet, isi dialog itu menjadi target berikutnya. Kartu ikut pindah dan tetap berada di atas dialog.
@@ -54,8 +54,7 @@ Tampil otomatis sekali per user, pada halaman aplikasi pertama setelah masuk.
 3. Database: harga material, profil, komponen. Sumber harga untuk costing.
 4. Costing: buat proyek, tambah item, lihat harga jual, buat penawaran.
 5. Dokumentasi: penawaran sampai SO, invoice, pembayaran.
-6. Help (ikon ?): panduan dan tempat mengulang tutorial.
-7. Menu akun, Pengaturan: data perusahaan, kurs, tampilan. Tombol Selesai.
+6. Menu akun (avatar): Help (panduan dan tutorial), Pengaturan (data perusahaan, kurs, tampilan), dan Ulangi tur. Tombol Selesai.
 
 Tidak tampil di `/activate`, `/operator`, `/sign-in`, `/sign-up`, `/legal`, saat organisasi read-only karena demo berakhir, dan saat `AUTH_BYPASS` aktif (kecuali dipaksa, lihat Tes).
 
@@ -81,7 +80,8 @@ Saat user pertama kali membuka rute modul (dan tur selamat datang sudah selesai 
 
 ### Mengulang
 
-- Menu akun (tombol avatar, yang juga memuat Help dan Pengaturan) mendapat item "Ulangi tur selamat datang". Ikon ? tetap tautan langsung ke Help.
+- Menu akun (tombol avatar, yang juga memuat Help dan Pengaturan) mendapat item "Ulangi tur selamat datang".
+- Ikon ? di header dihapus (dae, 2026-10-24): Help cukup lewat menu akun. Item Help di menu akun membuka lesson yang cocok dengan halaman saat ini (perilaku ikon ? yang lama), atau hub Help bila tidak ada yang cocok. Tanpa Clerk (mode dev) ikon ? tetap ada karena menu akun tidak ada.
 - Hub `/help` mendapat bagian "Tutorial interaktif": satu baris per tutorial yang boleh diakses user, status (Belum, Selesai, Dilewati) dan tombol Mulai / Ulangi. Memulai tutorial modul dari Help menavigasi ke rutenya lalu langsung memulai tanpa kartu ajakan.
 
 ## Arsitektur
@@ -175,7 +175,7 @@ PR 0 harus merge lebih dulu. Setelah itu PR A sampai F dikerjakan bersamaan dan 
 
 | PR | Isi | File |
 | --- | --- | --- |
-| 0 Fondasi | Engine, Popover, model + migrasi + API, `content/tutorials/` lengkap dengan kerangka (`steps: []` untuk modul, isi penuh untuk `welcome`), target `nav.*` di Navbar dan bottom bar, item "Ulangi tur selamat datang" di menu akun, teks tombol di i18n, update dokumen aturan | `components/tour/`, `lib/tour/`, `components/ui/popover.tsx`, `prisma/`, `app/api/tutorials/`, `content/tutorials/`, `components/Navbar.tsx`, `components/bottom-nav.tsx`, `components/app-providers.tsx`, `lib/i18n/messages.ts`, `docs/` |
+| 0 Fondasi | Engine, Popover, model + migrasi + API, `content/tutorials/` lengkap dengan kerangka (`steps: []` untuk modul, isi penuh untuk `welcome`), target `nav.*` di Navbar dan bottom bar, item "Ulangi tur selamat datang" di menu akun, hapus ikon ? di header, teks tombol di i18n, update dokumen aturan | `components/tour/`, `lib/tour/`, `components/ui/popover.tsx`, `prisma/`, `app/api/tutorials/`, `content/tutorials/`, `components/Navbar.tsx`, `components/bottom-nav.tsx`, `components/app-providers.tsx`, `lib/i18n/messages.ts`, `docs/` |
 | A Costing | Tutorial `costing` | `components/costing/`, `content/tutorials/costing.ts`, `tests/` file sendiri |
 | B Dashboard | Tutorial `dashboard` | `components/dashboard/`, `content/tutorials/dashboard.ts`, `tests/` file sendiri |
 | C Database | Tutorial `database` | `components/database/`, `content/tutorials/database.ts`, `tests/` file sendiri |

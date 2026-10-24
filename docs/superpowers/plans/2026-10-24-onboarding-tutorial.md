@@ -144,34 +144,35 @@ Perilaku yang ditetapkan spec dan harus ada:
 - [ ] **Step 2:** `npm run typecheck && npm run lint && npm run ui:standard` lulus.
 - [ ] **Step 3:** Commit `feat(tour): overlay, kartu, dan provider tutorial`.
 
-### Task 6: Tur selamat datang dan menu akun
+### Task 6: Tur selamat datang, menu akun, hapus ikon ?
 
 **Files:**
 - Modify: `content/tutorials/welcome.ts`, `components/Navbar.tsx`, `components/bottom-nav.tsx`
 - Test: `tests/ui/tour-welcome.spec.ts`, `tests/ui/tour-engine.spec.ts`
 
 **Interfaces:**
-- Target baru: `nav.dashboard`, `nav.database`, `nav.costing`, `nav.documentation` (link header), `nav-mobile.dashboard`, `nav-mobile.database`, `nav-mobile.costing`, `nav-mobile.documentation` (bottom bar), `nav.help` (ikon ?), `account.menu` (pembungkus `UserButton`; tanpa Clerk, tombol Pengaturan).
-- Langkah welcome (semua `info`): `hello` (tanpa target, teks memakai `{name}` dari `displayName`, fallback tanpa nama), `dashboard`, `database`, `costing`, `documentation` (target `nav.*`, `targetMobile` `nav-mobile.*`), `help` (target `nav.help`, `targetMobile` `account.menu`), `settings` (target `account.menu`). Teks dari spec.
-- Menu akun: `UserButton.Action` dengan label `t("tour.replayWelcome")` yang memanggil `start("welcome")`.
+- Target baru: `nav.dashboard`, `nav.database`, `nav.costing`, `nav.documentation` (link header), `nav-mobile.dashboard`, `nav-mobile.database`, `nav-mobile.costing`, `nav-mobile.documentation` (bottom bar), `account.menu` (pembungkus `UserButton`; tanpa Clerk, tombol Pengaturan).
+- Langkah welcome (semua `info`): `hello` (tanpa target, teks memakai `{name}` dari `displayName`, fallback tanpa nama), `dashboard`, `database`, `costing`, `documentation` (target `nav.*`, `targetMobile` `nav-mobile.*`), `account` (target `account.menu`, Help + Pengaturan + Ulangi tur). Total 6 langkah. Teks dari spec.
+- Menu akun: `UserButton.Action` dengan label `t("tour.replayWelcome")` yang memanggil `start("welcome")`. Item Help (`UserButton.Link`) memakai `useHelpHref()` (lesson kontekstual) alih-alih `/help`.
+- Ikon ? (`HelpLink`) hanya dirender bila tidak ada Clerk (`!HAS_CLERK`).
 
 - [ ] **Step 1: Tes gagal** `tour-welcome.spec.ts`, diulang untuk viewport 1280×800, 768×1024, 390×844:
-  - "runs welcome to the end with Lanjut": buka `/?tour=welcome`, kartu menampilkan `1 / 7`, klik Lanjut 6 kali, klik Selesai, kartu hilang.
+  - "runs welcome to the end with Lanjut": buka `/?tour=welcome`, kartu menampilkan `1 / 6`, klik Lanjut 5 kali, klik Selesai, kartu hilang.
   - "skip closes and Esc closes"
   - "highlights bottom bar below lg and header links from lg" (cek kotak sorotan berimpit dengan `[data-tour=nav-mobile.costing]` atau `[data-tour=nav.costing]`)
-  - "survives resize across lg": mulai di 1280, di langkah 4 ubah ke 390, kartu tetap `4 / 7` dan menyorot `nav-mobile.costing`
+  - "survives resize across lg": mulai di 1280, di langkah 4 ubah ke 390, kartu tetap `4 / 6` dan menyorot `nav-mobile.costing`
   - "no horizontal scroll at 390": `document.documentElement.scrollWidth <= 390` di setiap langkah
   - screenshot langkah 1 dan 4 di ketiga ukuran, terang dan gelap.
   - `tour-engine.spec.ts`: "no tour without ?tour under AUTH_BYPASS" (buka `/`, tidak ada `[role=dialog][data-tour-card]`).
 - [ ] **Step 2:** Tes gagal (DB lokal sesuai CLAUDE.md: `npm run db:up`, migrate, seed).
-- [ ] **Step 3:** Isi `welcome.ts`, tambah atribut dan item menu.
+- [ ] **Step 3:** Isi `welcome.ts`, tambah atribut dan item menu, sembunyikan `HelpLink` saat ada Clerk.
 - [ ] **Step 4:** `npx playwright test tests/ui/tour-welcome.spec.ts tests/ui/tour-engine.spec.ts` lulus, dan `npm run ui:test` lain tetap lulus tanpa update snapshot.
 - [ ] **Step 5:** Commit `feat(tour): tur selamat datang`.
 
 ### Task 7: Dokumen aturan dan PR
 
 **Files:**
-- Modify: `docs/UI-HARNESS.md` (paragraf Help: hapus "no product tour", tambah paragraf "Tutorial" yang merangkum aturan dua tombol, `data-tour`, `tourEvent`, breakpoint), `docs/UX-ACCEPTANCE-SCENARIOS.md` (hapus syarat "no interactive tour", tambah skenario tur selamat datang), `docs/UI-PR-CHECKLIST.md` (butir: elemen baru yang dipakai tutorial punya `data-tour`)
+- Modify: `docs/UI-HARNESS.md` (paragraf Help: hapus "no product tour", entry point Help sekarang menu akun, bukan ikon ? di Navbar, tambah paragraf "Tutorial" yang merangkum aturan dua tombol, `data-tour`, `tourEvent`, breakpoint), `docs/UX-ACCEPTANCE-SCENARIOS.md` (hapus syarat "no interactive tour", tambah skenario tur selamat datang), `docs/UI-PR-CHECKLIST.md` (butir: elemen baru yang dipakai tutorial punya `data-tour`)
 
 - [ ] **Step 1:** Ubah dokumen.
 - [ ] **Step 2:** `npm run lint && npm run typecheck && npm test && npm run ui:standard` lulus.
