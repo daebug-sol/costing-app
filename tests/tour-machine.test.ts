@@ -1,4 +1,5 @@
 import {
+  claimForcedTour,
   mergeStatus,
   missingTimer,
   pickAutoTour,
@@ -235,5 +236,27 @@ describe("missingTimer", () => {
     t = missingTimer.tick(t, false, 2999);
     expect(t.missing).toBe(false);
     expect(missingTimer.tick(t, false, 3001).missing).toBe(true);
+  });
+});
+
+describe("claimForcedTour", () => {
+  it("claims ?tour once per URL visit", () => {
+    let r = claimForcedTour(null, "/settings", "?tour=settings");
+    expect(r).toEqual({ key: "settings", handled: "/settings?tour=settings" });
+    r = claimForcedTour(r.handled, "/settings", "?tour=settings");
+    expect(r.key).toBeNull();
+    expect(r.handled).toBe("/settings?tour=settings");
+  });
+
+  it("forgets the claim on a URL without ?tour, so the same replay works again", () => {
+    let r = claimForcedTour(null, "/settings", "?tour=settings");
+    r = claimForcedTour(r.handled, "/help", "");
+    expect(r).toEqual({ key: null, handled: null });
+    r = claimForcedTour(r.handled, "/settings", "?tour=settings");
+    expect(r.key).toBe("settings");
+  });
+
+  it("ignores an unknown tour key", () => {
+    expect(claimForcedTour(null, "/", "?tour=nope")).toEqual({ key: null, handled: null });
   });
 });

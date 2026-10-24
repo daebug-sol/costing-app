@@ -1,3 +1,4 @@
+import { isTourKey } from "./types";
 import type {
   TourContext,
   TourDefinition,
@@ -115,6 +116,22 @@ export function pickAutoTour(args: {
   if (def.permission && !ctx.permissions.includes(def.permission)) return null;
   if (visibleSteps(def, ctx).length === 0) return null;
   return { kind: "invite", key: def.key };
+}
+
+/**
+ * A `?tour=<key>` URL forces its tour once per visit. A URL without `?tour`
+ * clears the claim, so pressing the same replay link again starts it again.
+ */
+export function claimForcedTour(
+  handled: string | null,
+  pathname: string,
+  search: string
+): { key: TourKey | null; handled: string | null } {
+  const key = new URLSearchParams(search).get("tour");
+  if (!isTourKey(key)) return { key: null, handled: null };
+  const url = pathname + search;
+  if (handled === url) return { key: null, handled };
+  return { key, handled: url };
 }
 
 /** A replayed tour that is skipped stays "done" for the user who finished it once. */

@@ -2,7 +2,8 @@
 
 import type { TargetRect } from "./use-tour-target";
 
-const PAD = 6;
+export const SPOTLIGHT_PAD = 6;
+const PAD = SPOTLIGHT_PAD;
 
 /**
  * Dims the page and blocks clicks everywhere except a hole over the target,

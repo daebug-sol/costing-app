@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/components/i18n-provider";
 import { cn } from "@/lib/utils";
 import type { TourStep } from "@/lib/tour/types";
+import { SPOTLIGHT_PAD } from "./tour-spotlight";
 import type { TargetRect } from "./use-tour-target";
 
 const GAP = 12;
@@ -72,7 +73,10 @@ function place(rect: TargetRect | null, isDesktop: boolean, w: number, h: number
   const vh = window.innerHeight;
   if (!isDesktop) {
     const dockTop = vh - DOCK_BOTTOM - h;
-    const overlaps = rect.top + rect.height > dockTop && rect.top < vh - DOCK_BOTTOM;
+    // Compare against the highlight ring (target + pad), not the bare target.
+    const overlaps =
+      rect.top + rect.height + SPOTLIGHT_PAD > dockTop &&
+      rect.top - SPOTLIGHT_PAD < vh - DOCK_BOTTOM;
     return overlaps ? { mode: "dock-top" } : { mode: "dock-bottom" };
   }
   const clampX = (x: number) => Math.min(Math.max(x, GUTTER), vw - w - GUTTER);
@@ -170,7 +174,7 @@ export function TourCard({
       data-placement={compact ? "compact" : placement.mode}
       style={style}
       className={cn(
-        "pointer-events-auto fixed z-[61] rounded-xl border border-border bg-popover text-popover-foreground shadow-none",
+        "pointer-events-auto fixed z-[101] rounded-xl border border-border bg-popover text-popover-foreground shadow-none",
         compact
           ? "inset-x-4 flex items-center gap-3 px-4 py-2"
           : placement.mode === "center"

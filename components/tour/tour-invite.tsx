@@ -21,7 +21,7 @@ export function TourInvite({
       role="region"
       aria-label={def.invite.title[locale]}
       data-tour-invite={def.key}
-      className="pointer-events-auto fixed inset-x-4 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-[61] rounded-xl border border-border bg-popover p-4 text-popover-foreground lg:inset-x-auto lg:right-6 lg:bottom-6 lg:w-80"
+      className="pointer-events-auto fixed inset-x-4 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-[101] rounded-xl border border-border bg-popover p-4 text-popover-foreground lg:inset-x-auto lg:right-6 lg:bottom-6 lg:w-80"
     >
       <p className="text-base font-semibold">{def.invite.title[locale]}</p>
       <p className="mt-1 text-sm text-muted-foreground">

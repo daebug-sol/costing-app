@@ -26,11 +26,13 @@ export async function expectCardClearOfTarget(page: Page, target: string) {
   const c = await card(page).boundingBox();
   const el = await page.locator(`[data-tour="${target}"]:visible`).first().boundingBox();
   expect(c && el).toBeTruthy();
+  // The highlight ring is the target plus the spotlight pad (6px).
+  const ring = 6;
   const overlap =
-    c!.x < el!.x + el!.width &&
-    c!.x + c!.width > el!.x &&
-    c!.y < el!.y + el!.height &&
-    c!.y + c!.height > el!.y;
+    c!.x < el!.x + el!.width + ring &&
+    c!.x + c!.width > el!.x - ring &&
+    c!.y < el!.y + el!.height + ring &&
+    c!.y + c!.height > el!.y - ring;
   expect(overlap).toBe(false);
 }
 

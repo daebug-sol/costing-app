@@ -13,6 +13,7 @@ import {
 import { TUTORIALS } from "@/content/tutorials";
 import { subscribeTourEvents } from "@/lib/tour/events";
 import {
+  claimForcedTour,
   mergeStatus,
   pickAutoTour,
   routeMatches,
@@ -21,7 +22,7 @@ import {
   type TourState,
 } from "@/lib/tour/machine";
 import { loadProgress, saveProgress } from "@/lib/tour/progress-client";
-import { isTourKey, type TourContext, type TourKey, type TourProgress } from "@/lib/tour/types";
+import type { TourContext, TourKey, TourProgress } from "@/lib/tour/types";
 import { useCostingStore } from "@/store/costingStore";
 import { TourCard } from "./tour-card";
 import { TourInvite } from "./tour-invite";
@@ -46,15 +47,11 @@ export function useTour(): TourApi {
 
 const IDLE: TourState = { status: "idle" };
 
-function forcedTour(): TourKey | null {
-  const key = new URLSearchParams(window.location.search).get("tour");
-  return isTourKey(key) ? key : null;
-}
-
 export function TourProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "/";
   const permissions = useCostingStore((s) => s.permissions);
   const ahu = useCostingStore((s) => s.modules.ahu);
+  const orgLoaded = useCostingStore((s) => s.orgLoaded);
   const isDesktop = useIsDesktop();
   const ctx: TourContext = useMemo(
     () => ({ permissions, modules: { ahu }, isDesktop }),
@@ -102,19 +99,24 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "route", pathname });
   }, [pathname, dispatch]);
 
-  // Decide what opens by itself on this route once the server progress is in.
+  // Decide what opens by itself on this route once the server progress and the
+  // org caps are in: `when` filters and the permission gate read ctx at start.
   useEffect(() => {
-    if (!loaded) return;
-    const search = window.location.pathname + window.location.search;
-    const forced = handledSearch.current === search ? null : forcedTour();
+    if (!loaded || !orgLoaded) return;
+    const claim = claimForcedTour(
+      handledSearch.current,
+      window.location.pathname,
+      window.location.search
+    );
+    handledSearch.current = claim.handled;
+    const forced = claim.key;
     if (!forced && !loaded.autoStart) return;
     if (!forced && stateRef.current.status === "running") return;
     const pick = pickAutoTour({ pathname, progress, ctx, forced, tutorials: TUTORIALS });
-    if (forced) handledSearch.current = search;
     if (!pick) return;
     if (pick.kind === "run") dispatch({ type: "start", def: TUTORIALS[pick.key], ctx });
     else dispatch({ type: "invite", key: pick.key });
-  }, [loaded, pathname, progress, ctx, dispatch]);
+  }, [loaded, orgLoaded, pathname, progress, ctx, dispatch]);
 
   const start = useCallback(
     (key: TourKey) => dispatch({ type: "start", def: TUTORIALS[key], ctx }),

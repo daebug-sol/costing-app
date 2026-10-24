@@ -189,6 +189,8 @@ export interface CostingStore {
   permissions: Permission[];
   /** Platform operator (OPERATOR_USER_IDS); from GET /api/me. */
   isOperator: boolean;
+  /** True once loadOrgModules has settled (success or failure); tours wait for it. */
+  orgLoaded: boolean;
   isCalculating: boolean;
   isLoading: boolean;
   loadOrgModules: () => Promise<void>;
@@ -227,33 +229,38 @@ export const useCostingStore = create<CostingStore>((set, get) => ({
   role: "member",
   permissions: permissionsFor("member"),
   isOperator: false,
+  orgLoaded: false,
   isCalculating: false,
   isLoading: false,
 
   loadOrgModules: async () => {
-    const [rs, meRs] = await Promise.all([
-      fetch("/api/settings", { cache: "no-store" }),
-      fetch("/api/me", { cache: "no-store" }),
-    ]);
-    if (!rs.ok) throw new Error(await readErr(rs));
-    const json = await rs.json();
-    const role = parseRole(json);
-    let isOperator = false;
-    if (meRs.ok) {
-      try {
-        const me = (await meRs.json()) as { isOperator?: unknown };
-        isOperator = me.isOperator === true;
-      } catch {
-        isOperator = false;
+    try {
+      const [rs, meRs] = await Promise.all([
+        fetch("/api/settings", { cache: "no-store" }),
+        fetch("/api/me", { cache: "no-store" }),
+      ]);
+      if (!rs.ok) throw new Error(await readErr(rs));
+      const json = await rs.json();
+      const role = parseRole(json);
+      let isOperator = false;
+      if (meRs.ok) {
+        try {
+          const me = (await meRs.json()) as { isOperator?: unknown };
+          isOperator = me.isOperator === true;
+        } catch {
+          isOperator = false;
+        }
       }
+      set({
+        plan: parsePlan(json),
+        modules: parseModules(json),
+        role,
+        permissions: parsePermissions(json, role),
+        isOperator,
+      });
+    } finally {
+      set({ orgLoaded: true });
     }
-    set({
-      plan: parsePlan(json),
-      modules: parseModules(json),
-      role,
-      permissions: parsePermissions(json, role),
-      isOperator,
-    });
   },
 
   loadProjects: async () => {
