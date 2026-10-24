@@ -34,6 +34,7 @@ import {
 import { invoiceStatusLabel } from "@/lib/o2c/status";
 import { formatDayMonth, formatIDR, formatRpShort } from "@/lib/utils/format";
 import { toastError, toastSuccess } from "@/store/toastStore";
+import { tourEvent } from "@/lib/tour/events";
 
 type InvRow = {
   id: string;
@@ -134,8 +135,10 @@ export function InvoicesModule() {
     (async () => {
       setLoading(true);
       try {
-        if (idParam) await loadDetail(idParam);
-        else {
+        if (idParam) {
+          await loadDetail(idParam);
+          tourEvent("invoices.opened");
+        } else {
           setDetail(null);
           await loadList();
         }
@@ -216,7 +219,10 @@ export function InvoicesModule() {
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="text-base">Detail</CardTitle>
-            <div className="flex flex-wrap gap-2">
+            <div
+              className="flex flex-wrap gap-2"
+              data-tour="invoices.primary-action"
+            >
               {detail.status === "draft" ? (
                 <>
                   <div className="flex items-center gap-2">
@@ -402,11 +408,12 @@ export function InvoicesModule() {
           ) : undefined
         }
       >
-        {shown.map((row) => {
+        {shown.map((row, i) => {
           const overdue = isOverdue(row);
           return (
             <ExplorerRow
               key={row.id}
+              dataTour={i === 0 ? "invoices.row" : undefined}
               icon={<FileText className="size-5" aria-hidden />}
               title={`${row.invNumber ?? "Draft"} · ${row.customer.company || row.customer.name}`}
               amountCompact={formatRpShort(row.grandTotal)}
@@ -450,9 +457,10 @@ export function InvoicesModule() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.map((row) => (
+                {list.map((row, i) => (
                   <TableRow
                     key={row.id}
+                    data-tour={i === 0 ? "invoices.row" : undefined}
                     className="cursor-pointer"
                     onClick={() => router.push(`/invoices?id=${row.id}`)}
                   >

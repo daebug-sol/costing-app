@@ -46,6 +46,12 @@ const id = {
   "costing.summary.totalCost": "Total biaya",
   "costing.page.saving": "Menyimpan…",
   "costing.page.renameProject": "Ganti nama proyek",
+  "costing.page.deleteProject": "Hapus proyek",
+  "costing.page.deleteProjectTitle": "Hapus proyek {name}?",
+  "costing.page.deleteProjectDescription":
+    "Semua item di proyek ini ikut terhapus. Tindakan ini tidak bisa dibatalkan.",
+  "costing.page.deleteProjectInUse":
+    "Proyek ini dipakai di penawaran. Hapus penawarannya dulu di Dokumentasi.",
   "costing.page.saved": "Tersimpan",
   "costing.page.saveFailed": "Gagal menyimpan",
   "costing.page.retry": "Coba lagi",
@@ -436,6 +442,14 @@ const id = {
   "database.explorer.searchFile": "Cari nama file…",
   "database.explorer.loadingFolders": "Memuat folder…",
   "database.explorer.folderActions": "Aksi folder",
+  "tour.skip": "Lewati",
+  "tour.next": "Lanjut",
+  "tour.done": "Selesai",
+  "tour.start": "Mulai",
+  "tour.actionHint": "Klik yang disorot untuk lanjut",
+  "tour.stepOf": "{current} / {total}",
+  "tour.replayWelcome": "Ulangi tur selamat datang",
+  "tour.inviteMinutes": "{minutes} menit",
 } as const;
 
 export type MessageKey = keyof typeof id;
@@ -480,6 +494,12 @@ const en: Record<MessageKey, string> = {
   "costing.summary.totalCost": "Total cost",
   "costing.page.saving": "Saving…",
   "costing.page.renameProject": "Rename project",
+  "costing.page.deleteProject": "Delete project",
+  "costing.page.deleteProjectTitle": "Delete project {name}?",
+  "costing.page.deleteProjectDescription":
+    "All items in this project are deleted too. This cannot be undone.",
+  "costing.page.deleteProjectInUse":
+    "This project is used in a quotation. Delete the quotation in Documentation first.",
   "costing.page.saved": "Saved",
   "costing.page.saveFailed": "Save failed",
   "costing.page.retry": "Try again",
@@ -870,6 +890,14 @@ const en: Record<MessageKey, string> = {
   "database.explorer.searchFile": "Search file name…",
   "database.explorer.loadingFolders": "Loading folders…",
   "database.explorer.folderActions": "Folder actions",
+  "tour.skip": "Skip",
+  "tour.next": "Next",
+  "tour.done": "Done",
+  "tour.start": "Start",
+  "tour.actionHint": "Click the highlighted item to continue",
+  "tour.stepOf": "{current} / {total}",
+  "tour.replayWelcome": "Replay welcome tour",
+  "tour.inviteMinutes": "{minutes} min",
 };
 
 export const MESSAGES = { id, en } as const;

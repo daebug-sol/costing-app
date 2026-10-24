@@ -42,6 +42,7 @@ import { soStatusLabel } from "@/lib/o2c/status";
 import { remainingQty } from "@/lib/o2c/so-status";
 import { formatDayMonth, formatIDR, formatRpShort } from "@/lib/utils/format";
 import { toastError, toastSuccess } from "@/store/toastStore";
+import { tourEvent } from "@/lib/tour/events";
 
 type SoListRow = {
   id: string;
@@ -144,8 +145,10 @@ export function SalesOrdersModule() {
     (async () => {
       setLoading(true);
       try {
-        if (idParam) await loadDetail(idParam);
-        else {
+        if (idParam) {
+          await loadDetail(idParam);
+          tourEvent("sales-orders.opened");
+        } else {
           setDetail(null);
           await loadList();
         }
@@ -326,7 +329,10 @@ export function SalesOrdersModule() {
                 </Table>
               </CardContent>
             </Card>
-            <div className="flex flex-wrap gap-2">
+            <div
+              className="flex flex-wrap gap-2"
+              data-tour="sales-orders.primary-action"
+            >
               <Button
                 type="button"
                 disabled={busy || openAmountHint <= 0}
@@ -517,9 +523,10 @@ export function SalesOrdersModule() {
           ) : undefined
         }
       >
-        {shown.map((row) => (
+        {shown.map((row, i) => (
           <ExplorerRow
             key={row.id}
+            dataTour={i === 0 ? "sales-orders.row" : undefined}
             icon={<ClipboardList className="size-5" aria-hidden />}
             title={`${row.soNumber} · ${row.customer.company || row.customer.name}`}
             amountCompact={formatRpShort(row.grandTotal)}
@@ -555,9 +562,10 @@ export function SalesOrdersModule() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.map((row) => (
+                {list.map((row, i) => (
                   <TableRow
                     key={row.id}
+                    data-tour={i === 0 ? "sales-orders.row" : undefined}
                     className="cursor-pointer"
                     onClick={() => router.push(`/sales-orders?id=${row.id}`)}
                   >

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/table";
 import { toastError, toastSuccess } from "@/store/toastStore";
 import { useConfirm } from "@/components/confirm-dialog";
+import { tourEvent } from "@/lib/tour/events";
 
 type Customer = {
   id: string;
@@ -70,6 +71,8 @@ export function CustomersModule() {
   const [saving, setSaving] = useState(false);
   // Below `md` the customer form is a full-screen sheet opened from the list.
   const [formOpen, setFormOpen] = useState(false);
+  // The tutorial's last step highlights the customer it just created.
+  const [createdId, setCreatedId] = useState<string | null>(null);
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -104,6 +107,7 @@ export function CustomersModule() {
   const startCreate = () => {
     setEditingId(null);
     setForm(emptyForm);
+    tourEvent("customers.dialog-opened");
   };
 
   const startEdit = (c: Customer) => {
@@ -146,6 +150,10 @@ export function CustomersModule() {
         },
       );
       if (!r.ok) throw new Error(await readErr(r));
+      if (!editingId) {
+        setCreatedId(((await r.json()) as Customer).id);
+        tourEvent("customers.created");
+      }
       toastSuccess(
         editingId ? "Pelanggan diperbarui" : "Pelanggan ditambahkan",
       );
@@ -192,6 +200,7 @@ export function CustomersModule() {
       actions={
         <ExplorerMobileAdd
           label="Pelanggan baru"
+          dataTour="customers.add"
           onClick={() => {
             startCreate();
             setFormOpen(true);
@@ -223,6 +232,7 @@ export function CustomersModule() {
             icon={<User className="size-5" aria-hidden />}
             title={c.name}
             meta={<span>{c.company || "—"}</span>}
+            dataTour={c.id === createdId ? "customers.row" : undefined}
             onClick={() => {
               startEdit(c);
               setFormOpen(true);
@@ -256,7 +266,12 @@ export function CustomersModule() {
               >
                 Cari
               </Button>
-              <Button type="button" size="sm" onClick={startCreate}>
+              <Button
+                type="button"
+                size="sm"
+                data-tour="customers.add"
+                onClick={startCreate}
+              >
                 <Plus className="size-4" />
                 Baru
               </Button>
@@ -286,7 +301,10 @@ export function CustomersModule() {
                 </TableHeader>
                 <TableBody>
                   {rows.map((c) => (
-                    <TableRow key={c.id}>
+                    <TableRow
+                      key={c.id}
+                      data-tour={c.id === createdId ? "customers.row" : undefined}
+                    >
                       <TableCell className="font-medium">{c.name}</TableCell>
                       <TableCell>{c.company || "—"}</TableCell>
                       <TableCell>{c.phone || "—"}</TableCell>
@@ -338,7 +356,7 @@ export function CustomersModule() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5" data-tour="customers.name">
               <Label htmlFor="cust-name">Nama</Label>
               <Input
                 id="cust-name"
@@ -426,6 +444,7 @@ export function CustomersModule() {
             <div className="flex gap-2 pt-2">
               <Button
                 type="button"
+                data-tour="customers.save"
                 onClick={() => void save()}
                 disabled={saving}
               >
