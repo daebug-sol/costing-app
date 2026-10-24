@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   card,
   expectCardClearOfTarget,
@@ -8,21 +8,7 @@ import {
   sizesFor,
 } from "./tour-helpers";
 
-/**
- * Steps are filtered by `ctx.modules.ahu` when the tour starts, so hold the
- * tutorial progress until the org modules have reached the page (the AHU entry
- * or the own-folder list has rendered). Real users start from the invite card,
- * long after the modules load.
- */
-async function startWhenModulesLoaded(page: Page, ready: (page: Page) => Locator) {
-  await page.route("**/api/tutorials", async (route) => {
-    if (route.request().method() === "GET") {
-      await ready(page).first().waitFor({ state: "attached" });
-    }
-    await route.continue();
-  });
-  await page.goto("/database?tour=database");
-}
+const start = (page: Page) => page.goto("/database?tour=database");
 
 const target = (page: Page, name: string) => page.locator(`[data-tour="${name}"]:visible`).first();
 
@@ -38,7 +24,7 @@ test.describe("database tutorial (AHU)", () => {
   for (const scheme of ["light", "dark"] as const) {
     test(`runs to the end and leaves the price unchanged (${scheme})`, async ({ page }, testInfo) => {
       await page.emulateMedia({ colorScheme: scheme });
-      await startWhenModulesLoaded(page, (p) => p.locator('[data-tour="database.folder.ahu"]'));
+      await start(page);
       for (const [i, size] of sizesFor(testInfo.project.name).entries()) {
         await page.setViewportSize(size);
         if (i > 0) await page.goto("/database?tour=database");
@@ -78,7 +64,7 @@ test.describe("database tutorial (AHU)", () => {
   }
 
   test("Esc closes the price editor, not the tutorial", async ({ page }) => {
-    await startWhenModulesLoaded(page, (p) => p.locator('[data-tour="database.folder.ahu"]'));
+    await start(page);
     for (const [n, name] of [
       [1, "database.folder.ahu"],
       [2, "database.folder.material"],
@@ -100,7 +86,7 @@ test.describe("database tutorial (AHU)", () => {
   });
 
   test("Lewati closes the tutorial", async ({ page }) => {
-    await startWhenModulesLoaded(page, (p) => p.locator('[data-tour="database.folder.ahu"]'));
+    await start(page);
     await expect(card(page)).toContainText("1 / 7");
     await card(page).getByRole("button", { name: "Lewati" }).click();
     await expect(card(page)).toHaveCount(0);
@@ -114,7 +100,7 @@ test("database tutorial without AHU and without files never gets stuck", async (
     const json = await res.json();
     await route.fulfill({ response: res, json: { ...json, modules: { ...json.modules, ahu: false } } });
   });
-  await startWhenModulesLoaded(page, (p) => p.locator('[data-tour="database.folder.mine"]'));
+  await start(page);
 
   await expectStep(page, 1, 4, "database.folder.mine");
   await target(page, "database.folder.mine").click();
