@@ -393,7 +393,7 @@ export function Explorer({
           aria-label={folderHeading}
           className="bg-card border-border hidden flex-col gap-0.5 rounded-xl border p-2 lg:flex"
         >
-          <SidebarItem
+          <ExplorerSidebarItem
             active={selectedKey === null}
             icon={<Layers className="size-4" />}
             label={allLabel}
@@ -404,7 +404,7 @@ export function Explorer({
             {folderHeading}
           </p>
           {folders.map((f) => (
-            <SidebarItem
+            <ExplorerSidebarItem
               key={f.key}
               active={selectedKey === f.key}
               icon={<Folder className="size-4" />}
@@ -486,7 +486,7 @@ export function Explorer({
   );
 }
 
-function SidebarItem({
+export function ExplorerSidebarItem({
   active,
   icon,
   label,
