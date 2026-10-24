@@ -269,6 +269,15 @@ export async function PUT(request: Request, context: Ctx) {
     if (body.pphEnabled !== undefined) {
       data.pphEnabled = Boolean(body.pphEnabled);
     }
+    if (body.detailMode !== undefined) {
+      if (body.detailMode !== "flat" && body.detailMode !== "nested") {
+        return NextResponse.json(
+          { error: "detailMode must be \"flat\" or \"nested\"" },
+          { status: 400 }
+        );
+      }
+      data.detailMode = body.detailMode;
+    }
     if (body.pphRate !== undefined) {
       const r = Number(body.pphRate);
       data.pphRate = Number.isFinite(r) ? Math.max(0, r) : existing.pphRate;

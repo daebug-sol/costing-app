@@ -8,6 +8,7 @@ import { mergeQuotationDoc } from "@/lib/merge-quotation-doc";
 import { costingProjectToProjectDoc, costingProjectToSectionDocs, quotationSubAssemblyLineItemsFromProjects, segmentTitlesSpecFromProject, type CostingProjectApi } from "@/lib/quotation-export-mappers";
 import { computeProjectProgress, documentationHref } from "@/lib/o2c/project-progress";
 import { computeQuotationTotals } from "@/lib/quotation-financials";
+import type { QuotationDetailMode } from "@/lib/generators/document-types";
 import { toastError, toastSuccess } from "@/store/toastStore";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
 import { useConfirm } from "@/components/confirm-dialog";
@@ -69,6 +70,7 @@ export function useDocumentationEditor() {
     ppnEnabled: true,
     pphEnabled: false,
     pphRate: 0,
+    detailMode: "flat" as QuotationDetailMode,
     paymentTerms: "",
     deliveryTerms: "",
     warrantyTerms: "",
@@ -238,6 +240,7 @@ export function useDocumentationEditor() {
       ppnEnabled: q.ppnEnabled ?? true,
       pphEnabled: q.pphEnabled,
       pphRate: q.pphRate,
+      detailMode: (q.detailMode === "nested" ? "nested" : "flat") as QuotationDetailMode,
       paymentTerms: q.paymentTerms ?? "",
       deliveryTerms: q.deliveryTerms ?? "",
       warrantyTerms: q.warrantyTerms ?? "",
@@ -613,6 +616,7 @@ export function useDocumentationEditor() {
         ppnEnabled: form.ppnEnabled,
         pphEnabled: form.pphEnabled,
         pphRate: form.pphRate,
+        detailMode: form.detailMode,
         paymentTerms: form.paymentTerms,
         deliveryTerms: form.deliveryTerms,
         warrantyTerms: form.warrantyTerms,
@@ -765,12 +769,13 @@ export function useDocumentationEditor() {
       projectsById.set(pid, raw);
       out.push({
         project: costingProjectToProjectDoc(raw),
-        sections: costingProjectToSectionDocs(raw),
+        sections: costingProjectToSectionDocs(raw, form.detailMode),
       });
     }
     return { breakdowns: out, projectsById };
   };
 
+  const detailMode = form.detailMode;
   const formProjectIdsKey = [...new Set(form.items.map((i) => i.projectId))]
     .sort()
     .join("\0");
@@ -790,7 +795,7 @@ export function useDocumentationEditor() {
         if (!raw) continue;
         out.push({
           project: costingProjectToProjectDoc(raw),
-          sections: costingProjectToSectionDocs(raw),
+          sections: costingProjectToSectionDocs(raw, detailMode),
         });
       }
       setPreviewBreakdowns(out);
@@ -798,7 +803,7 @@ export function useDocumentationEditor() {
     return () => {
       cancelled = true;
     };
-  }, [screen, previewMode, formProjectIdsKey]);
+  }, [screen, previewMode, formProjectIdsKey, detailMode]);
 
   const runExport = async (
     kind: "pdf" | "excel",

@@ -18,7 +18,14 @@ export type SectionDoc = {
   category: string;
   subtotal: number;
   lineItems: LineItemDoc[];
+  /** Tingkat bagian (1 = atas) untuk rincian "Per bagian"; kosong = tanpa tingkat. */
+  depth?: number;
+  /** Total bagian termasuk sub-bagian (rincian "Per bagian"). */
+  total?: number;
 };
+
+/** Rincian material: "flat" = Rata (material sama digabung), "nested" = Per bagian. */
+export type QuotationDetailMode = "flat" | "nested";
 
 export type ProjectDoc = {
   name: string;

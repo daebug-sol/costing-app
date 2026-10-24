@@ -69,6 +69,7 @@ export async function POST(_request: Request, context: Ctx) {
           ppnEnabled: source.ppnEnabled,
           pphEnabled: source.pphEnabled,
           pphRate: source.pphRate,
+          detailMode: source.detailMode,
           totalBeforeDisc: source.totalBeforeDisc,
           totalAfterDisc: source.totalAfterDisc,
           totalPPN: source.totalPPN,

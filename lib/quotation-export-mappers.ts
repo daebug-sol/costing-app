@@ -1,5 +1,7 @@
 import type {
+  LineItemDoc,
   ProjectDoc,
+  QuotationDetailMode,
   QuotationLineItemDoc,
   SectionDoc,
 } from "@/lib/generators/document-types";
@@ -10,7 +12,7 @@ import {
   resolveActiveModules,
 } from "@/lib/costing-scope";
 import { effectiveSectionSubtotal } from "@/lib/section-subtotal";
-import { orderGroupsDepthFirst } from "@/lib/manual-group-tree";
+import { buildGroupTree, flattenGroupTree, orderGroupsDepthFirst } from "@/lib/manual-group-tree";
 import { formatNumber } from "@/lib/utils/format";
 
 type LineRow = {
@@ -29,6 +31,8 @@ type SectionApi = {
 };
 
 type ManualItemApi = {
+  sourceType?: string;
+  sourceId?: string;
   name: string;
   uom: string;
   qty: number;
@@ -123,7 +127,10 @@ export function costingProjectToProjectDoc(p: CostingProjectApi): ProjectDoc {
   };
 }
 
-export function costingProjectToSectionDocs(p: CostingProjectApi): SectionDoc[] {
+export function costingProjectToSectionDocs(
+  p: CostingProjectApi,
+  mode: QuotationDetailMode = "flat"
+): SectionDoc[] {
   const segs = [...(p.segments ?? [])].sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
   );
@@ -155,23 +162,92 @@ export function costingProjectToSectionDocs(p: CostingProjectApi): SectionDoc[] 
     }
 
     if (seg.type === "manual" && seg.manualGroups?.length) {
-      for (const g of flatManualGroups(seg.manualGroups)) {
-        out.push({
-          category: multi ? `${label} — ${g.name}` : g.name,
-          subtotal: g.subtotal,
-          lineItems: g.items.map((it) => ({
-            description: it.name,
-            uom: it.uom,
-            qty: it.qty,
-            unitPrice: it.effectivePrice,
-            subtotal: it.subtotal,
-          })),
-        });
-      }
+      out.push(
+        ...(mode === "nested"
+          ? manualSectionsNested(seg.manualGroups, label, multi)
+          : manualSectionsFlat(seg.manualGroups, label))
+      );
     }
   });
 
   return out;
+}
+
+function manualLine(it: ManualItemApi): LineItemDoc {
+  return {
+    description: it.name,
+    uom: it.uom,
+    qty: it.qty,
+    unitPrice: it.effectivePrice,
+    subtotal: it.subtotal,
+  };
+}
+
+/**
+ * Rata: satu kategori per segmen manual, material yang sama (sumber + harga sama)
+ * digabung, mis. baut M6 4 + 8 + 8 = 20 pcs.
+ */
+export function manualSectionsFlat(
+  groups: ManualGroupApi[],
+  label: string
+): SectionDoc[] {
+  const lines = new Map<string, LineItemDoc>();
+  let subtotal = 0;
+  for (const g of flatManualGroups(groups)) {
+    subtotal += g.subtotal;
+    for (const it of g.items) {
+      const source = it.sourceType && it.sourceId ? `${it.sourceType}:${it.sourceId}` : `${it.name}|${it.uom}`;
+      const key = `${source}|${it.effectivePrice}`;
+      const cur = lines.get(key);
+      if (cur) {
+        cur.qty += it.qty;
+        cur.subtotal += it.subtotal;
+      } else {
+        lines.set(key, manualLine(it));
+      }
+    }
+  }
+  if (lines.size === 0) return [];
+  return [{ category: label, subtotal, lineItems: [...lines.values()] }];
+}
+
+/** Per bagian: induk lalu sub-bagiannya, dengan tingkat dan total bertingkat. */
+export function manualSectionsNested(
+  groups: ManualGroupApi[],
+  segmentLabel: string,
+  multi: boolean
+): SectionDoc[] {
+  const label = multi ? segmentLabel : null;
+  // Item tunggal (satu bagian bawaan): pakai nama segmen, bukan "Kelompok utama".
+  const only = groups.length === 1 ? groups[0] : undefined;
+  if (only && (only.name === "Kelompok utama" || only.name === "Umum")) {
+    return [
+      {
+        category: segmentLabel,
+        subtotal: only.subtotal,
+        lineItems: only.items.map(manualLine),
+        depth: 1,
+        total: only.subtotal,
+      },
+    ];
+  }
+  if (!groups.every((g) => typeof g.id === "string")) {
+    return groups.map((g) => ({
+      category: label ? `${label} — ${g.name}` : g.name,
+      subtotal: g.subtotal,
+      lineItems: g.items.map(manualLine),
+    }));
+  }
+  const nodes = flattenGroupTree(
+    buildGroupTree(groups.map((g, i) => ({ ...g, id: g.id as string, sortOrder: g.sortOrder ?? i })))
+  );
+  return nodes.map((n) => ({
+    category: label && n.depth === 1 ? `${label} — ${n.group.name}` : n.group.name,
+    subtotal: n.group.subtotal,
+    lineItems: n.group.items.map(manualLine),
+    depth: n.depth,
+    total: n.total,
+  }));
 }
 
 function segmentSpecLineFullAhu(
