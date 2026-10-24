@@ -28,8 +28,22 @@ Layar diredupkan, elemen target disorot (lubang di lapisan redup), dan kartu kec
 - Langkah tanpa target (sambutan) tampil sebagai kartu di tengah.
 - Esc sama dengan Lewati. Lewati menutup seluruh tutorial dan mencatatnya sebagai `skipped`.
 - Fokus dikunci di kartu, teks langkah diumumkan lewat `aria-live`, animasi mati bila `prefers-reduced-motion`.
-- Di bawah `lg`, target menu adalah bottom bar, dan kartu menempel di atas bottom bar.
 - Tidak pernah macet: target yang tidak muncul dalam 3 detik membuat langkah itu dilewati otomatis. Jika semua sisa langkah gagal, tutorial ditutup sebagai `done`.
+
+### Desktop, tablet, dan ponsel (sama mulusnya)
+
+Permintaan dae (2026-10-24): pengalaman di desktop dan mobile harus seimbang. Ketiganya dipakai sama seringnya.
+
+- **Isi sama persis.** Langkah, urutan, teks, dan jumlah tombol sama di semua ukuran. Yang berbeda hanya target sorotan dan posisi kartu.
+- **Posisi kartu.** Mulai `lg` (1024px), kartu adalah Popover di samping target, lebar maksimal 22rem. Di bawah `lg`, kartu menempel di bawah selebar layar dikurangi gutter 16px, tepat di atas bottom bar dan `safe-area-inset-bottom`, sehingga mudah dijangkau jempol.
+- **Tombol.** Tinggi minimal 44px. Di bawah `lg`, Lewati (ghost, kiri) dan Lanjut (primary, kanan) berbagi lebar kartu.
+- **Target per ukuran.** Menu utama memakai `nav.*` di header (mulai `lg`) dan `nav-mobile.*` di bottom bar (di bawah `lg`). Di bawah `sm` ikon Help di header disembunyikan, jadi di bawah `lg` langkah Help dan Pengaturan sama-sama menyorot tombol akun (`account.menu`), yang menu-nya berisi keduanya.
+- **Scroll otomatis.** Target digulir ke area terlihat dengan memperhitungkan header (56px) dan, di bawah `lg`, bottom bar serta kartu yang menempel di bawah. Kartu tidak pernah menutupi target.
+- **Keyboard di layar.** Saat input di dalam target sedang fokus di ponsel, kartu mengecil jadi satu baris petunjuk di atas layar (judul langkah dan Lewati), dan posisinya mengikuti `visualViewport` supaya tidak menutupi input maupun keyboard.
+- **Dialog dan sheet.** Bila langkah `action` membuka dialog atau sheet, isi dialog itu menjadi target berikutnya. Kartu ikut pindah dan tetap berada di atas dialog.
+- **Rotasi dan ubah ukuran.** Posisi dihitung ulang saat ukuran layar berubah, termasuk saat melewati batas `lg` di tengah langkah.
+- **Kartu ajakan.** Mulai `lg` di pojok kanan bawah, lebar 20rem. Di bawah `lg`, menempel di atas bottom bar selebar layar.
+- **Syarat selesai.** Setiap tutorial bisa diselesaikan dari awal sampai akhir di lebar 390px tanpa zoom dan tanpa scroll horizontal, dan di 768px serta 1280px dengan perilaku yang sama.
 
 ### Tur selamat datang (`welcome`)
 
@@ -153,7 +167,7 @@ model TutorialProgress {
 
 - Unit (jest) untuk engine: Lanjut, Lewati, Esc, maju lewat event, maju lewat rute, target hilang dilewati setelah 3 detik, `when` menyaring langkah, izin menyaring ajakan.
 - Unit untuk API: validasi kunci, scoping per user dan organisasi.
-- Playwright: parameter `?tour=<key>` memaksa tutorial tampil walau `AUTH_BYPASS` aktif. Tiap PR modul menjalankan tutorialnya dari awal sampai Selesai di desktop 1280 dan ponsel 390, dan menyimpan screenshot langkah kunci. Snapshot visual yang ada tidak berubah karena tutorial tidak tampil tanpa parameter itu.
+- Playwright: parameter `?tour=<key>` memaksa tutorial tampil walau `AUTH_BYPASS` aktif. Tiap PR (termasuk PR 0 untuk tur selamat datang) menjalankan tutorialnya dari awal sampai Selesai di 1280 (desktop), 768 (tablet), dan 390 (ponsel), dan menyimpan screenshot langkah kunci di ketiga ukuran, terang dan gelap. Snapshot visual yang ada tidak berubah karena tutorial tidak tampil tanpa parameter itu.
 
 ## Pembagian PR
 
