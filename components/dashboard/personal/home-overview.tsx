@@ -51,7 +51,7 @@ export function HomeOverview({
         </div>
         <div className="flex min-w-0 flex-col gap-6 border-border lg:border-l lg:pl-6">
           {showTarget ? (
-            <div className="flex flex-col gap-3" data-testid="dashboard-target">
+            <div className="flex flex-col gap-3" data-testid="dashboard-target" data-tour="dashboard.target">
               <CardTitle>{targetTitle}</CardTitle>
               <TargetBody personal={personal} canEditTarget onSaved={onTargetSaved} />
             </div>

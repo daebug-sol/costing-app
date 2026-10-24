@@ -55,6 +55,7 @@ export function PersonalKpis({ items, variant = "card" }: { items: PersonalKpi[]
       <section
         className="grid min-w-0 grid-cols-2 gap-px overflow-hidden rounded-lg bg-border ring-1 ring-border 2xl:grid-cols-4"
         data-testid="dashboard-hero-kpis"
+        data-tour="dashboard.kpi"
       >
         {items.map((item) => (
           <div key={item.key} className="flex min-w-0 flex-col gap-2 bg-card p-4">
