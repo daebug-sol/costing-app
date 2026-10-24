@@ -13,7 +13,12 @@ export function ThemeSettingsCard() {
   const { locale, setLocale, t } = useI18n();
 
   return (
-    <Card size="sm" className="border-border shadow-sm" data-testid="theme-settings-card">
+    <Card
+      size="sm"
+      className="border-border shadow-sm"
+      data-testid="theme-settings-card"
+      data-tour="settings.appearance"
+    >
       <CardHeader>
         <CardTitle className="text-lg">{t("settings.appearance.title")}</CardTitle>
       </CardHeader>

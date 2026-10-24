@@ -17,6 +17,7 @@ import {
   ExplorerRows,
 } from "@/components/file-explorer";
 import { HelpSearch } from "@/components/help/help-search";
+import { HelpTutorials } from "@/components/help/help-tutorials";
 import { useHelpProgress } from "@/components/help/use-help-progress";
 import { PageShell } from "@/components/page-shell";
 import {
@@ -148,6 +149,8 @@ export function HelpHub() {
             pelajaran ditandai selesai di perangkat ini.
           </p>
         ) : null}
+
+        <HelpTutorials />
       </div>
     </PageShell>
   );
