@@ -11,6 +11,7 @@ import { computeQuotationTotals } from "@/lib/quotation-financials";
 import type { QuotationDetailMode } from "@/lib/generators/document-types";
 import { toastError, toastSuccess } from "@/store/toastStore";
 import { useUiWorkflowStore } from "@/store/uiWorkflowStore";
+import { tourEvent } from "@/lib/tour/events";
 import { useConfirm } from "@/components/confirm-dialog";
 import { SPEC_MAX_CHARS, fetchProjectDetailCached, readErr, CostingBreakdown, AvailableProject, CustomerOption, QuotationApi, toListRow, folderNameFor, folderKeyFor, FormLine, SettingsRow, toSettingsDoc, newLocalId, defaultDesc, defaultSpec, itemsFromApi, fmtDateInput } from "./documentation-shared";
 
@@ -254,6 +255,7 @@ export function useDocumentationEditor() {
       stampPath: q.stampPath ?? "",
       items: itemsFromApi(q),
     });
+    tourEvent("documentation.quote-opened");
   }, [setDocumentationUi]);
 
   useEffect(() => {
@@ -869,6 +871,7 @@ export function useDocumentationEditor() {
     a.download = name;
     a.click();
     URL.revokeObjectURL(url);
+    if (kind === "pdf") tourEvent("documentation.pdf-exported");
   };
 
   const filteredAvailable = useMemo(() => {

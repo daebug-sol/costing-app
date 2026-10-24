@@ -24,7 +24,10 @@ export function DocumentationPreview({ ed }: { ed: EditorCtx }) {
 
   return (
     <>
-        <div className="flex min-h-0 min-w-0 flex-col gap-2 overflow-hidden">
+        <div
+          data-tour="documentation.preview"
+          className="flex min-h-0 min-w-0 flex-col gap-2 overflow-hidden"
+        >
           <div className="relative min-h-0 flex-1 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3 sm:p-4 lg:p-5">
             <div
               className={`relative z-0 mx-auto box-border w-full max-w-[min(100%,56rem)] rounded-md bg-white p-6 shadow-md sm:p-8 ${
