@@ -666,7 +666,7 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-lg">Prefix penomoran dokumen</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Contoh: QT-202608-0001
+            Nomor dokumen dibuat otomatis: prefix, tahun-bulan, lalu nomor urut. Contoh: QT-202608-0001
           </p>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
