@@ -27,6 +27,7 @@ export const quotationDariProyek: HelpLesson = {
     },
   ],
   tips: [
+    "Nomor surat dibuat otomatis saat penawaran baru dibuat, formatnya prefix-tahunbulan-urutan (contoh QT-202610-0001). Prefix bisa diubah di Pengaturan.",
     "Syarat default (pembayaran, delivery, garansi) bisa diisi di Pengaturan agar quotation baru lebih cepat.",
   ],
 };
