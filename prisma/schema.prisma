@@ -304,14 +304,20 @@ model ManualCostingGroup {
   id        String         @id @default(cuid())
   segmentId String
   segment   CostingSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  /// Bagian induk (sub-bagian / sub-assembly). Null = bagian tingkat atas. Maks 3 tingkat.
+  parentId  String?
+  parent    ManualCostingGroup?  @relation("ManualGroupTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  ManualCostingGroup[] @relation("ManualGroupTree")
   name      String
   sortOrder Int            @default(0)
+  /// Jumlah item milik bagian ini saja (tanpa sub-bagian), supaya penjumlahan semua bagian tidak dobel.
   subtotal  Float          @default(0.0)
   items     ManualCostingItem[]
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
   @@index([segmentId])
+  @@index([parentId])
 }
 
 model ManualCostingItem {

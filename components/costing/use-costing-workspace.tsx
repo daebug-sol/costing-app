@@ -93,8 +93,8 @@ export function useCostingWorkspace() {
   };
 
   /**
-   * Manual segment + second named group so the new segment opens in
-   * multi-group mode (same naming as ManualWorkspace “Tambah item grup”).
+   * Manual segment whose default group is renamed to a named bagian, so the
+   * new segment opens in bagian mode (header + "Tambah sub-bagian").
    */
   const addManualGroupItem = async () => {
     try {
@@ -105,14 +105,23 @@ export function useCostingWorkspace() {
         (a, b) => b.sortOrder - a.sortOrder
       )[0];
       if (!newest || newest.type !== "manual") return;
-      const r = await fetch(
-        `/api/projects/${project.id}/segments/${newest.id}/manual/groups`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: "Kelompok 2" }),
-        }
-      );
+      const base = `/api/projects/${project.id}/segments/${newest.id}/manual`;
+      const list = await fetch(base, { cache: "no-store" });
+      const data = list.ok
+        ? ((await list.json()) as { groups?: { id: string }[] })
+        : null;
+      const first = data?.groups?.[0];
+      const r = first
+        ? await fetch(`${base}/groups/${first.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "Bagian 1" }),
+          })
+        : await fetch(`${base}/groups`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "Bagian 1" }),
+          });
       if (!r.ok) {
         const j = (await r.json().catch(() => null)) as {
           error?: string;
