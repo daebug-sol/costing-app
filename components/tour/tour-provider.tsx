@@ -13,6 +13,7 @@ import {
 import { TUTORIALS } from "@/content/tutorials";
 import { subscribeTourEvents } from "@/lib/tour/events";
 import {
+  mergeStatus,
   pickAutoTour,
   routeMatches,
   tourReducer,
@@ -63,6 +64,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<TourState>(IDLE);
   const stateRef = useRef(state);
   const [progress, setProgress] = useState<TourProgress>({});
+  const progressRef = useRef<TourProgress>({});
   const [loaded, setLoaded] = useState<{ displayName: string | null; autoStart: boolean } | null>(
     null
   );
@@ -73,8 +75,10 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     stateRef.current = next;
     setState(next);
     if (effect) {
-      const { key, status } = effect.save;
-      setProgress((p) => ({ ...p, [key]: status }));
+      const { key } = effect.save;
+      const status = mergeStatus(progressRef.current[key], effect.save.status);
+      progressRef.current = { ...progressRef.current, [key]: status };
+      setProgress(progressRef.current);
       void saveProgress(key, status);
     }
   }, []);
@@ -83,6 +87,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     void loadProgress().then((result) => {
       if (cancelled || !result) return;
+      progressRef.current = result.progress;
       setProgress(result.progress);
       setLoaded({ displayName: result.displayName, autoStart: result.autoStart });
     });

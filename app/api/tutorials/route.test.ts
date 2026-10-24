@@ -41,6 +41,7 @@ describe("/api/tutorials", () => {
       progress: { welcome: "done", costing: "skipped" },
       displayName: "Rina W.",
       autoStart: true,
+      owner: "org-a:user-1",
     });
     expect(prisma.tutorialProgress.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { organizationId: "org-a", userId: "user-1" } })

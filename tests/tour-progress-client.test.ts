@@ -47,16 +47,21 @@ describe("tour progress client", () => {
   });
 
   it("loadProgress merges server over local and refreshes the mirror", async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({ progress: {}, displayName: "Rina", autoStart: true, owner: "org-a:u1" })
+    );
+    await loadProgress();
     fetchMock.mockResolvedValue(new Response("{}", { status: 500 }));
     await saveProgress("costing", "done");
     fetchMock.mockResolvedValue(
-      Response.json({ progress: { welcome: "done" }, displayName: "Rina", autoStart: true })
+      Response.json({ progress: { welcome: "done" }, displayName: "Rina", autoStart: true, owner: "org-a:u1" })
     );
     const result = await loadProgress();
     expect(result).toEqual({
       progress: { costing: "done", welcome: "done" },
       displayName: "Rina",
       autoStart: true,
+      owner: "org-a:u1",
     });
     expect(readLocalProgress()).toEqual({ costing: "done", welcome: "done" });
   });
@@ -69,5 +74,23 @@ describe("tour progress client", () => {
   it("ignores a corrupt mirror", () => {
     localStorage.setItem("costing-tour-progress", "{not json");
     expect(readLocalProgress()).toEqual({});
+  });
+
+  it("discards a mirror written for another user and never resends it", async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({ progress: {}, displayName: "A", autoStart: true, owner: "org-a:user-a" })
+    );
+    await loadProgress();
+    await saveProgress("welcome", "done");
+
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue(
+      Response.json({ progress: {}, displayName: "B", autoStart: true, owner: "org-a:user-b" })
+    );
+    const result = await loadProgress();
+    expect(result?.progress).toEqual({});
+    expect(readLocalProgress()).toEqual({});
+    const puts = fetchMock.mock.calls.filter(([, init]) => init?.method === "PUT");
+    expect(puts).toHaveLength(0);
   });
 });

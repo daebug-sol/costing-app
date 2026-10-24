@@ -29,6 +29,8 @@ export async function GET() {
     displayName: await getDisplayName(),
     /** Off for the Playwright harness so tutorials show only when forced (?tour=). */
     autoStart: !isAuthBypassed(),
+    /** Lets the client keep its local mirror per user and org. */
+    owner: `${orgId}:${userId}`,
   });
 }
 

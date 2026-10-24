@@ -40,6 +40,22 @@ function keyboardTop(): number | null {
   return Math.round(vv.offsetTop);
 }
 
+/** Popups that handle Esc themselves: Radix dialogs/menus/listboxes and Clerk's account menu. */
+const ESC_OWNERS =
+  '[role="dialog"][data-state="open"]:not([data-tour-card]), [role="menu"], [role="listbox"], .cl-userButtonPopoverCard';
+
+/** Esc closes an open popup or cancels an inline edit before it ever skips the tour. */
+function escapeBelongsElsewhere(card: HTMLElement | null): boolean {
+  const el = document.activeElement;
+  const inCard = !!card && !!el && card.contains(el);
+  const editing =
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLTextAreaElement ||
+    el instanceof HTMLSelectElement ||
+    (el instanceof HTMLElement && (el.isContentEditable || el.getAttribute("role") === "combobox"));
+  return (!inCard && editing) || !!document.querySelector(ESC_OWNERS);
+}
+
 export function fillName(text: string, name: string | null): string {
   return text.replace(/,? ?\{name\}/, name ? `, ${name}` : "");
 }
@@ -123,9 +139,8 @@ export function TourCard({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      // Esc belongs to an open dialog or menu first.
-      if (document.querySelector('[role="dialog"][data-state="open"], [role="menu"]')) return;
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (escapeBelongsElsewhere(ref.current)) return;
       onSkip();
     };
     window.addEventListener("keydown", onKey);
@@ -170,11 +185,11 @@ export function TourCard({
           <p id={titleId} className="min-w-0 flex-1 truncate text-sm font-semibold">
             {title}
           </p>
-          <Button variant="ghost" size="sm" onClick={onSkip}>
+          <Button variant="ghost" size="sm" className="h-11" onClick={onSkip}>
             {t("tour.skip")}
           </Button>
           {step.kind === "info" ? (
-            <Button ref={primaryRef} size="sm" onClick={onNext}>
+            <Button ref={primaryRef} size="sm" className="h-11" onClick={onNext}>
               {isLast ? t("tour.done") : t("tour.next")}
             </Button>
           ) : null}

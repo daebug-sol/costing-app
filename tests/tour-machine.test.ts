@@ -1,4 +1,6 @@
 import {
+  mergeStatus,
+  missingTimer,
   pickAutoTour,
   tourReducer,
   visibleSteps,
@@ -200,5 +202,38 @@ describe("pickAutoTour", () => {
         progress: { welcome: "done", costing: "done" },
       })
     ).toEqual({ kind: "run", key: "costing" });
+  });
+});
+
+describe("mergeStatus", () => {
+  it("never downgrades done to skipped (replay then Lewati)", () => {
+    expect(mergeStatus("done", "skipped")).toBe("done");
+    expect(mergeStatus("skipped", "done")).toBe("done");
+    expect(mergeStatus(undefined, "skipped")).toBe("skipped");
+  });
+});
+
+describe("missingTimer", () => {
+  it("reports missing 3s after the target was last seen, not after the step started", () => {
+    let t = missingTimer.start(0);
+    t = missingTimer.tick(t, true, 1000);
+    t = missingTimer.tick(t, true, 10_000);
+    t = missingTimer.tick(t, false, 10_016);
+    expect(t.missing).toBe(false);
+    t = missingTimer.tick(t, false, 12_000);
+    expect(t.missing).toBe(false);
+    t = missingTimer.tick(t, true, 12_500);
+    t = missingTimer.tick(t, false, 13_000);
+    t = missingTimer.tick(t, false, 15_400);
+    expect(t.missing).toBe(false);
+    t = missingTimer.tick(t, false, 15_600);
+    expect(t.missing).toBe(true);
+  });
+
+  it("reports a target that never appears after 3s", () => {
+    let t = missingTimer.start(0);
+    t = missingTimer.tick(t, false, 2999);
+    expect(t.missing).toBe(false);
+    expect(missingTimer.tick(t, false, 3001).missing).toBe(true);
   });
 });

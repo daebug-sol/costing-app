@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { missingTimer } from "@/lib/tour/machine";
 
 const DESKTOP_QUERY = "(min-width: 1024px)";
-const MISSING_AFTER_MS = 3000;
 
 function subscribeDesktop(onChange: () => void) {
   const mq = window.matchMedia(DESKTOP_QUERY);
@@ -59,7 +59,7 @@ function sameRect(a: TargetRect | null, b: TargetRect | null) {
 
 /**
  * Tracks the element carrying `data-tour={name}` every frame (scroll, resize,
- * dialogs opening). Calls `onMissing` once when it has not appeared after 3s.
+ * dialogs opening). Calls `onMissing` once the target has been gone for 3s.
  * A null name means a centered step: no target, never missing.
  */
 export function useTourTarget(
@@ -80,11 +80,11 @@ export function useTourTarget(
     let scrolled = false;
     let last: TargetRect | null = null;
     let lastEl: HTMLElement | null = null;
-    const started = performance.now();
-    let reported = false;
+    let timer = missingTimer.start(performance.now());
 
     const tick = () => {
       const el = findVisible(name);
+      timer = missingTimer.tick(timer, el !== null, performance.now());
       if (el) {
         if (!scrolled) {
           scrolled = true;
@@ -106,8 +106,7 @@ export function useTourTarget(
           lastEl = null;
           setState({ key: stepKey, element: null, rect: null });
         }
-        if (!reported && performance.now() - started > MISSING_AFTER_MS) {
-          reported = true;
+        if (timer.missing) {
           onMissing();
           return;
         }

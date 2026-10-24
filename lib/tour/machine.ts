@@ -116,3 +116,23 @@ export function pickAutoTour(args: {
   if (visibleSteps(def, ctx).length === 0) return null;
   return { kind: "invite", key: def.key };
 }
+
+/** A replayed tour that is skipped stays "done" for the user who finished it once. */
+export function mergeStatus(prev: TourStatus | undefined, next: TourStatus): TourStatus {
+  return prev === "done" ? "done" : next;
+}
+
+const MISSING_AFTER_MS = 3000;
+
+export type MissingTimer = { lastSeenOrStart: number; missing: boolean };
+
+/** Grace period for a step target: 3s after it was last seen (or since the step began). */
+export const missingTimer = {
+  start(now: number): MissingTimer {
+    return { lastSeenOrStart: now, missing: false };
+  },
+  tick(t: MissingTimer, found: boolean, now: number): MissingTimer {
+    if (found) return { lastSeenOrStart: now, missing: false };
+    return { ...t, missing: now - t.lastSeenOrStart > MISSING_AFTER_MS };
+  },
+};

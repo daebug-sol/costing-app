@@ -59,6 +59,17 @@ test.describe("welcome tour", () => {
     await expect(card(page)).toHaveCount(0);
   });
 
+  test("Esc inside an input belongs to the input, not the tour", async ({ page }) => {
+    await page.goto("/settings?tour=welcome");
+    await expect(card(page)).toBeVisible();
+    await page.locator("main input:visible").first().focus();
+    await page.keyboard.press("Escape");
+    await expect(card(page)).toBeVisible();
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press("Escape");
+    await expect(card(page)).toHaveCount(0);
+  });
+
   test("survives resize across lg", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium-desktop");
     await page.setViewportSize({ width: 1280, height: 800 });

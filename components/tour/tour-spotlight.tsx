@@ -9,8 +9,14 @@ const PAD = 6;
  * so on action steps the highlighted element stays usable.
  */
 export function TourSpotlight({ rect }: { rect: TargetRect | null }) {
-  // Pointer-down must not reach document listeners (e.g. a dialog's outside-dismiss).
-  const block = (e: React.PointerEvent) => e.stopPropagation();
+  // While a modal dialog is open (action steps), a click on the shade must not
+  // reach its outside-dismiss listener; otherwise let popups such as the
+  // account menu close as usual.
+  const block = (e: React.PointerEvent) => {
+    if (document.querySelector('[role="dialog"][data-state="open"]:not([data-tour-card])')) {
+      e.stopPropagation();
+    }
+  };
   const shade = "fixed z-[60] bg-black/50 motion-safe:transition-all";
 
   if (!rect) {
