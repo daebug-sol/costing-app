@@ -144,6 +144,18 @@ export async function DELETE(_request: Request, context: Ctx) {
     ) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+    // Quotation items keep their project (onDelete: Restrict).
+    if (
+      e &&
+      typeof e === "object" &&
+      "code" in e &&
+      (e as { code: string }).code === "P2003"
+    ) {
+      return NextResponse.json(
+        { error: "Proyek ini dipakai di penawaran. Hapus penawarannya dulu di Dokumentasi." },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { error: "Failed to delete project" },
       { status: 500 }

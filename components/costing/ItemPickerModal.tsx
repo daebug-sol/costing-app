@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { formatIDR } from "@/lib/utils/format";
 import type { MaterialUsage } from "@/lib/manual-group-tree";
+import { tourEvent } from "@/lib/tour/events";
 
 export type PickerSelection = {
   sourceType: "material" | "profile" | "component" | "custom";
@@ -211,6 +212,7 @@ export function ItemPickerModal({
 
   const toggle = (key: string, row: UnifiedRow, next: boolean) => {
     setChecked((prev) => ({ ...prev, [key]: next }));
+    if (next) tourEvent("costing.material-picked");
     setQtyByKey((prev) => {
       if (next && prev[key] === undefined) return { ...prev, [key]: "1" };
       return prev;
@@ -322,7 +324,10 @@ export function ItemPickerModal({
               </Select>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-2">
+            <div
+              className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-2"
+              data-tour="costing.material-picker.list"
+            >
               {loading ? (
                 <p className="text-muted-foreground p-4 text-sm">Memuat…</p>
               ) : (
@@ -340,6 +345,7 @@ export function ItemPickerModal({
                           <label
                             key={r.key}
                             className="flex cursor-pointer items-start gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm hover:bg-muted"
+                            data-tour="costing.material-picker.row"
                           >
                             <Checkbox
                               checked={Boolean(checked[r.key])}
@@ -451,6 +457,7 @@ export function ItemPickerModal({
           <Button
             disabled={!canSubmit || submitting || groups.length === 0}
             onClick={() => void handleConfirm()}
+            data-tour="costing.material-picker.confirm"
           >
             Tambahkan ke item
           </Button>

@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { costingErrorMessage } from "@/lib/costing-error-message";
+import { tourEvent } from "@/lib/tour/events";
 import type { CostingWorkspaceState } from "./use-costing-workspace";
 
 type Props = {
@@ -24,7 +25,10 @@ export function AddItemMenu({ ed, variant }: Props) {
 
   const addManual = () => void addManualItem();
   const addGroup = () => void addManualGroupItem();
-  const addAhu = () => addSegment("ahu").catch((e) => showToast(costingErrorMessage(e)));
+  const addAhu = () =>
+    addSegment("ahu")
+      .then(() => tourEvent("costing.item-added"))
+      .catch((e) => showToast(costingErrorMessage(e)));
 
   if (variant === "empty") {
     return (
@@ -33,8 +37,16 @@ export function AddItemMenu({ ed, variant }: Props) {
         <p className="text-muted-foreground mx-auto mt-1 max-w-md text-sm">
           {t("costing.page.emptyDescription")}
         </p>
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-          <Button type="button" size="lg" onClick={addManual}>
+        <div
+          className="mt-5 flex flex-wrap items-center justify-center gap-3"
+          data-tour="costing.add-item"
+        >
+          <Button
+            type="button"
+            size="lg"
+            onClick={addManual}
+            data-tour="costing.add-item.single"
+          >
             <FileText aria-hidden />
             {t("costing.page.itemManual")}
           </Button>
