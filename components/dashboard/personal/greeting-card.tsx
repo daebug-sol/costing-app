@@ -78,6 +78,7 @@ export function GreetingCard({
     <div
       className="flex flex-col gap-6 bg-inverse px-6 py-6 text-inverse-foreground sm:flex-row sm:items-end sm:justify-between sm:px-8 sm:py-8"
       data-testid="dashboard-greeting"
+      data-tour="dashboard.greeting"
     >
       <div className="flex min-w-0 flex-col gap-2">
         <p className="text-sm text-inverse-foreground/70" data-volatile>

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { tourEvent } from "@/lib/tour/events";
 import { toastError, toastSuccess } from "@/store/toastStore";
 
 export function TargetDialog({
@@ -40,6 +41,7 @@ export function TargetDialog({
       });
       if (!res.ok) throw new Error("save failed");
       toastSuccess(t("common.saved"));
+      tourEvent("dashboard.target-saved");
       setOpen(false);
       onSaved();
     } catch {
@@ -57,7 +59,10 @@ export function TargetDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (next) setValue(current ? String(current) : "");
+        if (next) {
+          setValue(current ? String(current) : "");
+          tourEvent("dashboard.target-dialog-opened");
+        }
       }}
     >
       <DialogTrigger asChild>
@@ -65,7 +70,7 @@ export function TargetDialog({
           {triggerLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-tour="dashboard.target-dialog">
         <DialogHeader>
           <DialogTitle>{t("dashboard.personal.target.dialogTitle")}</DialogTitle>
           <DialogDescription>{t("dashboard.personal.target.dialogDescription")}</DialogDescription>

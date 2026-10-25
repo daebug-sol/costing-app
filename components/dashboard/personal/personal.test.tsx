@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { FollowUpList } from "@/components/dashboard/personal/follow-up-list";
+import { FollowUpList, followUpHref } from "@/components/dashboard/personal/follow-up-list";
 import { greetingForHour } from "@/components/dashboard/personal/greeting-card";
 import { HomeOverview } from "@/components/dashboard/personal/home-overview";
 import { RichLine } from "@/components/dashboard/personal/rich-line";
@@ -48,6 +48,19 @@ describe("FollowUpList", () => {
 
   it("shows an empty state", () => {
     expect(wrap(<FollowUpList total={0} items={[]} />)).toContain("Tidak ada tindak lanjut");
+  });
+
+  it("links each row to its document", () => {
+    expect(followUpHref({ kind: "quotation-expiring", id: "q1" })).toBe("/documentation?id=q1");
+    expect(followUpHref({ kind: "invoice-overdue", id: "i1" })).toBe("/invoices?id=i1");
+    expect(followUpHref({ kind: "order-waiting", id: "s1" })).toBe("/sales-orders?id=s1");
+    const html = wrap(
+      <FollowUpList
+        total={1}
+        items={[{ id: "i1", kind: "invoice-overdue", ref: "INV-0412", party: "PT Arga", dueLabel: "overdue", overdueDays: 1 }]}
+      />
+    );
+    expect(html).toContain('href="/invoices?id=i1"');
   });
 });
 
