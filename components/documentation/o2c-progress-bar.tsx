@@ -42,7 +42,10 @@ export function O2cProgressBar({ progress, className }: Props) {
   const router = useRouter();
 
   return (
-    <div className={cn("flex flex-col gap-3", className)}>
+    <div
+      data-tour="documentation.o2c-progress"
+      className={cn("flex flex-col gap-3", className)}
+    >
       <div
         className="flex gap-1"
         role="group"
@@ -54,6 +57,9 @@ export function O2cProgressBar({ progress, className }: Props) {
             <button
               key={stage.stage}
               type="button"
+              data-tour={
+                stage.stage === "quotation" ? "documentation.open-quote" : undefined
+              }
               disabled={disabled}
               aria-label={stageAriaLabel(stage)}
               aria-current={stage.state === "current" ? "step" : undefined}
