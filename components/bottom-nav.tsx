@@ -50,6 +50,7 @@ export function BottomNav() {
             <li key={href} className="min-w-0 flex-1">
               <Link
                 href={href}
+                data-tour={`nav-mobile.${icon}`}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex h-14 flex-col items-center justify-center gap-0.5 px-1 text-xs font-medium transition-colors",

@@ -3,6 +3,7 @@ import { GET as getItems } from "./database/items/route";
 import { POST as bulkDelete } from "./quotations/bulk-delete/route";
 import { GET as getFiles } from "./database/files/route";
 import { POST as createTable } from "./custom-db/route";
+import { GET as getTutorials } from "./tutorials/route";
 import { prisma } from "@/lib/prisma";
 import { requireFolderInOrg } from "@/lib/tenant-context";
 
@@ -14,6 +15,7 @@ jest.mock("@/lib/prisma", () => ({
     customDbRow: { findMany: jest.fn(async () => []) },
     quotation: { deleteMany: jest.fn(async () => ({ count: 0 })) },
     customDbTable: { findMany: jest.fn(), create: jest.fn() },
+    tutorialProgress: { findMany: jest.fn(async () => []) },
   },
 }));
 
@@ -23,6 +25,11 @@ jest.mock("@/lib/api-guard", () => ({
     orgId: "org-a",
     role: "owner",
   })),
+}));
+
+jest.mock("@/lib/auth", () => ({
+  getDisplayName: jest.fn(async () => null),
+  isAuthBypassed: jest.fn(() => false),
 }));
 
 jest.mock("@/lib/permissions", () => ({
@@ -97,5 +104,12 @@ describe("tenant isolation", () => {
     );
     expect(res.status).toBe(404);
     expect(prisma.customDbTable.create).not.toHaveBeenCalled();
+  });
+
+  it("tutorials GET scopes to the active org and user", async () => {
+    await getTutorials();
+    expect(
+      (prisma.tutorialProgress.findMany as jest.Mock).mock.calls[0][0].where
+    ).toEqual({ organizationId: "org-a", userId: "u" });
   });
 });
