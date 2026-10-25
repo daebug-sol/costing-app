@@ -14,6 +14,9 @@ import { PageShell } from "@/components/page-shell";
 import { DemoDataCard } from "@/components/settings/demo-data-card";
 import { OrgMembersCard } from "@/components/settings/org-members-card";
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card";
+import { useTour } from "@/components/tour/tour-provider";
+import { settingsOnboardingCopy } from "@/content/tutorials/settings";
+import { tourEvent } from "@/lib/tour/events";
 import type { OrgRole } from "@/lib/org-roles";
 import type { Permission } from "@/lib/permissions";
 import { toastError, toastSuccess } from "@/store/toastStore";
@@ -77,7 +80,8 @@ async function readErr(res: Response): Promise<string> {
 const LOAD_FAILED = "__load_failed__";
 
 export function SettingsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { start: startTour } = useTour();
   const [row, setRow] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +134,7 @@ export function SettingsPage() {
       setRow(await r.json());
       void syncOrgCaps().catch(() => undefined);
       toastSuccess(t("settings.saved"));
+      tourEvent(`settings.${card}-saved`);
     } catch (e) {
       toastError(e instanceof Error ? e.message : t("settings.saveFailed"));
     } finally {
@@ -211,10 +216,13 @@ export function SettingsPage() {
                   t("settings.onboarding.markDone")
                 )}
               </Button>
-              <Button type="button" size="sm" variant="outline" asChild>
-                <Link href="/help/mulai-cepat/orientasi-aplikasi">
-                  {t("settings.onboarding.openHelp")}
-                </Link>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => startTour("settings")}
+              >
+                {settingsOnboardingCopy.start[locale]}
               </Button>
             </div>
           </CardContent>
@@ -237,7 +245,7 @@ export function SettingsPage() {
           <CardTitle className="text-lg">{t("settings.companyProfile")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" data-tour="settings.company-name">
             <Label htmlFor="co-name">Nama perusahaan</Label>
             <Input
               id="co-name"
@@ -308,6 +316,7 @@ export function SettingsPage() {
         <CardFooter className="justify-end border-t bg-muted/40">
           <Button
             type="button"
+            data-tour="settings.company-save"
             disabled={saving !== null || !canWrite}
             onClick={() =>
               void put(
@@ -619,7 +628,11 @@ export function SettingsPage() {
                 ["forexSGD", "SGD → IDR"],
               ] as const
             ).map(([key, label]) => (
-              <div key={key} className="space-y-1.5">
+              <div
+                key={key}
+                className="space-y-1.5"
+                data-tour={key === "forexUSD" ? "settings.forex-usd" : undefined}
+              >
                 <Label htmlFor={key}>{label}</Label>
                 <Input
                   id={key}
@@ -640,6 +653,7 @@ export function SettingsPage() {
         <CardFooter className="justify-end border-t bg-muted/40">
           <Button
             type="button"
+            data-tour="settings.forex-save"
             disabled={saving !== null || !canWrite}
             onClick={() =>
               void put(
