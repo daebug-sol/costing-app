@@ -241,6 +241,7 @@ export function PaymentsModule() {
       actions={
         <ExplorerMobileAdd
           label="Penerimaan baru"
+          dataTour="payments.primary-action"
           onClick={() => setFormOpen(true)}
         />
       }
@@ -275,9 +276,10 @@ export function PaymentsModule() {
           ) : undefined
         }
       >
-        {shown.map((p) => (
+        {shown.map((p, i) => (
           <ExplorerRow
             key={p.id}
+            dataTour={i === 0 ? "payments.row" : undefined}
             icon={<Wallet className="size-5" aria-hidden />}
             title={`${p.payNumber} · ${p.customer.company || p.customer.name}`}
             amountCompact={formatRpShort(p.amount)}
@@ -308,6 +310,7 @@ export function PaymentsModule() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         <Card
+          data-tour="payments.primary-action"
           className={
             formOpen
               ? "fixed inset-0 z-50 overflow-y-auto rounded-none md:static md:z-auto md:rounded-xl"
@@ -464,8 +467,11 @@ export function PaymentsModule() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payments.map((p) => (
-                    <TableRow key={p.id}>
+                  {payments.map((p, i) => (
+                    <TableRow
+                      key={p.id}
+                      data-tour={i === 0 ? "payments.row" : undefined}
+                    >
                       <TableCell>
                         <div className="font-medium">{p.payNumber}</div>
                         <div className="text-xs text-muted-foreground">
