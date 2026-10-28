@@ -1,17 +1,18 @@
 "use client";
 
 import {
-  OrganizationSwitcher,
   Show,
   SignInButton,
   SignUpButton,
   UserButton,
+  useOrganization,
 } from "@clerk/nextjs";
-import { CircleHelp, RotateCcw, Settings } from "lucide-react";
+import { Building2, CircleHelp, RotateCcw, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/components/i18n-provider";
+import { OrgSwitchDialog } from "@/components/org-switch-dialog";
 import { useTour } from "@/components/tour/tour-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -92,10 +93,53 @@ function HelpLink() {
   );
 }
 
-function AuthControls() {
+/** Avatar menu: active organization on top (switch), then org settings, Help, tour, own account, sign out. */
+function AccountMenu() {
   const { t } = useI18n();
   const helpHref = useHelpHref();
   const { start } = useTour();
+  const { organization } = useOrganization();
+  const [switchOpen, setSwitchOpen] = useState(false);
+
+  return (
+    <>
+      <span data-tour="account.menu" className="inline-flex">
+        <UserButton>
+          <UserButton.MenuItems>
+            {organization ? (
+              <UserButton.Action
+                label={t("nav.orgItem", { name: organization.name })}
+                labelIcon={<Building2 className="size-4" aria-hidden />}
+                onClick={() => setSwitchOpen(true)}
+              />
+            ) : null}
+            <UserButton.Link
+              label={t("nav.orgSettings")}
+              labelIcon={<Settings className="size-4" aria-hidden />}
+              href="/settings"
+            />
+            <UserButton.Link
+              label={t("nav.help")}
+              labelIcon={<CircleHelp className="size-4" aria-hidden />}
+              href={helpHref}
+            />
+            <UserButton.Action
+              label={t("tour.replayWelcome")}
+              labelIcon={<RotateCcw className="size-4" aria-hidden />}
+              onClick={() => start("welcome")}
+            />
+            <UserButton.Action label="manageAccount" />
+            <UserButton.Action label="signOut" />
+          </UserButton.MenuItems>
+        </UserButton>
+      </span>
+      <OrgSwitchDialog open={switchOpen} onOpenChange={setSwitchOpen} />
+    </>
+  );
+}
+
+function AuthControls() {
+  const { t } = useI18n();
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     return (
       <Button variant="ghost" size="sm" asChild>
@@ -109,35 +153,7 @@ function AuthControls() {
   return (
     <>
       <Show when="signed-in">
-        <OrganizationSwitcher
-          hidePersonal
-          appearance={{
-            elements: { rootBox: "hidden sm:flex" },
-          }}
-        />
-        <span data-tour="account.menu" className="inline-flex">
-          <UserButton>
-            <UserButton.MenuItems>
-              <UserButton.Link
-                label={t("nav.userSettings")}
-                labelIcon={<Settings className="size-4" aria-hidden />}
-                href="/settings"
-              />
-              <UserButton.Link
-                label={t("nav.help")}
-                labelIcon={<CircleHelp className="size-4" aria-hidden />}
-                href={helpHref}
-              />
-              <UserButton.Action
-                label={t("tour.replayWelcome")}
-                labelIcon={<RotateCcw className="size-4" aria-hidden />}
-                onClick={() => start("welcome")}
-              />
-              <UserButton.Action label="manageAccount" />
-              <UserButton.Action label="signOut" />
-            </UserButton.MenuItems>
-          </UserButton>
-        </span>
+        <AccountMenu />
       </Show>
       <Show when="signed-out">
         <SignInButton mode="modal">

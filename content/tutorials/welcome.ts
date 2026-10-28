@@ -63,8 +63,8 @@ export const welcomeTour: TourDefinition = {
       target: "account.menu",
       title: { id: "Menu akun", en: "Account menu" },
       body: {
-        id: "Help, Pengaturan, dan Ulangi tur ada di sini. Tiap modul juga punya tutorial singkat saat pertama dibuka.",
-        en: "Help, Settings, and Replay tour live here. Each module also has a short tutorial the first time you open it.",
+        id: "Ganti organisasi, Pengaturan organisasi, Help, Ulangi tur, dan Akun saya ada di sini. Tiap modul juga punya tutorial singkat saat pertama dibuka.",
+        en: "Switch organization, Organization settings, Help, Replay tour, and My account live here. Each module also has a short tutorial the first time you open it.",
       },
     },
   ],
