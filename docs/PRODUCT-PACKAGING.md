@@ -7,7 +7,7 @@ This document describes how **costing-app** is packaged for SaaS: public tiers, 
 ## One product
 
 - **One repo, one deploy, one website** — no AHU fork, no long-lived product branch that strips features.
-- **Tenancy:** one `Organization` per client company; workers are org members with **app-owned roles** (below). Clerk handles sign-in and org membership invites (`OrganizationSwitcher`); the **app role** is assigned in Settings → Anggota.
+- **Tenancy:** one `Organization` per client company; workers are org members with **app-owned roles** (below). Clerk handles sign-in and org membership invites (organization switching lives in the account menu via `components/org-switch-dialog.tsx`); the **app role** is assigned in Settings → Anggota.
 
 ---
 
